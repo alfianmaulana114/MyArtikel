@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyArtikel - Test CSS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'earth-cream': '#F5F1E8',
+                        'earth-sage': '#A8B5A0',
+                        'earth-olive': '#8B9A7A',
+                        'earth-brown': '#8B4513',
+                        'earth-taupe': '#D2B48C',
+                        'earth-charcoal': '#36454F',
+                        'earth-rust': '#AA5F3C'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .test-gradient {
+            background: linear-gradient(135deg, #F5F1E8 0%, #AA5F3C 100%);
+        }
+    </style>
+</head>
+<body class="bg-earth-cream min-h-screen flex items-center justify-center">
+    <div class="text-center p-8">
+        <h1 class="text-4xl font-bold text-earth-charcoal mb-4">MyArtikel CSS Test</h1>
+        <div class="bg-earth-sage text-white p-6 rounded-lg mb-4">
+            <p class="text-lg">Jika Anda melihat warna-warna earth-tone ini, CSS bekerja dengan baik!</p>
+        </div>
+        <div class="test-gradient text-white p-6 rounded-lg">
+            <p class="text-lg">Gradient test - ini harus berwarna cream ke rust</p>
+        </div>
+        <div class="mt-8 space-x-4">
+            <a href="/" class="bg-earth-rust text-white px-6 py-3 rounded-lg hover:bg-earth-brown transition-colors">
+                Ke Landing Page
+            </a>
+            <a href="/login" class="bg-earth-sage text-white px-6 py-3 rounded-lg hover:bg-earth-olive transition-colors">
+                Login
+            </a>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+    .marketing-nav {
+        background-color: color-mix(
+            in srgb,
+            var(--surface-primary) 88%,
+            transparent
+        );
+        backdrop-filter: blur(10px);
+    }
+
+    .marketing-hero {
+        position: relative;
+        isolation: isolate;
+    }
+
+    .marketing-hero::before {
+        content: "";
+        position: absolute;
+        inset: -16rem -10rem auto -10rem;
+        height: 38rem;
+        pointer-events: none;
+        z-index: -1;
+        background:
+            radial-gradient(
+                60rem 26rem at 15% 35%,
+                color-mix(in srgb, var(--earth-accent-500) 30%, transparent),
+                transparent 60%
+            ),
+            radial-gradient(
+                54rem 24rem at 85% 25%,
+                color-mix(in srgb, var(--earth-secondary-500) 26%, transparent),
+                transparent 62%
+            ),
+            radial-gradient(
+                40rem 22rem at 55% 0%,
+                color-mix(in srgb, var(--earth-primary-500) 22%, transparent),
+                transparent 58%
+            );
+    }
+
+    [data-theme="dark"] .marketing-hero::before {
+        background:
+            radial-gradient(
+                60rem 26rem at 15% 35%,
+                color-mix(in srgb, var(--earth-accent-400) 26%, transparent),
+                transparent 60%
+            ),
+            radial-gradient(
+                54rem 24rem at 85% 25%,
+                color-mix(in srgb, var(--earth-secondary-400) 22%, transparent),
+                transparent 62%
+            ),
+            radial-gradient(
+                40rem 22rem at 55% 0%,
+                color-mix(in srgb, var(--earth-primary-400) 18%, transparent),
+                transparent 58%
+            );
+        opacity: 0.7;
+    }
+
+    .faq-plus {
+        transition: transform var(--transition-normal);
+    }
+
+    details[open] .faq-plus {
+        transform: rotate(45deg);
+    }
+
+    .nav-link {
+        color: var(--text-secondary);
+        transition: color var(--transition-fast);
+    }
+
+    .nav-link:hover {
+        color: var(--text-primary);
+    }
+}
+
+@layer utilities {
+    [x-cloak] {
+        display: none !important;
+    }
+}

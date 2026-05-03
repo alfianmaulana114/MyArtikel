@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Tag Management System Demo</title>
+        <meta name="csrf-token" content="{{ csrf_token() }}" />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+        />
+        <style>
+            body {
+                font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+                margin: 0;
+                padding: 20px;
+                background-color: #f8fafc;
+                color: #334155;
+            }
+
+            .demo-container {
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+
+            .demo-section {
+                background: white;
+                border-radius: 8px;
+                padding: 24px;
+                margin-bottom: 24px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            }
+
+            .demo-section h2 {
+                margin: 0 0 20px 0;
+                color: #1e293b;
+                font-size: 20px;
+                font-weight: 600;
+                border-bottom: 2px solid #e2e8f0;
+                padding-bottom: 12px;
+            }
+
+            .demo-description {
+                color: #64748b;
+                margin-bottom: 20px;
+                line-height: 1.6;
+            }
+
+            .demo-actions {
+                display: flex;
+                gap: 12px;
+                margin-bottom: 20px;
+                flex-wrap: wrap;
+            }
+
+            .btn {
+                padding: 8px 16px;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 14px;
+                transition: all 0.2s ease;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .btn-primary {
+                background: #3b82f6;
+                color: white;
+            }
+
+            .btn-primary:hover {
+                background: #2563eb;
+            }
+
+            .btn-secondary {
+                background: #f1f5f9;
+                color: #475569;
+                border: 1px solid #e2e8f0;
+            }
+
+            .btn-secondary:hover {
+                background: #e2e8f0;
+            }
+
+            .demo-output {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 6px;
+                padding: 16px;
+                margin-top: 16px;
+                font-family: "Courier New", monospace;
+                font-size: 13px;
+                max-height: 200px;
+                overflow-y: auto;
+            }
+
+            .demo-output:empty {
+                display: none;
+            }
+
+            .article-content {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 6px;
+                padding: 16px;
+                margin-bottom: 16px;
+                line-height: 1.6;
+            }
+
+            .article-title {
+                font-size: 18px;
+                font-weight: 600;
+                color: #1e293b;
+                margin-bottom: 12px;
+            }
+
+            .status-indicator {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: 500;
+            }
+
+            .status-success {
+                background: #dcfce7;
+                color: #166534;
+            }
+
+            .status-error {
+                background: #fee2e2;
+                color: #dc2626;
+            }
+
+            .status-info {
+                background: #dbeafe;
+                color: #1d4ed8;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="demo-container">
+            <h1 style="text-align: center; color: #1e293b; margin-bottom: 32px">
+                Tag Management System Demo
+            </h1>
+
+            <!-- Tag Manager Demo -->
+            <div class="demo-section">
+                <h2>
+                    <i class="fas fa-tags"></i> Tag Manager with Autocomplete
+                </h2>
+                <p class="demo-description">
+                    Advanced tag input with autocomplete, create-on-enter, and
+                    auto-generation features.
+                </p>
+                <div class="demo-actions">
+                    <button
+                        class="btn btn-primary"
+                        onclick="generateSampleContent()"
+                    >
+                        <i class="fas fa-magic"></i> Generate Sample Content
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearTags()">
+                        <i class="fas fa-trash"></i> Clear All Tags
+                    </button>
+                    <button
+                        class="btn btn-secondary"
+                        onclick="getCurrentTags()"
+                    >
+                        <i class="fas fa-list"></i> Get Current Tags
+                    </button>
+                </div>
+
+                <div class="article-content">
+                    <div class="article-title" id="article-title">
+                        Sample Article Title
+                    </div>
+                    <div id="article-content">
+                        This is a sample article about web development,
+                        programming, and technology. The content discusses
+                        various programming languages like JavaScript, Python,
+                        and PHP.
+                    </div>
+                </div>
+
+                <div id="tag-manager-container"></div>
+                <div id="tag-manager-output" class="demo-output"></div>
+            </div>
+
+            <!-- Tag Filter Demo -->
+            <div class="demo-section">
+                <h2>
+                    <i class="fas fa-filter"></i> Tag Filter for Article Library
+                </h2>
+                <p class="demo-description">
+                    Advanced filtering system for articles with multi-select tag
+                    filtering and related tag suggestions.
+                </p>
+                <div class="demo-actions">
+                    <button
+                        class="btn btn-primary"
+                        onclick="loadSampleArticles()"
+                    >
+                        <i class="fas fa-sync"></i> Load Sample Articles
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearFilters()">
+                        <i class="fas fa-times"></i> Clear Filters
+                    </button>
+                    <button
+                        class="btn btn-secondary"
+                        onclick="getFilteredResults()"
+                    >
+                        <i class="fas fa-search"></i> Show Filtered Results
+                    </button>
+                </div>
+
+                <div id="tag-filter-container"></div>
+                <div id="filtered-articles" class="demo-output"></div>
+            </div>
+
+            <!-- Tag Management UI Demo -->
+            <div class="demo-section">
+                <h2><i class="fas fa-cog"></i> Tag Management Interface</h2>
+                <p class="demo-description">
+                    Complete tag management interface with CRUD operations, bulk
+                    actions, and statistics.
+                </p>
+                <div class="demo-actions">
+                    <button
+                        class="btn btn-primary"
+                        onclick="initializeTagManagement()"
+                    >
+                        <i class="fas fa-play"></i> Initialize Management UI
+                    </button>
+                    <button
+                        class="btn btn-secondary"
+                        onclick="refreshTagManagement()"
+                    >
+                        <i class="fas fa-refresh"></i> Refresh Data
+                    </button>
+                </div>
+
+                <div id="tag-management-container"></div>
+            </div>
+
+            <!-- Tag Analytics Dashboard Demo -->
+            <div class="demo-section">
+                <h2>
+                    <i class="fas fa-chart-bar"></i> Tag Analytics Dashboard
+                </h2>
+                <p class="demo-description">
+                    Comprehensive analytics dashboard with usage statistics,
+                    trends, and recommendations.
+                </p>
+                <div class="demo-actions">
+                    <button
+                        class="btn btn-primary"
+                        onclick="initializeAnalytics()"
+                    >
+                        <i class="fas fa-chart-line"></i> Initialize Analytics
+                    </button>
+                    <button
+                        class="btn btn-secondary"
+                        onclick="refreshAnalytics()"
+                    >
+                        <i class="fas fa-sync"></i> Refresh Analytics
+                    </button>
+                    <button
+                        class="btn btn-secondary"
+                        onclick="exportAnalytics()"
+                    >
+                        <i class="fas fa-download"></i> Export Data
+                    </button>
+                </div>
+
+                <div id="analytics-dashboard-container"></div>
+            </div>
+        </div>
+
+        <!-- Load required scripts -->
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="/js/tags/TagService.js"></script>
+        <script src="/js/tags/TagManager.js"></script>
+        <script src="/js/tags/TagFilter.js"></script>
+        <script src="/js/tags/TagManagementUI.js"></script>
+        <script src="/js/tags/TagAnalyticsDashboard.js"></script>
+
+        <script>
+            // Global variables
+            let tagManager = null;
+            let tagFilter = null;
+            let tagManagementUI = null;
+            let analyticsDashboard = null;
+            let sampleArticles = [];
+
+            // Sample content for testing
+            const sampleContents = [
+                {
+                    title: "Modern Web Development with JavaScript",
+                    content:
+                        "JavaScript is the backbone of modern web development. From frontend frameworks like React and Vue to backend Node.js applications, JavaScript powers the web. This article explores advanced JavaScript concepts, ES6+ features, and best practices for scalable applications.",
+                },
+                {
+                    title: "Python for Data Science and Machine Learning",
+                    content:
+                        "Python has become the de facto language for data science and machine learning. With libraries like pandas, NumPy, scikit-learn, and TensorFlow, Python provides a comprehensive ecosystem for data analysis, visualization, and AI development.",
+                },
+                {
+                    title: "PHP Laravel Framework Best Practices",
+                    content:
+                        "Laravel is a powerful PHP framework that makes web development enjoyable and creative. This article covers Laravel best practices, including MVC architecture, Eloquent ORM, middleware, and modern PHP development patterns.",
+                },
+            ];
+
+            // Initialize Tag Manager
+            function initializeTagManager() {
+                const container = document.getElementById(
+                    "tag-manager-container",
+                );
+
+                tagManager = new TagManager({
+                    container: container,
+                    maxTags: 8,
+                    allowCreate: true,
+                    allowAutoGenerate: true,
+                    onTagsChanged: function (event) {
+                        updateOutput(
+                            "tag-manager-output",
+                            `Tags changed: ${event.detail.tags.join(", ")}`,
+                        );
+                    },
+                });
+            }
+
+            // Generate sample content
+            function generateSampleContent() {
+                const randomContent =
+                    sampleContents[
+                        Math.floor(Math.random() * sampleContents.length)
+                    ];
+                document.getElementById("article-title").textContent =
+                    randomContent.title;
+                document.getElementById("article-content").textContent =
+                    randomContent.content;
+
+                if (tagManager) {
+                    tagManager.generateTags();
+                }
+
+                updateOutput(
+                    "tag-manager-output",
+                    "Sample content generated. Auto-generating tags...",
+                );
+            }
+
+            // Clear all tags
+            function clearTags() {
+                if (tagManager) {
+                    tagManager.clearTags();
+                    updateOutput("tag-manager-output", "All tags cleared");
+                }
+            }
+
+            // Get current tags
+            function getCurrentTags() {
+                if (tagManager) {
+                    const tags = tagManager.getTags();
+                    updateOutput(
+                        "tag-manager-output",
+                        `Current tags: ${tags.length > 0 ? tags.join(", ") : "No tags selected"}`,
+                    );
+                }
+            }
+
+            // Initialize Tag Filter
+            function initializeTagFilter() {
+                const container = document.getElementById(
+                    "tag-filter-container",
+                );
+
+                tagFilter = new TagFilter({
+                    container: container,
+                    filterType: "multi",
+                    showCounts: true,
+                    showRelated: true,
+                    allowClear: true,
+                    onFilterChange: function (filteredArticles, selectedTags) {
+                        updateOutput(
+                            "filtered-articles",
+                            `Filtered ${filteredArticles.length} articles with ${selectedTags.size} tags`,
+                        );
+                    },
+                });
+            }
+
+            // Load sample articles
+            function loadSampleArticles() {
+                sampleArticles = [
+                    {
+                        id: 1,
+                        title: "JavaScript ES6+ Features",
+                        content:
+                            "Modern JavaScript with arrow functions, destructuring, and async/await",
+                        tags: [
+                            { id: 1, name: "JavaScript", color: "#f7df1e" },
+                            { id: 2, name: "Programming", color: "#4ecdc4" },
+                            {
+                                id: 3,
+                                name: "Web Development",
+                                color: "#45b7d1",
+                            },
+                        ],
+                    },
+                    {
+                        id: 2,
+                        title: "Python Data Analysis",
+                        content:
+                            "Using pandas and NumPy for data manipulation and analysis",
+                        tags: [
+                            { id: 4, name: "Python", color: "#3776ab" },
+                            { id: 2, name: "Programming", color: "#4ecdc4" },
+                            { id: 5, name: "Data Science", color: "#ff6b6b" },
+                        ],
+                    },
+                    {
+                        id: 3,
+                        title: "Laravel PHP Framework",
+                        content:
+                            "Building modern web applications with Laravel and PHP",
+                        tags: [
+                            { id: 6, name: "PHP", color: "#777bb4" },
+                            {
+                                id: 3,
+                                name: "Web Development",
+                                color: "#45b7d1",
+                            },
+                            { id: 7, name: "Laravel", color: "#ff2d20" },
+                        ],
+                    },
+                ];
+
+                // Simulate loading articles into filter
+                if (tagFilter) {
+                    tagFilter.articles = sampleArticles;
+                    tagFilter.filteredArticles = sampleArticles;
+                    tagFilter.updateStats();
+                }
+
+                updateOutput(
+                    "filtered-articles",
+                    "Sample articles loaded. Use the filter above to test tag filtering.",
+                );
+            }
+
+            // Clear filters
+            function clearFilters() {
+                if (tagFilter) {
+                    tagFilter.clearAllFilters();
+                    updateOutput("filtered-articles", "All filters cleared");
+                }
+            }
+
+            // Get filtered results
+            function getFilteredResults() {
+                if (tagFilter) {
+                    const filtered = tagFilter.getFilteredArticles();
+                    const selectedTags = tagFilter.getSelectedTags();
+
+                    let output = `Filtered Articles (${filtered.length}):\n`;
+                    filtered.forEach((article) => {
+                        output += `- ${article.title} (${article.tags.map((t) => t.name).join(", ")})\n`;
+                    });
+
+                    output += `\nSelected Tags (${selectedTags.length}): ${selectedTags.join(", ")}`;
+                    updateOutput("filtered-articles", output);
+                }
+            }
+
+            // Initialize Tag Management UI
+            function initializeTagManagement() {
+                const container = document.getElementById(
+                    "tag-management-container",
+                );
+
+                tagManagementUI = new TagManagementUI({
+                    container: container,
+                    showStatistics: true,
+                    showAnalytics: true,
+                    allowBulkOperations: true,
+                    onTagSelect: function (tag) {
+                        console.log("Tag selected:", tag);
+                    },
+                    onTagUpdate: function (tagData) {
+                        updateOutput(
+                            "tag-management-output",
+                            `Tag updated: ${tagData.name}`,
+                        );
+                    },
+                    onTagDelete: function (tag) {
+                        updateOutput(
+                            "tag-management-output",
+                            `Tag deleted: ${tag.name}`,
+                        );
+                    },
+                });
+            }
+
+            // Refresh tag management
+            function refreshTagManagement() {
+                if (tagManagementUI) {
+                    tagManagementUI.refresh();
+                    updateOutput(
+                        "tag-management-output",
+                        "Tag management data refreshed",
+                    );
+                }
+            }
+
+            // Initialize Analytics Dashboard
+            function initializeAnalytics() {
+                const container = document.getElementById(
+                    "analytics-dashboard-container",
+                );
+
+                analyticsDashboard = new TagAnalyticsDashboard({
+                    container: container,
+                    showCharts: true,
+                    showTrends: true,
+                    showRecommendations: true,
+                    refreshInterval: 60000, // 1 minute for demo
+                });
+            }
+
+            // Refresh analytics
+            function refreshAnalytics() {
+                if (analyticsDashboard) {
+                    analyticsDashboard.refresh();
+                    updateOutput(
+                        "analytics-output",
+                        "Analytics dashboard refreshed",
+                    );
+                }
+            }
+
+            // Export analytics
+            function exportAnalytics() {
+                if (analyticsDashboard) {
+                    analyticsDashboard.exportAnalytics();
+                    updateOutput("analytics-output", "Analytics data exported");
+                }
+            }
+
+            // Helper function to update output
+            function updateOutput(elementId, message) {
+                const output = document.getElementById(elementId);
+                if (output) {
+                    output.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+                }
+            }
+
+            // Initialize all components when page loads
+            document.addEventListener("DOMContentLoaded", function () {
+                // Initialize components in sequence
+                setTimeout(() => {
+                    initializeTagManager();
+                    updateOutput(
+                        "tag-manager-output",
+                        "Tag Manager initialized",
+                    );
+                }, 500);
+
+                setTimeout(() => {
+                    initializeTagFilter();
+                    updateOutput("filtered-articles", "Tag Filter initialized");
+                }, 1000);
+
+                setTimeout(() => {
+                    initializeTagManagement();
+                    updateOutput(
+                        "tag-management-output",
+                        "Tag Management UI initialized",
+                    );
+                }, 1500);
+
+                setTimeout(() => {
+                    initializeAnalytics();
+                    updateOutput(
+                        "analytics-output",
+                        "Analytics Dashboard initialized",
+                    );
+                }, 2000);
+            });
+
+            // Cleanup on page unload
+            window.addEventListener("beforeunload", function () {
+                if (tagManager) tagManager.destroy();
+                if (tagFilter) tagFilter.destroy();
+                if (tagManagementUI) tagManagementUI.destroy();
+                if (analyticsDashboard) analyticsDashboard.destroy();
+            });
+        </script>
+    </body>
+</html>

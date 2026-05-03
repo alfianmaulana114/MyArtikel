@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clean Reader - Bacaan yang Nyaman & Aman</title>
+    <meta name="description" content="Nikmati pengalaman membaca yang optimal dengan Clean Reader. Tampilan bersih, aman, dan nyaman untuk setiap artikel.">
+    <meta name="keywords" content="reader, clean reader, reading, article reader, clean design">
+    <meta name="author" content="Clean Reader Team">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Clean Reader - Bacaan yang Nyaman & Aman">
+    <meta property="og:description" content="Nikmati pengalaman membaca yang optimal dengan Clean Reader. Tampilan bersih, aman, dan nyaman untuk setiap artikel.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://cleanreader.example.com">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Clean Reader - Bacaan yang Nyaman & Aman">
+    <meta name="twitter:description" content="Nikmati pengalaman membaca yang optimal dengan Clean Reader. Tampilan bersih, aman, dan nyaman untuk setiap artikel.">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📖%3C/text%3E%3C/svg%3E">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- DOMPurify for HTML Sanitization -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Quill.js for Rich Text Editor -->
+    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+    
+    <!-- Notes CSS -->
+    <link rel="stylesheet" href="/css/notes.css">
+    
+    <!-- Custom Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        // Frieren-inspired Earth Tone Palette
+                        'earth-50': '#faf8f5',
+                        'earth-100': '#f4f0e8',
+                        'earth-200': '#e8ddd0',
+                        'earth-300': '#d9c5a8',
+                        'earth-400': '#c8a882',
+                        'earth-500': '#b8925f',
+                        'earth-600': '#a67c52',
+                        'earth-700': '#8a6545',
+                        'earth-800': '#6f523a',
+                        'earth-900': '#5c4430',
+                        'earth-950': '#33261b',
+                        'sage-50': '#f6f7f4',
+                        'sage-100': '#e9ebe4',
+                        'sage-200': '#d4d8c8',
+                        'sage-300': '#b8bfa4',
+                        'sage-400': '#9ba284',
+                        'sage-500': '#818b6b',
+                        'sage-600': '#6b7358',
+                        'sage-700': '#575d49',
+                        'sage-800': '#494c3e',
+                        'sage-900': '#3f4237',
+                        'sage-950': '#21221d',
+                        'cream-50': '#fefcf8',
+                        'cream-100': '#fdf8f0',
+                        'cream-200': '#faf0e1',
+                        'cream-300': '#f5e4c7',
+                        'cream-400': '#eed4a3',
+                        'cream-500': '#e6c184',
+                        'cream-600': '#d4a86a',
+                        'cream-700': '#b98a56',
+                        'cream-800': '#966f4a',
+                        'cream-900': '#7a5c40',
+                        'cream-950': '#443123',
+                        'charcoal': {
+                            50: '#f6f6f6',
+                            100: '#e7e7e7',
+                            200: '#d1d1d1',
+                            300: '#b0b0b0',
+                            400: '#888888',
+                            500: '#6d6d6d',
+                            600: '#5d5d5d',
+                            700: '#4f4f4f',
+                            800: '#454545',
+                            900: '#3d3d3d',
+                            950: '#1a1a1a'
+                        }
+                    },
+                    fontFamily: {
+                        'serif': ['Crimson Text', 'Georgia', 'serif'],
+                        'sans': ['Inter', 'system-ui', 'sans-serif'],
+                        'mono': ['JetBrains Mono', 'Monaco', 'monospace']
+                    },
+                    typography: {
+                        DEFAULT: {
+                            css: {
+                                maxWidth: '65ch',
+                                lineHeight: '1.7',
+                                fontSize: '1.125rem',
+                                color: '#5c4430',
+                                'h1, h2, h3, h4, h5, h6': {
+                                    color: '#3d3d3d',
+                                    fontWeight: '600'
+                                },
+                                'a': {
+                                    color: '#b8925f',
+                                    textDecoration: 'none',
+                                    '&:hover': {
+                                        color: '#a67c52'
+                                    }
+                                },
+                                'blockquote': {
+                                    borderLeftColor: '#d9c5a8',
+                                    color: '#6f523a'
+                                },
+                                'code': {
+                                    color: '#8a6545',
+                                    backgroundColor: '#faf8f5'
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f4f0e8;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #d9c5a8;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #c8a882;
+        }
+        
+        /* Dark mode scrollbar */
+        .dark ::-webkit-scrollbar-track {
+            background: #21221d;
+        }
+        
+        .dark ::-webkit-scrollbar-thumb {
+            background: #575d49;
+        }
+        
+        .dark ::-webkit-scrollbar-thumb:hover {
+            background: #6b7358;
+        }
+        
+        /* Reading progress indicator */
+        .reading-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: rgba(217, 197, 168, 0.3);
+            z-index: 50;
+            transition: opacity 0.3s ease;
+        }
+        
+        .reading-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #b8925f, #d9c5a8);
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+        
+        .dark .reading-progress {
+            background: rgba(87, 93, 73, 0.3);
+        }
+        
+        .dark .reading-progress-bar {
+            background: linear-gradient(90deg, #818b6b, #9ba284);
+        }
+        
+        /* Print styles */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            
+            body {
+                background: white !important;
+                color: black !important;
+                font-size: 12pt !important;
+                line-height: 1.5 !important;
+            }
+            
+            .reader-content {
+                max-width: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            .reader-content h1,
+            .reader-content h2,
+            .reader-content h3 {
+                page-break-after: avoid;
+            }
+            
+            .reader-content p {
+                orphans: 3;
+                widows: 3;
+            }
+        }
+        
+        /* Smooth transitions */
+        * {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+        
+        /* Focus styles */
+        .focus-visible {
+            outline: 2px solid #b8925f;
+            outline-offset: 2px;
+        }
+        
+        /* Loading animation */
+        .loading-shimmer {
+            background: linear-gradient(90deg, #f4f0e8 25%, #e8ddd0 50%, #f4f0e8 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        
+        .dark .loading-shimmer {
+            background: linear-gradient(90deg, #21221d 25%, #2a2b25 50%, #21221d 75%);
+            background-size: 200% 100%;
+        }
+        
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+            100% {
+                background-position: 200% 0;
+            }
+        }
+    </style>
+</head>
+<body class="bg-cream-50 text-earth-900 font-serif antialiased">
+    <!-- Reading Progress Indicator -->
+    <div class="reading-progress no-print">
+        <div class="reading-progress-bar" id="progressBar"></div>
+    </div>
+    
+    <!-- Header Controls -->
+    <header class="no-print sticky top-0 z-40 bg-cream-50/95 backdrop-blur-sm border-b border-earth-200">
+        <div class="max-w-4xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <!-- Logo/Brand -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-gradient-to-br from-earth-400 to-sage-500 rounded-lg flex items-center justify-center">
+                        <span class="text-white text-lg">📖</span>
+                    </div>
+                    <h1 class="text-xl font-semibold text-earth-800">Clean Reader</h1>
+                </div>
+                
+                <!-- Controls -->
+                <div class="flex items-center space-x-2">
+                    <!-- Text Size Controls -->
+                    <div class="flex items-center space-x-1 bg-earth-100 rounded-lg p-1">
+                        <button id="decreaseText" class="p-2 rounded hover:bg-earth-200 transition-colors" title="Kecilkan teks" aria-label="Kecilkan teks">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
+                            </svg>
+                        </button>
+                        <button id="resetText" class="px-2 py-1 text-xs text-earth-600 hover:text-earth-800 transition-colors" title="Reset ukuran teks" aria-label="Reset ukuran teks">
+                            Aa
+                        </button>
+                        <button id="increaseText" class="p-2 rounded hover:bg-earth-200 transition-colors" title="Besarkan teks" aria-label="Besarkan teks">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <!-- Dark Mode Toggle -->
+                    <button id="darkModeToggle" class="p-2 rounded-lg bg-earth-100 hover:bg-earth-200 transition-colors" title="Mode gelap" aria-label="Mode gelap">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                        </svg>
+                    </button>
+                    
+                    <!-- Print Button -->
+                    <button id="printButton" class="p-2 rounded-lg bg-earth-100 hover:bg-earth-200 transition-colors" title="Cetak artikel" aria-label="Cetak artikel">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                        </svg>
+                    </button>
+                    
+                    <!-- Notes Button -->
+                    <button id="notesButton" class="p-2 rounded-lg bg-earth-100 hover:bg-earth-200 transition-colors" title="Catatan" aria-label="Buka catatan">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto px-4 py-8">
+        <!-- Article Input (Demo Purpose) -->
+        <div id="articleInput" class="no-print mb-8 p-6 bg-white rounded-xl shadow-sm border border-earth-200">
+            <h2 class="text-lg font-semibold text-earth-800 mb-4">Masukkan Artikel</h2>
+            <textarea id="rawContent" class="w-full h-32 p-4 border border-earth-200 rounded-lg focus:ring-2 focus:ring-earth-400 focus:border-transparent resize-none" placeholder="Masukkan HTML artikel di sini..."></textarea>
+            <div class="flex items-center justify-between mt-4">
+                <div class="text-sm text-earth-600">
+                    <span id="charCount">0</span> karakter
+                </div>
+                <button id="loadArticle" class="px-6 py-2 bg-earth-500 hover:bg-earth-600 text-white rounded-lg transition-colors font-medium">
+                    Muat Artikel
+                </button>
+            </div>
+        </div>
+        
+        <!-- Reader Content -->
+        <article id="readerContent" class="reader-content bg-white rounded-xl shadow-sm border border-earth-200 overflow-hidden">
+            <!-- Loading State -->
+            <div id="loadingState" class="hidden p-12 text-center">
+                <div class="loading-shimmer h-4 w-3/4 mx-auto mb-4 rounded"></div>
+                <div class="loading-shimmer h-4 w-1/2 mx-auto mb-8 rounded"></div>
+                <div class="space-y-3">
+                    <div class="loading-shimmer h-3 w-full rounded"></div>
+                    <div class="loading-shimmer h-3 w-full rounded"></div>
+                    <div class="loading-shimmer h-3 w-5/6 rounded"></div>
+                    <div class="loading-shimmer h-3 w-full rounded"></div>
+                    <div class="loading-shimmer h-3 w-3/4 rounded"></div>
+                </div>
+            </div>
+            
+            <!-- Content will be loaded here -->
+            <div id="sanitizedContent" class="p-8 md:p-12 prose prose-earth max-w-none">
+                <h1 class="text-3xl md:text-4xl font-bold text-earth-900 mb-6">Selamat Datang di Clean Reader</h1>
+                <p class="text-lg text-earth-700 mb-8 leading-relaxed">
+                    Clean Reader memberikan pengalaman membaca yang optimal dengan tampilan bersih, aman, dan nyaman. 
+                    Desain ini terinspirasi dari estetika Frieren dengan warna-warna earth tone yang menenangkan.
+                </p>
+                
+                <h2 class="text-2xl font-semibold text-earth-800 mb-4">Fitur Utama</h2>
+                <ul class="space-y-2 text-earth-700 mb-8">
+                    <li>📖 <strong>Tipografi Optimal:</strong> 65-75 karakter per baris dengan line-height yang nyaman</li>
+                    <li>🔒 <strong>Keamanan:</strong> HTML sanitization untuk menghapus script berbahaya</li>
+                    <li>🎨 <strong>Desain Frieren:</strong> Warna earth tone yang menenangkan</li>
+                    <li>🌙 <strong>Mode Gelap:</strong> Opsi tema gelap untuk kenyamanan mata</li>
+                    <li>📊 <strong>Progress:</strong> Indikator kemajuan membaca</li>
+                    <li>🔤 <strong>Ukuran Teks:</strong> Kontrol ukuran teks yang mudah</li>
+                    <li>🖨️ <strong>Print-friendly:</strong> Styling optimal untuk pencetakan</li>
+                    <li>📱 <strong>Responsive:</strong> Tampilan sempurna di semua perangkat</li>
+                    <li>🔗 <strong>Link Aman:</strong> Semua link dilindungi dengan noopener/noreferrer</li>
+                </ul>
+                
+                <h2 class="text-2xl font-semibold text-earth-800 mb-4">Cara Menggunakan</h2>
+                <p class="text-earth-700 mb-4">
+                    Gunakan textarea di atas untuk memasukkan konten HTML artikel. Clean Reader akan otomatis:
+                </p>
+                <ol class="list-decimal list-inside space-y-2 text-earth-700 mb-8">
+                    <li>Membersihkan HTML dari elemen berbahaya</li>
+                    <li>Menerapkan styling yang optimal untuk membaca</li>
+                    <li>Menambahkan indikator progress membaca</li>
+                    <li>Mengamankan semua link eksternal</li>
+                </ol>
+                
+                <blockquote class="border-l-4 border-earth-400 pl-6 py-4 bg-earth-50 rounded-r-lg mb-8">
+                    <p class="text-earth-700 italic">
+                        "Membaca adalah jendela dunia. Clean Reader memastikan pengalaman itu tetap bersih, aman, dan menyenangkan."
+                    </p>
+                    <cite class="text-earth-600 text-sm not-italic">— Tim Clean Reader</cite>
+                </blockquote>
+                
+                <p class="text-earth-700">
+                    Cobalah fitur-fitur yang tersedia: ubah ukuran teks, beralih ke mode gelap, atau cetak artikel untuk dibaca nanti. 
+                    Semua kontrol tersedia di header untuk kemudahan akses.
+                </p>
+            </div>
+        </article>
+        
+        <!-- Reading Stats -->
+        <div class="no-print mt-6 p-4 bg-sage-50 rounded-lg border border-sage-200">
+            <div class="flex items-center justify-between text-sm text-sage-700">
+                <span>Estimasi waktu baca: <span id="readingTime">3 menit</span></span>
+                <span>Jumlah kata: <span id="wordCount">285</span></span>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Notes Panel -->
+    <div id="notesPanel" class="no-print fixed inset-y-0 right-0 w-96 bg-white shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out z-50 border-l border-earth-200">
+        <div class="h-full flex flex-col">
+            <div class="flex items-center justify-between p-4 border-b border-earth-200">
+                <h3 class="text-lg font-semibold text-earth-800">Catatan</h3>
+                <button id="closeNotesPanel" class="p-2 rounded-lg hover:bg-earth-100 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="flex-1 overflow-hidden">
+                <div id="noteManagerContainer" class="h-full"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notes Overlay -->
+    <div id="notesOverlay" class="no-print fixed inset-0 bg-black bg-opacity-50 z-40 hidden"></div>
+    
+    <!-- Footer -->
+    <footer class="no-print mt-16 py-8 border-t border-earth-200">
+        <div class="max-w-4xl mx-auto px-4 text-center text-earth-600">
+            <p>&copy; 2024 Clean Reader. Dibuat dengan ❤️ untuk pengalaman membaca yang lebih baik.</p>
+        </div>
+    </footer>
+    
+    <script>
+        class CleanReader {
+            constructor() {
+                this.currentTextSize = 1.125; // rem
+                this.isDarkMode = false;
+                this.init();
+            }
+            
+            init() {
+                this.bindEvents();
+                this.loadPreferences();
+                this.setupReadingProgress();
+                this.setupArticleLoader();
+            }
+            
+            bindEvents() {
+                // Text size controls
+                document.getElementById('increaseText').addEventListener('click', () => this.adjustTextSize(0.125));
+                document.getElementById('decreaseText').addEventListener('click', () => this.adjustTextSize(-0.125));
+                document.getElementById('resetText').addEventListener('click', () => this.resetTextSize());
+                
+                // Dark mode toggle
+                document.getElementById('darkModeToggle').addEventListener('click', () => this.toggleDarkMode());
+                
+                // Print button
+                document.getElementById('printButton').addEventListener('click', () => window.print());
+                
+                // Character count
+                document.getElementById('rawContent').addEventListener('input', (e) => {
+                    document.getElementById('charCount').textContent = e.target.value.length;
+                });
+                
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey || e.metaKey) {
+                        switch(e.key) {
+                            case '+':
+                            case '=':
+                                e.preventDefault();
+                                this.adjustTextSize(0.125);
+                                break;
+                            case '-':
+                                e.preventDefault();
+                                this.adjustTextSize(-0.125);
+                                break;
+                            case '0':
+                                e.preventDefault();
+                                this.resetTextSize();
+                                break;
+                        }
+                    }
+                });
+            }
+            
+            setupArticleLoader() {
+                const loadButton = document.getElementById('loadArticle');
+                const rawContent = document.getElementById('rawContent');
+                const loadingState = document.getElementById('loadingState');
+                const sanitizedContent = document.getElementById('sanitizedContent');
+                
+                loadButton.addEventListener('click', async () => {
+                    const content = rawContent.value.trim();
+                    if (!content) {
+                        alert('Silakan masukkan konten artikel terlebih dahulu.');
+                        return;
+                    }
+                    
+                    // Show loading state
+                    loadingState.classList.remove('hidden');
+                    sanitizedContent.classList.add('hidden');
+                    
+                    // Simulate loading delay
+                    await new Promise(resolve => setTimeout(resolve, 800));
+                    
+                    // Sanitize and load content
+                    const cleanContent = this.sanitizeHTML(content);
+                    sanitizedContent.innerHTML = cleanContent;
+                    
+                    // Hide loading and show content
+                    loadingState.classList.add('hidden');
+                    sanitizedContent.classList.remove('hidden');
+                    
+                    // Update reading stats
+                    this.updateReadingStats();
+                    
+                    // Scroll to content
+                    sanitizedContent.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
+            }
+            
+            sanitizeHTML(html) {
+                // Configure DOMPurify
+                const config = {
+                    ALLOWED_TAGS: [
+                        'p', 'br', 'strong', 'em', 'u', 'i', 'b', 'mark', 'small', 'sub', 'sup',
+                        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                        'ul', 'ol', 'li', 'dl', 'dt', 'dd',
+                        'blockquote', 'q', 'cite',
+                        'code', 'pre', 'kbd', 'samp', 'var',
+                        'a', 'img',
+                        'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'caption',
+                        'div', 'span', 'section', 'article', 'header', 'footer', 'main', 'aside',
+                        'figure', 'figcaption', 'details', 'summary'
+                    ],
+                    ALLOWED_ATTR: [
+                        'href', 'title', 'alt', 'src', 'width', 'height', 'class', 'id'
+                    ],
+                    ALLOW_DATA_ATTR: false,
+                    FORBID_TAGS: ['style', 'script', 'iframe', 'object', 'embed', 'form', 'input', 'textarea'],
+                    FORBID_ATTR: ['style', 'onclick', 'onload', 'onerror', 'onmouseover'],
+                    ADD_ATTR: ['target', 'rel'],
+                    RETURN_TRUSTED_TYPE: false
+                };
+                
+                // Sanitize HTML
+                let clean = DOMPurify.sanitize(html, config);
+                
+                // Add noopener and noreferrer to all external links
+                clean = clean.replace(/<a([^>]*?)href="([^"]*)"([^>]*?)>/gi, (match, before, href, after) => {
+                    // Check if it's an external link
+                    if (href.startsWith('http') && !href.includes(window.location.hostname)) {
+                        // Add or update rel attribute
+                        if (after.includes('rel=')) {
+                            after = after.replace(/rel="[^"]*"/, 'rel="noopener noreferrer"');
+                        } else {
+                            after += ' rel="noopener noreferrer"';
+                        }
+                        // Add target="_blank" for external links
+                        if (!after.includes('target=')) {
+                            after += ' target="_blank"';
+                        }
+                    }
+                    return `<a${before}href="${href}"${after}>`;
+                });
+                
+                return clean;
+            }
+            
+            adjustTextSize(delta) {
+                this.currentTextSize = Math.max(0.875, Math.min(2, this.currentTextSize + delta));
+                this.applyTextSize();
+                this.savePreferences();
+            }
+            
+            resetTextSize() {
+                this.currentTextSize = 1.125;
+                this.applyTextSize();
+                this.savePreferences();
+            }
+            
+            applyTextSize() {
+                const content = document.getElementById('sanitizedContent');
+                content.style.fontSize = `${this.currentTextSize}rem`;
+                
+                // Update line height based on text size for optimal readability
+                const lineHeight = 1.4 + (this.currentTextSize - 1.125) * 0.2;
+                content.style.lineHeight = `${lineHeight}`;
+            }
+            
+            toggleDarkMode() {
+                this.isDarkMode = !this.isDarkMode;
+                this.applyDarkMode();
+                this.savePreferences();
+            }
+            
+            applyDarkMode() {
+                const body = document.body;
+                const toggle = document.getElementById('darkModeToggle');
+                
+                if (this.isDarkMode) {
+                    body.classList.add('dark');
+                    body.classList.remove('bg-cream-50', 'text-earth-900');
+                    body.classList.add('bg-charcoal-950', 'text-cream-100');
+                    toggle.innerHTML = `
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                    `;
+                    toggle.title = 'Mode terang';
+                    toggle.setAttribute('aria-label', 'Mode terang');
+                } else {
+                    body.classList.remove('dark');
+                    body.classList.remove('bg-charcoal-950', 'text-cream-100');
+                    body.classList.add('bg-cream-50', 'text-earth-900');
+                    toggle.innerHTML = `
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                        </svg>
+                    `;
+                    toggle.title = 'Mode gelap';
+                    toggle.setAttribute('aria-label', 'Mode gelap');
+                }
+            }
+            
+            setupReadingProgress() {
+                const progressBar = document.getElementById('progressBar');
+                const content = document.getElementById('sanitizedContent');
+                
+                const updateProgress = () => {
+                    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                    const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+                    const progress = Math.min(100, Math.max(0, (scrollTop / scrollHeight) * 100));
+                    progressBar.style.width = `${progress}%`;
+                };
+                
+                window.addEventListener('scroll', updateProgress, { passive: true });
+                updateProgress();
+            }
+            
+            updateReadingStats() {
+                const content = document.getElementById('sanitizedContent');
+                const text = content.textContent || content.innerText || '';
+                
+                // Word count
+                const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+                const wordCount = words.length;
+                document.getElementById('wordCount').textContent = wordCount;
+                
+                // Reading time (average 200 words per minute)
+                const readingTime = Math.max(1, Math.ceil(wordCount / 200));
+                document.getElementById('readingTime').textContent = `${readingTime} menit`;
+            }
+            
+            savePreferences() {
+                const preferences = {
+                    textSize: this.currentTextSize,
+                    darkMode: this.isDarkMode
+                };
+                localStorage.setItem('cleanReaderPreferences', JSON.stringify(preferences));
+            }
+            
+            loadPreferences() {
+                const saved = localStorage.getItem('cleanReaderPreferences');
+                if (saved) {
+                    try {
+                        const preferences = JSON.parse(saved);
+                        this.currentTextSize = preferences.textSize || 1.125;
+                        this.isDarkMode = preferences.darkMode || false;
+                        
+                        this.applyTextSize();
+                        this.applyDarkMode();
+                    } catch (e) {
+                        console.warn('Failed to load preferences:', e);
+                    }
+                }
+            }
+        }
+        
+        // Initialize Clean Reader
+        document.addEventListener('DOMContentLoaded', () => {
+            new CleanReader();
+        });
+        
+        // Service Worker registration for offline functionality (optional)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => console.log('SW registered'))
+                    .catch(error => console.log('SW registration failed'));
+            });
+        }
+        
+        // Notes Integration
+        class NotesIntegration {
+            constructor() {
+                this.noteManager = null;
+                this.currentArticleId = null;
+                this.selectedText = null;
+                this.isPanelOpen = false;
+                this.init();
+            }
+            
+            init() {
+                this.createNotesButton();
+                this.setupPanelToggle();
+                this.setupTextSelection();
+                this.loadNotesScripts();
+            }
+            
+            createNotesButton() {
+                const notesButton = document.getElementById('notesButton');
+                if (notesButton) {
+                    notesButton.addEventListener('click', () => this.toggleNotesPanel());
+                }
+            }
+            
+            setupPanelToggle() {
+                const closeButton = document.getElementById('closeNotesPanel');
+                const overlay = document.getElementById('notesOverlay');
+                
+                if (closeButton) {
+                    closeButton.addEventListener('click', () => this.closeNotesPanel());
+                }
+                
+                if (overlay) {
+                    overlay.addEventListener('click', () => this.closeNotesPanel());
+                }
+            }
+            
+            setupTextSelection() {
+                document.addEventListener('mouseup', (e) => {
+                    const selection = window.getSelection();
+                    const selectedText = selection.toString().trim();
+                    
+                    if (selectedText.length > 0) {
+                        this.selectedText = {
+                            text: selectedText,
+                            range: selection.getRangeAt(0),
+                            paragraph: this.getParagraphInfo(selection)
+                        };
+                        this.showSelectionTooltip(e.pageX, e.pageY);
+                    } else {
+                        this.hideSelectionTooltip();
+                    }
+                });
+                
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('.selection-tooltip')) {
+                        this.hideSelectionTooltip();
+                    }
+                });
+            }
+            
+            getParagraphInfo(selection) {
+                const range = selection.getRangeAt(0);
+                const container = range.commonAncestorContainer;
+                const paragraph = container.nodeType === Node.TEXT_NODE ? 
+                    container.parentElement : container;
+                
+                const paragraphs = Array.from(document.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li'));
+                const paragraphIndex = paragraphs.indexOf(paragraph.closest('p, h1, h2, h3, h4, h5, h6, li'));
+                
+                return {
+                    element: paragraph.closest('p, h1, h2, h3, h4, h5, h6, li'),
+                    index: paragraphIndex,
+                    id: paragraph.id || `paragraph-${paragraphIndex}`
+                };
+            }
+            
+            showSelectionTooltip(x, y) {
+                let tooltip = document.getElementById('selectionTooltip');
+                
+                if (!tooltip) {
+                    tooltip = document.createElement('div');
+                    tooltip.id = 'selectionTooltip';
+                    tooltip.className = 'selection-tooltip fixed z-50 bg-earth-800 text-white px-3 py-2 rounded-lg shadow-lg text-sm';
+                    tooltip.innerHTML = `
+                        <button id="addNoteFromSelection" class="flex items-center gap-2 hover:text-earth-200">
+                            <i class="fas fa-sticky-note"></i>
+                            Tambah Catatan
+                        </button>
+                    `;
+                    document.body.appendChild(tooltip);
+                    
+                    document.getElementById('addNoteFromSelection').addEventListener('click', () => {
+                        this.createNoteFromSelection();
+                    });
+                }
+                
+                tooltip.style.left = `${x}px`;
+                tooltip.style.top = `${y - 40}px`;
+                tooltip.style.display = 'block';
+            }
+            
+            hideSelectionTooltip() {
+                const tooltip = document.getElementById('selectionTooltip');
+                if (tooltip) {
+                    tooltip.style.display = 'none';
+                }
+            }
+            
+            createNoteFromSelection() {
+                if (!this.selectedText) return;
+                
+                const noteData = {
+                    title: `Catatan dari: "${this.selectedText.text.substring(0, 50)}..."`,
+                    content: this.selectedText.text,
+                    article_id: this.currentArticleId || 1, // Default article ID
+                    paragraph_index: this.selectedText.paragraph.index,
+                    paragraph_id: this.selectedText.paragraph.id,
+                    start_offset: 0,
+                    end_offset: this.selectedText.text.length,
+                    type: 'personal',
+                    is_private: false
+                };
+                
+                if (this.noteManager) {
+                    this.noteManager.createNewNote(noteData);
+                    this.openNotesPanel();
+                }
+                
+                this.hideSelectionTooltip();
+            }
+            
+            async loadNotesScripts() {
+                try {
+                    // Load NoteService
+                    await this.loadScript('/js/notes/NoteService.js');
+                    
+                    // Load NoteManager
+                    await this.loadScript('/js/notes/NoteManager.js');
+                    
+                    // Initialize NoteManager
+                    this.initializeNoteManager();
+                } catch (error) {
+                    console.error('Error loading notes scripts:', error);
+                }
+            }
+            
+            loadScript(src) {
+                return new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = src;
+                    script.onload = resolve;
+                    script.onerror = reject;
+                    document.head.appendChild(script);
+                });
+            }
+            
+            initializeNoteManager() {
+                const container = document.getElementById('noteManagerContainer');
+                if (container && window.NoteService && window.NoteManager) {
+                    const noteService = new NoteService();
+                    this.noteManager = new NoteManager({
+                        container: container,
+                        noteService: noteService
+                    });
+                    
+                    // Set current article context
+                    this.noteManager.filters.articleId = this.currentArticleId;
+                }
+            }
+            
+            toggleNotesPanel() {
+                if (this.isPanelOpen) {
+                    this.closeNotesPanel();
+                } else {
+                    this.openNotesPanel();
+                }
+            }
+            
+            openNotesPanel() {
+                const panel = document.getElementById('notesPanel');
+                const overlay = document.getElementById('notesOverlay');
+                
+                if (panel && overlay) {
+                    panel.classList.remove('translate-x-full');
+                    overlay.classList.remove('hidden');
+                    this.isPanelOpen = true;
+                    
+                    // Load notes for current article
+                    if (this.noteManager) {
+                        this.noteManager.filters.articleId = this.currentArticleId;
+                        this.noteManager.loadNotes();
+                    }
+                }
+            }
+            
+            closeNotesPanel() {
+                const panel = document.getElementById('notesPanel');
+                const overlay = document.getElementById('notesOverlay');
+                
+                if (panel && overlay) {
+                    panel.classList.add('translate-x-full');
+                    overlay.classList.add('hidden');
+                    this.isPanelOpen = false;
+                }
+            }
+            
+            setCurrentArticle(articleId) {
+                this.currentArticleId = articleId;
+                if (this.noteManager) {
+                    this.noteManager.filters.articleId = articleId;
+                }
+            }
+            
+            // Method untuk anchoring notes ke paragraf
+            highlightAnchoredNotes() {
+                if (!this.noteManager) return;
+                
+                const notes = this.noteManager.notes.filter(note => note.is_anchored);
+                
+                notes.forEach(note => {
+                    const paragraph = document.querySelector(`[data-paragraph-id="${note.paragraph_id}"]`);
+                    if (paragraph) {
+                        paragraph.classList.add('has-anchored-note');
+                        paragraph.setAttribute('data-note-id', note.id);
+                        
+                        // Add note indicator
+                        const indicator = document.createElement('span');
+                        indicator.className = 'note-indicator inline-block ml-2 text-earth-500 cursor-pointer';
+                        indicator.innerHTML = '<i class="fas fa-sticky-note"></i>';
+                        indicator.title = note.title || 'Catatan';
+                        indicator.addEventListener('click', () => {
+                            this.noteManager.selectNote(note.id);
+                            this.openNotesPanel();
+                        });
+                        
+                        paragraph.appendChild(indicator);
+                    }
+                });
+            }
+        }
+        
+        // Initialize Notes Integration
+        let notesIntegration;
+        
+        // Update CleanReader class to include notes
+        document.addEventListener('DOMContentLoaded', () => {
+            const cleanReader = new CleanReader();
+            notesIntegration = new NotesIntegration();
+            
+            // Add some CSS for notes integration
+            const style = document.createElement('style');
+            style.textContent = `
+                .selection-tooltip {
+                    z-index: 1000;
+                }
+                
+                .has-anchored-note {
+                    position: relative;
+                }
+                
+                .note-indicator {
+                    opacity: 0.6;
+                    transition: opacity 0.2s ease;
+                }
+                
+                .note-indicator:hover {
+                    opacity: 1;
+                }
+                
+                .paragraph-with-note {
+                    background-color: rgba(184, 146, 95, 0.1);
+                    border-left: 3px solid #b8925f;
+                    padding-left: 1rem;
+                }
+            `;
+            document.head.appendChild(style);
+        });
+    </script>
+    
+    <!-- CSRF Token for Laravel -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    
+    <!-- Notes Scripts -->
+    <script src="/js/notes/NoteService.js"></script>
+    <script src="/js/notes/NoteManager.js"></script>
+</body>
+</html>

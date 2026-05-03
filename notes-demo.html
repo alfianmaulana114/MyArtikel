@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="id">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Notes System Demo - MyArtikel</title>
+        <meta name="csrf-token" content="{{ csrf_token() }}" />
+
+        <!-- Tailwind CSS -->
+        <script src="https://cdn.tailwindcss.com"></script>
+
+        <!-- Font Awesome -->
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        />
+
+        <!-- Quill.js -->
+        <link
+            href="https://cdn.quilljs.com/1.3.7/quill.snow.css"
+            rel="stylesheet"
+        />
+        <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+
+        <!-- Notes CSS -->
+        <link rel="stylesheet" href="/css/notes.css" />
+
+        <style>
+            body {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+            }
+
+            .demo-container {
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                border-radius: 20px;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            }
+
+            .feature-card {
+                background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                border-radius: 15px;
+                padding: 20px;
+                color: white;
+                text-align: center;
+                transform: translateY(0);
+                transition: transform 0.3s ease;
+            }
+
+            .feature-card:hover {
+                transform: translateY(-5px);
+            }
+
+            .feature-card i {
+                font-size: 2rem;
+                margin-bottom: 10px;
+            }
+
+            .status-indicator {
+                display: inline-block;
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                margin-right: 8px;
+            }
+
+            .status-online {
+                background-color: #10b981;
+            }
+
+            .status-offline {
+                background-color: #ef4444;
+            }
+
+            .demo-article {
+                background: #f8fafc;
+                border: 2px dashed #cbd5e0;
+                border-radius: 12px;
+                padding: 20px;
+                margin: 20px 0;
+                text-align: center;
+                color: #64748b;
+            }
+
+            .demo-article.active {
+                background: #e0f2fe;
+                border-color: #0284c7;
+                color: #0c4a6e;
+            }
+        </style>
+    </head>
+    <body class="font-sans">
+        <div class="container mx-auto px-4 py-8">
+            <!-- Header -->
+            <div class="text-center mb-12">
+                <h1 class="text-4xl font-bold text-white mb-4">
+                    <i class="fas fa-sticky-note mr-3"></i>Notes System Demo
+                </h1>
+                <p class="text-xl text-white/80 max-w-2xl mx-auto">
+                    Demonstrasi sistem catatan lengkap dengan fitur CRUD,
+                    real-time sync, rich text editor, dan note anchoring
+                </p>
+            </div>
+
+            <!-- Status Bar -->
+            <div class="demo-container p-6 mb-8">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <span class="flex items-center">
+                            <span
+                                id="networkStatus"
+                                class="status-indicator status-online"
+                            ></span>
+                            <span id="networkText">Online</span>
+                        </span>
+                        <span class="text-sm text-gray-600">
+                            Sync: <span id="syncStatus">Enabled</span>
+                        </span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button
+                            id="testSyncBtn"
+                            class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                        >
+                            <i class="fas fa-sync mr-2"></i>Test Sync
+                        </button>
+                        <button
+                            id="createSampleBtn"
+                            class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                        >
+                            <i class="fas fa-plus mr-2"></i>Create Sample
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature Overview -->
+            <div class="grid md:grid-cols-3 gap-6 mb-8">
+                <div class="feature-card">
+                    <i class="fas fa-edit"></i>
+                    <h3 class="font-semibold mb-2">Rich Text Editor</h3>
+                    <p class="text-sm opacity-90">
+                        Editor teks kaya dengan formatting lengkap
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-anchor"></i>
+                    <h3 class="font-semibold mb-2">Note Anchoring</h3>
+                    <p class="text-sm opacity-90">
+                        Catatan dapat diikat ke paragraf tertentu
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-tags"></i>
+                    <h3 class="font-semibold mb-2">Categories & Tags</h3>
+                    <p class="text-sm opacity-90">
+                        Organisasi catatan dengan kategori dan tag
+                    </p>
+                </div>
+            </div>
+
+            <!-- Demo Article -->
+            <div class="demo-container p-6 mb-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">
+                    <i class="fas fa-book mr-2"></i>Demo Article
+                </h2>
+                <div id="demoArticle" class="demo-article">
+                    <i class="fas fa-file-alt text-4xl mb-4"></i>
+                    <p class="text-lg font-medium mb-2">No Article Loaded</p>
+                    <p>
+                        Silakan pilih artikel atau gunakan artikel sampel untuk
+                        menguji fitur catatan
+                    </p>
+                    <button
+                        id="loadSampleArticle"
+                        class="mt-4 px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                    >
+                        <i class="fas fa-upload mr-2"></i>Load Sample Article
+                    </button>
+                </div>
+            </div>
+
+            <!-- Notes Manager Container -->
+            <div class="demo-container p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">
+                    <i class="fas fa-sticky-note mr-2"></i>Notes Manager
+                </h2>
+                <div id="noteManagerContainer" class="min-h-[600px]"></div>
+            </div>
+
+            <!-- API Testing Section -->
+            <div class="demo-container p-6 mt-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">
+                    <i class="fas fa-code mr-2"></i>API Testing
+                </h2>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="font-semibold mb-3">Create Note Test</h3>
+                        <div class="space-y-3">
+                            <input
+                                type="text"
+                                id="testTitle"
+                                placeholder="Note title"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                            <textarea
+                                id="testContent"
+                                placeholder="Note content"
+                                rows="3"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            ></textarea>
+                            <button
+                                id="testCreateNote"
+                                class="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                            >
+                                <i class="fas fa-plus mr-2"></i>Create Test Note
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold mb-3">Search Test</h3>
+                        <div class="space-y-3">
+                            <input
+                                type="text"
+                                id="testSearchQuery"
+                                placeholder="Search query"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                            <button
+                                id="testSearch"
+                                class="w-full px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+                            >
+                                <i class="fas fa-search mr-2"></i>Search Notes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <h3 class="font-semibold mb-3">API Response</h3>
+                    <div
+                        id="apiResponse"
+                        class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm min-h-[100px] overflow-auto"
+                    >
+                        <p class="text-gray-400">
+                            API responses will appear here...
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            class NotesDemo {
+                constructor() {
+                    this.noteManager = null;
+                    this.noteService = null;
+                    this.currentArticleId = 1;
+                    this.init();
+                }
+
+                init() {
+                    this.setupNetworkMonitoring();
+                    this.initializeNoteManager();
+                    this.setupEventListeners();
+                    this.loadSampleArticle();
+                }
+
+                setupNetworkMonitoring() {
+                    const updateNetworkStatus = () => {
+                        const isOnline = navigator.onLine;
+                        const statusEl =
+                            document.getElementById("networkStatus");
+                        const textEl = document.getElementById("networkText");
+
+                        if (isOnline) {
+                            statusEl.className =
+                                "status-indicator status-online";
+                            textEl.textContent = "Online";
+                        } else {
+                            statusEl.className =
+                                "status-indicator status-offline";
+                            textEl.textContent = "Offline";
+                        }
+                    };
+
+                    window.addEventListener("online", updateNetworkStatus);
+                    window.addEventListener("offline", updateNetworkStatus);
+                    updateNetworkStatus();
+                }
+
+                async initializeNoteManager() {
+                    try {
+                        // Initialize NoteService
+                        this.noteService = new NoteService();
+
+                        // Initialize NoteManager
+                        this.noteManager = new NoteManager({
+                            container: document.getElementById(
+                                "noteManagerContainer",
+                            ),
+                            noteService: this.noteService,
+                        });
+
+                        // Set article context
+                        this.noteManager.filters.articleId =
+                            this.currentArticleId;
+
+                        console.log("NoteManager initialized successfully");
+                    } catch (error) {
+                        console.error("Error initializing NoteManager:", error);
+                        this.showApiResponse(
+                            "Error initializing NoteManager: " + error.message,
+                            "error",
+                        );
+                    }
+                }
+
+                setupEventListeners() {
+                    // Test buttons
+                    document
+                        .getElementById("testSyncBtn")
+                        .addEventListener("click", () => this.testSync());
+                    document
+                        .getElementById("createSampleBtn")
+                        .addEventListener("click", () =>
+                            this.createSampleNote(),
+                        );
+                    document
+                        .getElementById("loadSampleArticle")
+                        .addEventListener("click", () =>
+                            this.loadSampleArticle(),
+                        );
+                    document
+                        .getElementById("testCreateNote")
+                        .addEventListener("click", () => this.testCreateNote());
+                    document
+                        .getElementById("testSearch")
+                        .addEventListener("click", () => this.testSearch());
+                }
+
+                loadSampleArticle() {
+                    const sampleArticle = {
+                        id: 1,
+                        title: "Panduan Lengkap Membaca dengan Efektif",
+                        content: `
+                        <h1>Panduan Lengkap Membaca dengan Efektif</h1>
+                        <p>Membaca adalah keterampilan fundamental yang penting untuk pengembangan diri dan pengetahuan. Dalam era digital ini, kemampuan membaca dengan efektif menjadi semakin krusial.</p>
+                        
+                        <h2>Manfaat Membaca</h2>
+                        <p>Membaca secara teratur dapat meningkatkan kosa kata, memperkuat daya ingat, dan mengembangkan kemampuan berpikir kritis. Studi menunjukkan bahwa orang yang gemar membaca cenderung memiliki pengetahuan yang lebih luas.</p>
+                        
+                        <h2>Teknik Membaca Efektif</h2>
+                        <p>Ada beberapa teknik yang dapat diterapkan untuk membaca dengan lebih efektif, termasuk skimming, scanning, dan membaca intensif. Setiap teknik memiliki kegunaannya masing-masing tergantung pada tujuan membaca.</p>
+                        
+                        <h2>Kesimpulan</h2>
+                        <p>Membaca adalah investasi jangka panjang untuk pengembangan diri. Dengan menerapkan teknik yang tepat, kita dapat memaksimalkan manfaat dari setiap bahan bacaan yang kita konsumsi.</p>
+                    `,
+                    };
+
+                    this.currentArticleId = sampleArticle.id;
+
+                    // Update UI
+                    const articleDiv = document.getElementById("demoArticle");
+                    articleDiv.className = "demo-article active";
+                    articleDiv.innerHTML = `
+                    <i class="fas fa-book-open text-4xl mb-4"></i>
+                    <h3 class="text-xl font-bold mb-2">${sampleArticle.title}</h3>
+                    <p class="text-sm mb-4">ID: ${sampleArticle.id}</p>
+                    <div class="text-left text-sm space-y-2">
+                        <p><strong>Tip:</strong> Pilih teks di artikel ini untuk membuat catatan yang terikat ke paragraf!</p>
+                        <p><strong>Fitur:</strong> Gunakan panel catatan untuk mengelola semua catatan Anda</p>
+                    </div>
+                `;
+
+                    // Update note manager article context
+                    if (this.noteManager) {
+                        this.noteManager.filters.articleId =
+                            this.currentArticleId;
+                        this.noteManager.loadNotes();
+                    }
+
+                    this.showApiResponse(
+                        `Sample article loaded: "${sampleArticle.title}" (ID: ${sampleArticle.id})`,
+                        "success",
+                    );
+                }
+
+                async testSync() {
+                    try {
+                        this.showApiResponse("Testing sync...", "info");
+                        const result = await this.noteService.syncNotes();
+                        this.showApiResponse(
+                            `Sync test completed: ${result.message}`,
+                            "success",
+                        );
+                    } catch (error) {
+                        this.showApiResponse(
+                            `Sync test failed: ${error.message}`,
+                            "error",
+                        );
+                    }
+                }
+
+                async createSampleNote() {
+                    const sampleNotes = [
+                        {
+                            title: "Pentingnya Membaca",
+                            content:
+                                "Membaca secara ter dapat meningkatkan kosa kata dan memperkuat daya ingat. Ini adalah hal yang sangat penting untuk pengembangan diri.",
+                            type: "research",
+                            category: "Pendidikan",
+                            tags: [
+                                "membaca",
+                                "pendidikan",
+                                "pengembangan diri",
+                            ],
+                            article_id: this.currentArticleId,
+                            paragraph_index: 1,
+                            paragraph_id: "paragraph-1",
+                            is_private: false,
+                        },
+                        {
+                            title: "Teknik Skimming",
+                            content:
+                                "Skimming adalah teknik membaca cepat untuk mendapatkan gambaran umum. Sangat berguna untuk preview konten.",
+                            type: "personal",
+                            category: "Teknik",
+                            tags: ["skimming", "teknik", "cepat"],
+                            article_id: this.currentArticleId,
+                            paragraph_index: 2,
+                            paragraph_id: "paragraph-2",
+                            is_private: false,
+                        },
+                    ];
+
+                    const randomNote =
+                        sampleNotes[
+                            Math.floor(Math.random() * sampleNotes.length)
+                        ];
+
+                    try {
+                        this.showApiResponse("Creating sample note...", "info");
+                        const result =
+                            await this.noteService.createNote(randomNote);
+                        this.showApiResponse(
+                            `Sample note created: "${result.title}"`,
+                            "success",
+                        );
+
+                        // Reload notes
+                        if (this.noteManager) {
+                            this.noteManager.loadNotes();
+                        }
+                    } catch (error) {
+                        this.showApiResponse(
+                            `Failed to create sample note: ${error.message}`,
+                            "error",
+                        );
+                    }
+                }
+
+                async testCreateNote() {
+                    const title = document.getElementById("testTitle").value;
+                    const content =
+                        document.getElementById("testContent").value;
+
+                    if (!title || !content) {
+                        this.showApiResponse(
+                            "Please fill in both title and content",
+                            "warning",
+                        );
+                        return;
+                    }
+
+                    const noteData = {
+                        title: title,
+                        content: content,
+                        type: "personal",
+                        category: "Test",
+                        tags: ["test", "demo"],
+                        article_id: this.currentArticleId,
+                        is_private: false,
+                    };
+
+                    try {
+                        this.showApiResponse("Creating test note...", "info");
+                        const result =
+                            await this.noteService.createNote(noteData);
+                        this.showApiResponse(
+                            `Test note created successfully: "${result.title}" (ID: ${result.id})`,
+                            "success",
+                        );
+
+                        // Clear form
+                        document.getElementById("testTitle").value = "";
+                        document.getElementById("testContent").value = "";
+
+                        // Reload notes
+                        if (this.noteManager) {
+                            this.noteManager.loadNotes();
+                        }
+                    } catch (error) {
+                        this.showApiResponse(
+                            `Failed to create test note: ${error.message}`,
+                            "error",
+                        );
+                    }
+                }
+
+                async testSearch() {
+                    const query =
+                        document.getElementById("testSearchQuery").value;
+
+                    if (!query) {
+                        this.showApiResponse(
+                            "Please enter a search query",
+                            "warning",
+                        );
+                        return;
+                    }
+
+                    try {
+                        this.showApiResponse(
+                            `Searching for: "${query}"...`,
+                            "info",
+                        );
+                        const result =
+                            await this.noteService.searchNotes(query);
+                        this.showApiResponse(
+                            `Search completed: Found ${result.notes.length} notes`,
+                            "success",
+                        );
+
+                        // Display search results
+                        console.log("Search results:", result);
+                    } catch (error) {
+                        this.showApiResponse(
+                            `Search failed: ${error.message}`,
+                            "error",
+                        );
+                    }
+                }
+
+                showApiResponse(message, type = "info") {
+                    const responseDiv = document.getElementById("apiResponse");
+                    const timestamp = new Date().toLocaleTimeString();
+                    const typeClass =
+                        type === "error"
+                            ? "text-red-400"
+                            : type === "success"
+                              ? "text-green-400"
+                              : type === "warning"
+                                ? "text-yellow-400"
+                                : "text-blue-400";
+
+                    responseDiv.innerHTML = `
+                    <div class="${typeClass}">
+                        <span class="text-gray-500">[${timestamp}]</span> ${message}
+                    </div>
+                    ${responseDiv.innerHTML}
+                `;
+
+                    // Keep only last 10 messages
+                    const messages = responseDiv.querySelectorAll("div");
+                    if (messages.length > 10) {
+                        for (let i = 10; i < messages.length; i++) {
+                            messages[i].remove();
+                        }
+                    }
+                }
+            }
+
+            // Initialize demo when DOM is loaded
+            document.addEventListener("DOMContentLoaded", () => {
+                new NotesDemo();
+            });
+
+            // Handle network status changes
+            window.addEventListener("online", () => {
+                console.log("Network: Online");
+            });
+
+            window.addEventListener("offline", () => {
+                console.log("Network: Offline");
+            });
+        </script>
+    </body>
+</html>

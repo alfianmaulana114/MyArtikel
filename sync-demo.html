@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>MyArtikel - Sync Demo</title>
+        <link
+            href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+            rel="stylesheet"
+        />
+        <style>
+            .sync-status {
+                transition: all 0.3s ease;
+            }
+            .sync-indicator {
+                animation: pulse 2s infinite;
+            }
+            @keyframes pulse {
+                0%,
+                100% {
+                    opacity: 1;
+                }
+                50% {
+                    opacity: 0.5;
+                }
+            }
+        </style>
+    </head>
+    <body class="bg-gray-100">
+        <div class="container mx-auto px-4 py-8">
+            <!-- Header -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-3xl font-bold text-gray-800">
+                        MyArtikel Sync System
+                    </h1>
+                    <div class="flex items-center space-x-4">
+                        <div id="connectionStatus" class="flex items-center">
+                            <div
+                                id="connectionIndicator"
+                                class="w-3 h-3 rounded-full bg-green-500 mr-2"
+                            ></div>
+                            <span
+                                id="connectionText"
+                                class="text-sm font-medium"
+                                >Connected</span
+                            >
+                        </div>
+                        <div
+                            id="syncStatus"
+                            class="sync-status flex items-center"
+                        >
+                            <div
+                                id="syncIndicator"
+                                class="w-3 h-3 rounded-full bg-blue-500 mr-2"
+                            ></div>
+                            <span id="syncText" class="text-sm font-medium"
+                                >Synced</span
+                            >
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sync Controls -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-xl font-semibold mb-4">Sync Controls</h2>
+                <div class="flex space-x-4 mb-4">
+                    <button
+                        id="syncNowBtn"
+                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors"
+                    >
+                        Sync Now
+                    </button>
+                    <button
+                        id="forceSyncBtn"
+                        class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md transition-colors"
+                    >
+                        Force Sync
+                    </button>
+                    <button
+                        id="clearOfflineBtn"
+                        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md transition-colors"
+                    >
+                        Clear Offline Data
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <h3 class="font-medium mb-2">Connection Info</h3>
+                        <div
+                            id="connectionInfo"
+                            class="text-sm text-gray-600 space-y-1"
+                        >
+                            <div>
+                                Type: <span id="connectionType">WebSocket</span>
+                            </div>
+                            <div>
+                                Last Heartbeat:
+                                <span id="lastHeartbeat">-</span>
+                            </div>
+                            <div>
+                                Reconnect Attempts:
+                                <span id="reconnectAttempts">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="font-medium mb-2">Sync Statistics</h3>
+                        <div
+                            id="syncStats"
+                            class="text-sm text-gray-600 space-y-1"
+                        >
+                            <div>
+                                Pending Items: <span id="pendingItems">0</span>
+                            </div>
+                            <div>Last Sync: <span id="lastSync">-</span></div>
+                            <div>
+                                Sync Duration: <span id="syncDuration">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Management -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-xl font-semibold mb-4">Data Management</h2>
+                <div
+                    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4"
+                >
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <h3 class="font-medium text-blue-800">Articles</h3>
+                        <div
+                            class="text-2xl font-bold text-blue-600"
+                            id="articleCount"
+                        >
+                            0
+                        </div>
+                        <div class="text-sm text-blue-500" id="articlePending">
+                            0 pending
+                        </div>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-lg">
+                        <h3 class="font-medium text-green-800">Notes</h3>
+                        <div
+                            class="text-2xl font-bold text-green-600"
+                            id="noteCount"
+                        >
+                            0
+                        </div>
+                        <div class="text-sm text-green-500" id="notePending">
+                            0 pending
+                        </div>
+                    </div>
+                    <div class="bg-yellow-50 p-4 rounded-lg">
+                        <h3 class="font-medium text-yellow-800">Tags</h3>
+                        <div
+                            class="text-2xl font-bold text-yellow-600"
+                            id="tagCount"
+                        >
+                            0
+                        </div>
+                        <div class="text-sm text-yellow-500" id="tagPending">
+                            0 pending
+                        </div>
+                    </div>
+                    <div class="bg-purple-50 p-4 rounded-lg">
+                        <h3 class="font-medium text-purple-800">Bookmarks</h3>
+                        <div
+                            class="text-2xl font-bold text-purple-600"
+                            id="bookmarkCount"
+                        >
+                            0
+                        </div>
+                        <div
+                            class="text-sm text-purple-500"
+                            id="bookmarkPending"
+                        >
+                            0 pending
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex space-x-4">
+                    <button
+                        id="refreshDataBtn"
+                        class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md transition-colors"
+                    >
+                        Refresh Data
+                    </button>
+                    <button
+                        id="exportDataBtn"
+                        class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md transition-colors"
+                    >
+                        Export Data
+                    </button>
+                    <button
+                        id="importDataBtn"
+                        class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md transition-colors"
+                    >
+                        Import Data
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sync History -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold mb-4">Sync History</h2>
+                <div
+                    id="syncHistory"
+                    class="space-y-2 max-h-64 overflow-y-auto"
+                >
+                    <div class="text-gray-500 text-center py-4">
+                        No sync history available
+                    </div>
+                </div>
+            </div>
+
+            <!-- Test Data Creation -->
+            <div class="bg-white rounded-lg shadow-md p-6 mt-6">
+                <h2 class="text-xl font-semibold mb-4">Test Data Creation</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <h3 class="font-medium mb-2">Create Test Article</h3>
+                        <input
+                            type="text"
+                            id="testArticleTitle"
+                            placeholder="Article title"
+                            class="w-full px-3 py-2 border rounded-md mb-2"
+                        />
+                        <textarea
+                            id="testArticleContent"
+                            placeholder="Article content"
+                            class="w-full px-3 py-2 border rounded-md mb-2"
+                            rows="3"
+                        ></textarea>
+                        <button
+                            id="createArticleBtn"
+                            class="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors"
+                        >
+                            Create Article
+                        </button>
+                    </div>
+                    <div>
+                        <h3 class="font-medium mb-2">Create Test Note</h3>
+                        <input
+                            type="text"
+                            id="testNoteTitle"
+                            placeholder="Note title"
+                            class="w-full px-3 py-2 border rounded-md mb-2"
+                        />
+                        <textarea
+                            id="testNoteContent"
+                            placeholder="Note content"
+                            class="w-full px-3 py-2 border rounded-md mb-2"
+                            rows="3"
+                        ></textarea>
+                        <button
+                            id="createNoteBtn"
+                            class="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md transition-colors"
+                        >
+                            Create Note
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hidden file input for import -->
+        <input
+            type="file"
+            id="importFileInput"
+            accept=".json"
+            style="display: none"
+        />
+
+        <script type="module">
+            import offlineSyncManager from "./js/sync/OfflineSyncManager.js";
+            import realtimeSyncManager from "./js/sync/RealtimeSyncManager.js";
+
+            class SyncDemo {
+                constructor() {
+                    this.initializeEventListeners();
+                    this.initializeSyncManagers();
+                    this.updateUI();
+
+                    // Update UI every 5 seconds
+                    setInterval(() => this.updateUI(), 5000);
+                }
+
+                initializeEventListeners() {
+                    // Sync controls
+                    document
+                        .getElementById("syncNowBtn")
+                        .addEventListener("click", () => this.syncNow());
+                    document
+                        .getElementById("forceSyncBtn")
+                        .addEventListener("click", () => this.forceSync());
+                    document
+                        .getElementById("clearOfflineBtn")
+                        .addEventListener("click", () =>
+                            this.clearOfflineData(),
+                        );
+
+                    // Data management
+                    document
+                        .getElementById("refreshDataBtn")
+                        .addEventListener("click", () => this.refreshData());
+                    document
+                        .getElementById("exportDataBtn")
+                        .addEventListener("click", () => this.exportData());
+                    document
+                        .getElementById("importDataBtn")
+                        .addEventListener("click", () => this.importData());
+
+                    // Test data creation
+                    document
+                        .getElementById("createArticleBtn")
+                        .addEventListener("click", () =>
+                            this.createTestArticle(),
+                        );
+                    document
+                        .getElementById("createNoteBtn")
+                        .addEventListener("click", () => this.createTestNote());
+
+                    // File import
+                    document
+                        .getElementById("importFileInput")
+                        .addEventListener("change", (e) =>
+                            this.handleFileImport(e),
+                        );
+                }
+
+                initializeSyncManagers() {
+                    // Connection status updates
+                    realtimeSyncManager.onConnectionStatusChange((status) => {
+                        this.updateConnectionStatus(status);
+                    });
+
+                    // Sync status updates
+                    offlineSyncManager.onSyncStatusChange((status) => {
+                        this.updateSyncStatus(status);
+                    });
+
+                    // Start WebSocket connection
+                    realtimeSyncManager.connect();
+                }
+
+                async syncNow() {
+                    try {
+                        this.showSyncProgress("Starting sync...");
+                        await offlineSyncManager.triggerSync();
+                        this.showSyncProgress(
+                            "Sync completed successfully",
+                            "success",
+                        );
+                    } catch (error) {
+                        this.showSyncProgress(
+                            `Sync failed: ${error.message}`,
+                            "error",
+                        );
+                    }
+                }
+
+                async forceSync() {
+                    try {
+                        this.showSyncProgress("Force syncing...");
+                        // Force sync all pending items
+                        const pendingItems =
+                            await offlineSyncManager.getPendingItemsCount();
+                        if (pendingItems > 0) {
+                            await offlineSyncManager.triggerSync();
+                        }
+                        this.showSyncProgress(
+                            `Force sync completed. Processed ${pendingItems} items`,
+                            "success",
+                        );
+                    } catch (error) {
+                        this.showSyncProgress(
+                            `Force sync failed: ${error.message}`,
+                            "error",
+                        );
+                    }
+                }
+
+                async clearOfflineData() {
+                    if (
+                        confirm(
+                            "Are you sure you want to clear all offline data? This action cannot be undone.",
+                        )
+                    ) {
+                        try {
+                            await offlineSyncManager.clearAllData();
+                            this.showSyncProgress(
+                                "Offline data cleared successfully",
+                                "success",
+                            );
+                            this.updateUI();
+                        } catch (error) {
+                            this.showSyncProgress(
+                                `Failed to clear offline data: ${error.message}`,
+                                "error",
+                            );
+                        }
+                    }
+                }
+
+                async refreshData() {
+                    try {
+                        this.showSyncProgress("Refreshing data...");
+                        await this.updateDataCounts();
+                        this.showSyncProgress(
+                            "Data refreshed successfully",
+                            "success",
+                        );
+                    } catch (error) {
+                        this.showSyncProgress(
+                            `Failed to refresh data: ${error.message}`,
+                            "error",
+                        );
+                    }
+                }
+
+                async exportData() {
+                    try {
+                        const data =
+                            await offlineSyncManager.exportOfflineData();
+                        const blob = new Blob([JSON.stringify(data, null, 2)], {
+                            type: "application/json",
+                        });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `myartikel-data-${new Date().toISOString().split("T")[0]}.json`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        this.showSyncProgress(
+                            "Data exported successfully",
+                            "success",
+                        );
+                    } catch (error) {
+                        this.showSyncProgress(
+                            `Failed to export data: ${error.message}`,
+                            "error",
+                        );
+                    }
+                }
+
+                importData() {
+                    document.getElementById("importFileInput").click();
+                }
+
+                async handleFileImport(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    try {
+                        const text = await file.text();
+                        const data = JSON.parse(text);
+                        await offlineSyncManager.importOfflineData(data);
+                        this.showSyncProgress(
+                            "Data imported successfully",
+                            "success",
+                        );
+                        this.updateUI();
+                    } catch (error) {
+                        this.showSyncProgress(
+                            `Failed to import data: ${error.message}`,
+                            "error",
+                        );
+                    }
+                }
+
+                async createTestArticle() {
+                    const title =
+                        document.getElementById("testArticleTitle").value ||
+                        "Test Article";
+                    const content =
+                        document.getElementById("testArticleContent").value ||
+                        "This is a test article content.";
+
+                    const article = {
+                        id: `article_${Date.now()}`,
+                        title,
+                        content,
+                        tags: ["test", "demo"],
+                        createdAt: new Date().toISOString(),
+                        lastModified: new Date().toISOString(),
+                        isDeleted: false,
+                    };
+
+                    try {
+                        await offlineSyncManager.saveDataOffline(
+                            "articles",
+                            article,
+                        );
+                        this.showSyncProgress(
+                            "Test article created successfully",
+                            "success",
+                        );
+                        this.updateUI();
+
+                        // Clear form
+                        document.getElementById("testArticleTitle").value = "";
+                        document.getElementById("testArticleContent").value =
+                            "";
+                    } catch (error) {
+                        this.showSyncProgress(
+                            `Failed to create test article: ${error.message}`,
+                            "error",
+                        );
+                    }
+                }
+
+                async createTestNote() {
+                    const title =
+                        document.getElementById("testNoteTitle").value ||
+                        "Test Note";
+                    const content =
+                        document.getElementById("testNoteContent").value ||
+                        "This is a test note content.";
+
+                    const note = {
+                        id: `note_${Date.now()}`,
+                        title,
+                        content,
+                        tags: ["test", "demo"],
+                        createdAt: new Date().toISOString(),
+                        lastModified: new Date().toISOString(),
+                        isDeleted: false,
+                    };
+
+                    try {
+                        await offlineSyncManager.saveDataOffline("notes", note);
+                        this.showSyncProgress(
+                            "Test note created successfully",
+                            "success",
+                        );
+                        this.updateUI();
+
+                        // Clear form
+                        document.getElementById("testNoteTitle").value = "";
+                        document.getElementById("testNoteContent").value = "";
+                    } catch (error) {
+                        this.showSyncProgress(
+                            `Failed to create test note: ${error.message}`,
+                            "error",
+                        );
+                    }
+                }
+
+                updateConnectionStatus(status) {
+                    const indicator = document.getElementById(
+                        "connectionIndicator",
+                    );
+                    const text = document.getElementById("connectionText");
+                    const type = document.getElementById("connectionType");
+                    const heartbeat = document.getElementById("lastHeartbeat");
+                    const attempts =
+                        document.getElementById("reconnectAttempts");
+
+                    switch (status.status) {
+                        case "connected":
+                            indicator.className =
+                                "w-3 h-3 rounded-full bg-green-500 mr-2";
+                            text.textContent = "Connected";
+                            break;
+                        case "disconnected":
+                            indicator.className =
+                                "w-3 h-3 rounded-full bg-red-500 mr-2";
+                            text.textContent = "Disconnected";
+                            break;
+                        case "error":
+                            indicator.className =
+                                "w-3 h-3 rounded-full bg-yellow-500 mr-2";
+                            text.textContent = "Connection Error";
+                            break;
+                    }
+
+                    type.textContent = status.connectionType || "WebSocket";
+                    heartbeat.textContent = status.lastHeartbeat
+                        ? new Date(status.lastHeartbeat).toLocaleTimeString()
+                        : "-";
+                    attempts.textContent = status.reconnectAttempts || 0;
+                }
+
+                updateSyncStatus(status) {
+                    const indicator = document.getElementById("syncIndicator");
+                    const text = document.getElementById("syncText");
+                    const pending = document.getElementById("pendingItems");
+                    const lastSync = document.getElementById("lastSync");
+
+                    switch (status.status) {
+                        case "syncing":
+                            indicator.className =
+                                "w-3 h-3 rounded-full bg-blue-500 mr-2 sync-indicator";
+                            text.textContent = "Syncing...";
+                            break;
+                        case "completed":
+                            indicator.className =
+                                "w-3 h-3 rounded-full bg-green-500 mr-2";
+                            text.textContent = "Synced";
+                            break;
+                        case "failed":
+                            indicator.className =
+                                "w-3 h-3 rounded-full bg-red-500 mr-2";
+                            text.textContent = "Sync Failed";
+                            break;
+                        default:
+                            indicator.className =
+                                "w-3 h-3 rounded-full bg-gray-500 mr-2";
+                            text.textContent = "Not Synced";
+                    }
+
+                    pending.textContent = status.pendingItems || 0;
+                    lastSync.textContent = status.lastSync
+                        ? new Date(status.lastSync).toLocaleTimeString()
+                        : "-";
+                }
+
+                async updateDataCounts() {
+                    const stores = ["articles", "notes", "tags", "bookmarks"];
+
+                    for (const store of stores) {
+                        const items =
+                            await offlineSyncManager.getOfflineData(store);
+                        const pendingItems =
+                            await offlineSyncManager.getItemsNeedingSync(store);
+
+                        document.getElementById(
+                            `${store.slice(0, -1)}Count`,
+                        ).textContent = items.length;
+                        document.getElementById(
+                            `${store.slice(0, -1)}Pending`,
+                        ).textContent = `${pendingItems.length} pending`;
+                    }
+                }
+
+                async updateUI() {
+                    await this.updateDataCounts();
+
+                    // Update connection status
+                    const connectionStatus =
+                        realtimeSyncManager.getConnectionStatus();
+                    this.updateConnectionStatus(connectionStatus);
+
+                    // Update sync status
+                    const syncStatus = offlineSyncManager.getSyncStatus();
+                    this.updateSyncStatus(syncStatus);
+                }
+
+                showSyncProgress(message, type = "info") {
+                    // Create a temporary notification
+                    const notification = document.createElement("div");
+                    notification.className = `fixed top-4 right-4 p-4 rounded-md text-white z-50 ${
+                        type === "success"
+                            ? "bg-green-500"
+                            : type === "error"
+                              ? "bg-red-500"
+                              : "bg-blue-500"
+                    }`;
+                    notification.textContent = message;
+
+                    document.body.appendChild(notification);
+
+                    setTimeout(() => {
+                        notification.remove();
+                    }, 3000);
+                }
+            }
+
+            // Initialize the demo
+            const demo = new SyncDemo();
+        </script>
+    </body>
+</html>

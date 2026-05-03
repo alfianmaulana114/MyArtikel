@@ -1,0 +1,995 @@
+<!doctype html>
+<html lang="en" class="theme-loading">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Frieren Dark Mode Demo - Earth-Tone Theme</title>
+
+        <!-- Fonts -->
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+
+        <!-- Font Awesome -->
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        />
+
+        <!-- Frieren Dark Mode Styles -->
+        <link rel="stylesheet" href="/css/theme/frieren-dark-mode.css" />
+
+        <!-- No-Flash Dark Mode Loader -->
+        <script src="/js/theme/frieren-dark-mode-loader.js"></script>
+
+        <style>
+            /* Demo-specific styles */
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family:
+                    "Inter",
+                    -apple-system,
+                    BlinkMacSystemFont,
+                    sans-serif;
+                line-height: 1.6;
+                overflow-x: hidden;
+            }
+
+            .demo-container {
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+            }
+
+            /* Header */
+            .demo-header {
+                background: var(--gradient-primary);
+                color: var(--text-inverse);
+                padding: 2rem 0;
+                text-align: center;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .demo-header::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="40" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="80" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+                opacity: 0.3;
+            }
+
+            .demo-header-content {
+                position: relative;
+                z-index: 1;
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 0 2rem;
+            }
+
+            .demo-header h1 {
+                font-size: 3rem;
+                font-weight: 700;
+                margin-bottom: 0.5rem;
+                background: linear-gradient(45deg, #fff, #fbbf24);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+
+            .demo-header p {
+                font-size: 1.2rem;
+                opacity: 0.9;
+                margin-bottom: 1rem;
+            }
+
+            .demo-header .subtitle {
+                font-size: 1rem;
+                opacity: 0.8;
+                font-style: italic;
+            }
+
+            /* Navigation */
+            .demo-nav {
+                background: var(--surface-primary);
+                border-bottom: 1px solid var(--border-primary);
+                padding: 1rem 0;
+                position: sticky;
+                top: 0;
+                z-index: 100;
+                backdrop-filter: blur(10px);
+            }
+
+            .nav-container {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 0 2rem;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .nav-links {
+                display: flex;
+                gap: 2rem;
+                list-style: none;
+            }
+
+            .nav-link {
+                color: var(--text-secondary);
+                text-decoration: none;
+                font-weight: 500;
+                transition: color var(--transition-normal);
+                position: relative;
+            }
+
+            .nav-link:hover {
+                color: var(--text-primary);
+            }
+
+            .nav-link::after {
+                content: "";
+                position: absolute;
+                bottom: -4px;
+                left: 0;
+                width: 0;
+                height: 2px;
+                background: var(--gradient-primary);
+                transition: width var(--transition-normal);
+            }
+
+            .nav-link:hover::after {
+                width: 100%;
+            }
+
+            /* Dark mode toggle positioning */
+            .dark-mode-toggle-container {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+            }
+
+            /* Main content */
+            .demo-main {
+                flex: 1;
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 3rem 2rem;
+            }
+
+            /* Section styling */
+            .demo-section {
+                margin-bottom: 4rem;
+            }
+
+            .section-header {
+                text-align: center;
+                margin-bottom: 3rem;
+            }
+
+            .section-title {
+                font-size: 2.5rem;
+                font-weight: 600;
+                margin-bottom: 1rem;
+                background: var(--gradient-primary);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+
+            .section-subtitle {
+                font-size: 1.1rem;
+                color: var(--text-secondary);
+                max-width: 600px;
+                margin: 0 auto;
+            }
+
+            /* Component showcase */
+            .component-showcase {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 2rem;
+                margin-bottom: 3rem;
+            }
+
+            .component-card {
+                background: var(--surface-primary);
+                border: 1px solid var(--border-primary);
+                border-radius: var(--radius-xl);
+                padding: 2rem;
+                transition: all var(--transition-normal);
+                position: relative;
+                overflow: hidden;
+            }
+
+            .component-card::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 4px;
+                background: var(--gradient-primary);
+                opacity: 0;
+                transition: opacity var(--transition-normal);
+            }
+
+            .component-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 20px 40px var(--shadow-primary);
+            }
+
+            .component-card:hover::before {
+                opacity: 1;
+            }
+
+            .component-title {
+                font-size: 1.5rem;
+                font-weight: 600;
+                margin-bottom: 1rem;
+                color: var(--text-primary);
+            }
+
+            .component-description {
+                color: var(--text-secondary);
+                margin-bottom: 1.5rem;
+                line-height: 1.6;
+            }
+
+            /* Button showcase */
+            .button-showcase {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 1rem;
+                margin-bottom: 2rem;
+            }
+
+            .btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                padding: 0.75rem 1.5rem;
+                border: 1px solid transparent;
+                border-radius: var(--radius-lg);
+                font-weight: 500;
+                text-decoration: none;
+                cursor: pointer;
+                transition: all var(--transition-normal);
+                font-size: 0.875rem;
+            }
+
+            .btn-primary {
+                background: var(--gradient-primary);
+                color: var(--text-inverse);
+                border-color: var(--earth-primary-600);
+                box-shadow: 0 2px 4px var(--shadow-primary);
+            }
+
+            .btn-primary:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px var(--shadow-secondary);
+            }
+
+            .btn-secondary {
+                background: var(--surface-secondary);
+                color: var(--text-primary);
+                border-color: var(--border-primary);
+            }
+
+            .btn-secondary:hover {
+                background: var(--hover-bg);
+                border-color: var(--hover-border);
+            }
+
+            .btn-accent {
+                background: var(--gradient-accent);
+                color: var(--text-inverse);
+                border-color: var(--earth-accent-600);
+            }
+
+            .btn-accent:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px var(--shadow-secondary);
+            }
+
+            /* Form showcase */
+            .form-showcase {
+                background: var(--surface-secondary);
+                border: 1px solid var(--border-primary);
+                border-radius: var(--radius-xl);
+                padding: 2rem;
+            }
+
+            .form-group {
+                margin-bottom: 1.5rem;
+            }
+
+            .form-label {
+                display: block;
+                margin-bottom: 0.5rem;
+                font-weight: 500;
+                color: var(--text-primary);
+            }
+
+            .form-input {
+                width: 100%;
+                padding: 0.75rem;
+                border: 1px solid var(--border-primary);
+                border-radius: var(--radius-md);
+                background: var(--surface-primary);
+                color: var(--text-primary);
+                transition: all var(--transition-normal);
+            }
+
+            .form-input:focus {
+                outline: none;
+                border-color: var(--earth-primary-500);
+                box-shadow: 0 0 0 3px var(--focus-ring);
+            }
+
+            /* Color palette showcase */
+            .color-palette {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+                gap: 1rem;
+                margin-bottom: 2rem;
+            }
+
+            .color-swatch {
+                border-radius: var(--radius-lg);
+                padding: 1.5rem 1rem;
+                text-align: center;
+                color: var(--text-inverse);
+                font-weight: 500;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .color-swatch::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: linear-gradient(
+                    135deg,
+                    transparent 0%,
+                    rgba(255, 255, 255, 0.1) 100%
+                );
+            }
+
+            .primary-500 {
+                background: var(--earth-primary-500);
+            }
+            .secondary-500 {
+                background: var(--earth-secondary-500);
+            }
+            .accent-500 {
+                background: var(--earth-accent-500);
+            }
+            .neutral-500 {
+                background: var(--earth-neutral-500);
+            }
+
+            /* Theme info */
+            .theme-info {
+                background: var(--surface-secondary);
+                border: 1px solid var(--border-primary);
+                border-radius: var(--radius-xl);
+                padding: 2rem;
+                margin-bottom: 2rem;
+            }
+
+            .theme-info h3 {
+                color: var(--text-primary);
+                margin-bottom: 1rem;
+            }
+
+            .theme-info p {
+                color: var(--text-secondary);
+                margin-bottom: 0.5rem;
+            }
+
+            /* Footer */
+            .demo-footer {
+                background: var(--bg-secondary);
+                border-top: 1px solid var(--border-primary);
+                padding: 2rem 0;
+                text-align: center;
+                color: var(--text-secondary);
+            }
+
+            /* Responsive */
+            @media (max-width: 768px) {
+                .demo-header h1 {
+                    font-size: 2rem;
+                }
+
+                .demo-header p {
+                    font-size: 1rem;
+                }
+
+                .demo-main {
+                    padding: 2rem 1rem;
+                }
+
+                .nav-container {
+                    padding: 0 1rem;
+                    flex-direction: column;
+                    gap: 1rem;
+                }
+
+                .nav-links {
+                    gap: 1rem;
+                }
+
+                .component-showcase {
+                    grid-template-columns: 1fr;
+                }
+
+                .color-palette {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+            }
+
+            /* Animation for theme toggle */
+            @keyframes theme-pulse {
+                0% {
+                    transform: scale(1);
+                }
+                50% {
+                    transform: scale(1.05);
+                }
+                100% {
+                    transform: scale(1);
+                }
+            }
+
+            .theme-toggled {
+                animation: theme-pulse 0.6s ease-in-out;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="demo-container">
+            <!-- Header -->
+            <header class="demo-header">
+                <div class="demo-header-content">
+                    <h1><i class="fas fa-moon"></i> Frieren Dark Mode</h1>
+                    <p>Earth-tone inspired theme with magical transitions</p>
+                    <p class="subtitle">
+                        "In the quiet embrace of twilight, colors speak in
+                        whispers of ancient forests"
+                    </p>
+                </div>
+            </header>
+
+            <!-- Navigation -->
+            <nav class="demo-nav">
+                <div class="nav-container">
+                    <ul class="nav-links">
+                        <li><a href="#colors" class="nav-link">Colors</a></li>
+                        <li>
+                            <a href="#components" class="nav-link"
+                                >Components</a
+                            >
+                        </li>
+                        <li><a href="#forms" class="nav-link">Forms</a></li>
+                        <li>
+                            <a href="#typography" class="nav-link"
+                                >Typography</a
+                            >
+                        </li>
+                    </ul>
+
+                    <div class="dark-mode-toggle-container">
+                        <span
+                            style="
+                                color: var(--text-secondary);
+                                font-size: 0.875rem;
+                            "
+                            >Theme</span
+                        >
+                        <div id="dark-mode-toggle"></div>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <main class="demo-main">
+                <!-- Theme Info -->
+                <section class="demo-section">
+                    <div class="theme-info">
+                        <h3>
+                            <i class="fas fa-info-circle"></i> About Frieren
+                            Dark Mode
+                        </h3>
+                        <p>
+                            <strong>Earth-Tone Palette:</strong> Inspired by the
+                            anime character Frieren, featuring warm browns,
+                            forest greens, and autumn oranges.
+                        </p>
+                        <p>
+                            <strong>Smooth Transitions:</strong> All theme
+                            changes are animated with custom easing functions
+                            for a magical feel.
+                        </p>
+                        <p>
+                            <strong>Accessibility:</strong> Full keyboard
+                            support, ARIA labels, and high contrast mode
+                            compatibility.
+                        </p>
+                        <p>
+                            <strong>System Preference:</strong> Automatically
+                            detects and respects system dark mode preferences.
+                        </p>
+                        <p>
+                            <strong>Persistent Storage:</strong> Remembers your
+                            theme choice across browser sessions.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Color Palette -->
+                <section id="colors" class="demo-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Earth-Tone Color Palette</h2>
+                        <p class="section-subtitle">
+                            Inspired by ancient forests, autumn leaves, and
+                            magical twilight
+                        </p>
+                    </div>
+
+                    <div class="color-palette">
+                        <div class="color-swatch primary-500">
+                            <div>Primary</div>
+                            <small>#9c7a54</small>
+                        </div>
+                        <div class="color-swatch secondary-500">
+                            <div>Secondary</div>
+                            <small>#7d8a52</small>
+                        </div>
+                        <div class="color-swatch accent-500">
+                            <div>Accent</div>
+                            <small>#dc7c3a</small>
+                        </div>
+                        <div class="color-swatch neutral-500">
+                            <div>Neutral</div>
+                            <small>#78716c</small>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Component Showcase -->
+                <section id="components" class="demo-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Component Showcase</h2>
+                        <p class="section-subtitle">
+                            See how components adapt to the earth-tone theme
+                        </p>
+                    </div>
+
+                    <div class="component-showcase">
+                        <div class="component-card">
+                            <h3 class="component-title">
+                                <i class="fas fa-layer-group"></i> Cards &
+                                Panels
+                            </h3>
+                            <p class="component-description">
+                                Elegant cards with subtle shadows and hover
+                                effects that complement the earthy aesthetic.
+                            </p>
+                            <div
+                                style="
+                                    background: var(--surface-secondary);
+                                    padding: 1rem;
+                                    border-radius: var(--radius-lg);
+                                    border: 1px solid var(--border-primary);
+                                "
+                            >
+                                <p
+                                    style="
+                                        margin: 0;
+                                        color: var(--text-secondary);
+                                    "
+                                >
+                                    This is a nested card with theme-aware
+                                    styling.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="component-card">
+                            <h3 class="component-title">
+                                <i class="fas fa-mouse-pointer"></i> Buttons &
+                                Interactions
+                            </h3>
+                            <p class="component-description">
+                                Buttons with gradient backgrounds and smooth
+                                hover animations.
+                            </p>
+                            <div class="button-showcase">
+                                <button class="btn btn-primary">
+                                    <i class="fas fa-magic"></i> Primary
+                                </button>
+                                <button class="btn btn-secondary">
+                                    <i class="fas fa-leaf"></i> Secondary
+                                </button>
+                                <button class="btn btn-accent">
+                                    <i class="fas fa-fire"></i> Accent
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="component-card">
+                            <h3 class="component-title">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Alerts & Notifications
+                            </h3>
+                            <p class="component-description">
+                                Contextual alerts with appropriate color schemes
+                                for different message types.
+                            </p>
+                            <div
+                                style="
+                                    padding: 1rem;
+                                    background: var(--info-bg);
+                                    color: var(--info);
+                                    border: 1px solid var(--info-border);
+                                    border-radius: var(--radius-md);
+                                    margin-bottom: 0.5rem;
+                                "
+                            >
+                                <i class="fas fa-info-circle"></i> Information
+                                message
+                            </div>
+                            <div
+                                style="
+                                    padding: 1rem;
+                                    background: var(--success-bg);
+                                    color: var(--success);
+                                    border: 1px solid var(--success-border);
+                                    border-radius: var(--radius-md);
+                                    margin-bottom: 0.5rem;
+                                "
+                            >
+                                <i class="fas fa-check-circle"></i> Success
+                                message
+                            </div>
+                            <div
+                                style="
+                                    padding: 1rem;
+                                    background: var(--warning-bg);
+                                    color: var(--warning);
+                                    border: 1px solid var(--warning-border);
+                                    border-radius: var(--radius-md);
+                                    margin-bottom: 0.5rem;
+                                "
+                            >
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Warning message
+                            </div>
+                        </div>
+
+                        <div class="component-card">
+                            <h3 class="component-title">
+                                <i class="fas fa-table"></i> Tables & Data
+                            </h3>
+                            <p class="component-description">
+                                Clean table styling with alternating row colors
+                                and hover effects.
+                            </p>
+                            <table
+                                style="width: 100%; border-collapse: collapse"
+                            >
+                                <thead style="background: var(--bg-secondary)">
+                                    <tr>
+                                        <th
+                                            style="
+                                                padding: 0.75rem;
+                                                text-align: left;
+                                                border-bottom: 2px solid
+                                                    var(--border-primary);
+                                            "
+                                        >
+                                            Feature
+                                        </th>
+                                        <th
+                                            style="
+                                                padding: 0.75rem;
+                                                text-align: left;
+                                                border-bottom: 2px solid
+                                                    var(--border-primary);
+                                            "
+                                        >
+                                            Status
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr
+                                        style="
+                                            border-bottom: 1px solid
+                                                var(--border-secondary);
+                                        "
+                                    >
+                                        <td style="padding: 0.75rem">
+                                            Dark Mode Toggle
+                                        </td>
+                                        <td style="padding: 0.75rem">
+                                            <span style="color: var(--success)"
+                                                ><i class="fas fa-check"></i>
+                                                Active</span
+                                            >
+                                        </td>
+                                    </tr>
+                                    <tr
+                                        style="
+                                            border-bottom: 1px solid
+                                                var(--border-secondary);
+                                        "
+                                    >
+                                        <td style="padding: 0.75rem">
+                                            Smooth Transitions
+                                        </td>
+                                        <td style="padding: 0.75rem">
+                                            <span style="color: var(--success)"
+                                                ><i class="fas fa-check"></i>
+                                                Active</span
+                                            >
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 0.75rem">
+                                            Accessibility
+                                        </td>
+                                        <td style="padding: 0.75rem">
+                                            <span style="color: var(--success)"
+                                                ><i class="fas fa-check"></i>
+                                                Active</span
+                                            >
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Form Showcase -->
+                <section id="forms" class="demo-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Form Elements</h2>
+                        <p class="section-subtitle">
+                            Form controls with earth-tone styling and focus
+                            states
+                        </p>
+                    </div>
+
+                    <div class="form-showcase">
+                        <div class="form-group">
+                            <label class="form-label">Text Input</label>
+                            <input
+                                type="text"
+                                class="form-input"
+                                placeholder="Enter your name..."
+                            />
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Email Input</label>
+                            <input
+                                type="email"
+                                class="form-input"
+                                placeholder="your@email.com"
+                            />
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Textarea</label>
+                            <textarea
+                                class="form-input"
+                                rows="3"
+                                placeholder="Share your thoughts..."
+                            ></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Select Dropdown</label>
+                            <select class="form-input">
+                                <option>Choose an option...</option>
+                                <option>Forest Green</option>
+                                <option>Autumn Orange</option>
+                                <option>Earth Brown</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <button class="btn btn-primary" style="width: 100%">
+                                <i class="fas fa-paper-plane"></i> Submit Form
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Typography Showcase -->
+                <section id="typography" class="demo-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Typography</h2>
+                        <p class="section-subtitle">
+                            Readable text with proper contrast ratios
+                        </p>
+                    </div>
+
+                    <div class="component-card">
+                        <h1 style="margin-bottom: 1rem">
+                            Heading 1 - Major Section
+                        </h1>
+                        <h2 style="margin-bottom: 1rem">
+                            Heading 2 - Subsection
+                        </h2>
+                        <h3 style="margin-bottom: 1rem">
+                            Heading 3 - Minor Heading
+                        </h3>
+                        <p
+                            style="
+                                margin-bottom: 1rem;
+                                color: var(--text-secondary);
+                            "
+                        >
+                            This is body text with secondary color, providing
+                            good contrast and readability in both light and dark
+                            modes.
+                        </p>
+                        <p
+                            style="
+                                margin-bottom: 1rem;
+                                color: var(--text-tertiary);
+                            "
+                        >
+                            This is muted text with tertiary color, perfect for
+                            captions and less important information.
+                        </p>
+                        <p style="margin-bottom: 1rem">
+                            Regular body text maintains excellent readability
+                            across all theme variations with proper contrast
+                            ratios.
+                        </p>
+                        <a href="#" style="color: var(--text-link)"
+                            >This is a link with theme-aware coloring that
+                            adapts to both light and dark modes.</a
+                        >
+                    </div>
+                </section>
+            </main>
+
+            <!-- Footer -->
+            <footer class="demo-footer">
+                <p>
+                    &copy; 2024 Frieren Dark Mode Demo. Crafted with earth tones
+                    and magical transitions.
+                </p>
+                <p style="margin-top: 0.5rem; font-size: 0.875rem">
+                    <i class="fas fa-leaf"></i> Inspired by nature •
+                    <i class="fas fa-moon"></i> Perfected by twilight •
+                    <i class="fas fa-magic"></i> Animated with magic
+                </p>
+            </footer>
+        </div>
+
+        <!-- Dark Mode Service -->
+        <script src="/js/theme/DarkModeService.js"></script>
+
+        <!-- Frieren Dark Mode Toggle -->
+        <script src="/js/theme/FrierenDarkModeToggle.js"></script>
+
+        <!-- Theme Integration -->
+        <script src="/js/theme/FrierenThemeIntegration.js"></script>
+
+        <script>
+            // Initialize dark mode toggle
+            document.addEventListener("DOMContentLoaded", function () {
+                // Create toggle in the header
+                const toggleContainer =
+                    document.getElementById("dark-mode-toggle");
+
+                const toggle = new FrierenDarkModeToggle({
+                    container: toggleContainer,
+                    size: "medium",
+                    style: "ornate",
+                    showLabel: false,
+                    enableTooltip: true,
+                    enableAnimation: true,
+                    enableSound: false,
+                    keyboardShortcut: "Alt+T",
+                    onToggle: function (state) {
+                        console.log("Dark mode toggled:", state);
+
+                        // Add visual feedback
+                        document.body.classList.add("theme-toggled");
+                        setTimeout(() => {
+                            document.body.classList.remove("theme-toggled");
+                        }, 600);
+                    },
+                });
+
+                // Smooth scrolling for navigation links
+                document.querySelectorAll(".nav-link").forEach((link) => {
+                    link.addEventListener("click", function (e) {
+                        e.preventDefault();
+                        const targetId = this.getAttribute("href").substring(1);
+                        const targetElement = document.getElementById(targetId);
+
+                        if (targetElement) {
+                            targetElement.scrollIntoView({
+                                behavior: "smooth",
+                                block: "start",
+                            });
+                        }
+                    });
+                });
+
+                // Add scroll effect to header
+                let lastScrollTop = 0;
+                window.addEventListener("scroll", function () {
+                    const scrollTop =
+                        window.pageYOffset ||
+                        document.documentElement.scrollTop;
+                    const header = document.querySelector(".demo-header");
+                    const nav = document.querySelector(".demo-nav");
+
+                    if (scrollTop > 100) {
+                        nav.style.background = "var(--surface-primary)";
+                        nav.style.backdropFilter = "blur(10px)";
+                        nav.style.boxShadow =
+                            "0 2px 20px var(--shadow-primary)";
+                    } else {
+                        nav.style.background = "var(--surface-primary)";
+                        nav.style.backdropFilter = "none";
+                        nav.style.boxShadow = "none";
+                    }
+
+                    lastScrollTop = scrollTop;
+                });
+
+                // Add intersection observer for animations
+                const observerOptions = {
+                    threshold: 0.1,
+                    rootMargin: "0px 0px -50px 0px",
+                };
+
+                const observer = new IntersectionObserver(function (entries) {
+                    entries.forEach((entry) => {
+                        if (entry.isIntersecting) {
+                            entry.target.style.opacity = "1";
+                            entry.target.style.transform = "translateY(0)";
+                        }
+                    });
+                }, observerOptions);
+
+                // Observe component cards
+                document.querySelectorAll(".component-card").forEach((card) => {
+                    card.style.opacity = "0";
+                    card.style.transform = "translateY(20px)";
+                    card.style.transition =
+                        "opacity 0.6s ease, transform 0.6s ease";
+                    observer.observe(card);
+                });
+
+                console.log("Frieren Dark Mode Demo initialized successfully");
+            });
+        </script>
+    </body>
+</html>
