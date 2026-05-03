@@ -10,7 +10,7 @@ use Exception;
 class GeminiSummarizationService
 {
     private string $apiKey;
-    private string $apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+    private string $apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
     private int $maxRetries = 3;
     private int $retryDelay = 1; // seconds
     
@@ -53,27 +53,52 @@ class GeminiSummarizationService
     private function buildPrompt(string $content, int $maxWords, string $language): string
     {
         $langText = $language === 'id' ? 'Bahasa Indonesia' : 'English';
+        $topicIndicator = $this->detectTopic($content);
         
-        return "
-            Buatlah ringkasan artikel berikut dalam {$langText} dengan struktur yang jelas:
-            
-            KONTEN ARTIKEL:
-            {$content}
-            
-            INSTRUKSI:
-            1. Buat ringkasan dalam bentuk paragraf yang padat dan informatif (maksimal {$maxWords} kata)
-            2. Ekstrak 3-5 poin kunci dari artikel ini
-            3. Gunakan bahasa yang jelas dan mudah dipahami
-            4. Pastikan ringkasan mencakup ide utama dan poin penting
-            
-            FORMAT OUTPUT (JSON):
-            {
-                \"summary\": \"Ringkasan dalam paragraf...\",
-                \"key_points\": [\"Poin 1\", \"Poin 2\", \"Poin 3\"]
+        return "Kamu adalah seorang penulis ringkasan artikel profesional yang ahli dalam membuat ringkasan yang informatif dan mudah dipahami.
+
+BUAT RINGKASAN ARTIKEL BERIKUT DALAM {$langText}:
+
+KONTEN ARTIKEL:
+{$content}
+
+INSTRUKSI:
+1. Buat ringkasan dalam bentuk paragraf yang PADAT dan INFORMATIF (maksimal {$maxWords} kata)
+2. Ringkasan harus mencakup:
+   - Topik utama artikel ({$topicIndicator})
+   - Poin-poin penting dari artikel
+   - Kesimpulan atau implikasi dari informasi
+3. Ekstrak 3-5 poin kunci yang mewakili ide utama artikel
+4. Gunakan bahasa yang jelas, profesional, dan mudah dipahami
+5. Pastikan ringkasan COHERENT - kalimat satu terhubung dengan yang lainnya
+6. Hindari pengulangan informasi yang sudah disebutkan
+
+FORMAT OUTPUT (WAJIB JSON - tanpa markdown atau penjelasan tambahan):
+{
+    \"summary\": \"Paragraf ringkasan yang padate dan informatif... (maksimal {$maxWords} kata)\",
+    \"key_points\": [\"Poin kunci 1 yang spesifik\", \"Poin kunci 2 yang spesifik\", \"Poin kunci 3 yang spesifik\"]
+}";
+    }
+    
+    private function detectTopic(string $content): string
+    {
+        $content = strtolower(strip_tags($content));
+        $words = str_word_count($content, 1);
+        $wordFreq = array_count_values($words);
+        arsort($wordFreq);
+
+        $stopWords = ['yang', 'untuk', 'dengan', 'tidak', 'dari', 'dalam', 'adalah', 'akan', 'oleh', 'ini', 'itu', 'dan', 'atau', 'jika', 'ters', 'pada', 'untuk', 'dapat', 'sudah', 'saya', 'kami', 'nya', 'lebih', 'juga', 'telah', 'bahwa', 'hanya'];
+
+        $importantWords = [];
+        foreach ($wordFreq as $word => $count) {
+            if (strlen($word) > 4 && !in_array($word, $stopWords) && is_numeric($count) === false) {
+                $importantWords[$word] = $count;
             }
-            
-            Pastikan output dalam format JSON yang valid dan bisa diparsing.
-        ";
+        }
+
+        arsort($importantWords);
+        $topWords = array_slice(array_keys($importantWords), 0, 3);
+        return !empty($topWords) ? implode(', ', $topWords) : 'artikel';
     }
 
     /**
@@ -107,19 +132,19 @@ class GeminiSummarizationService
                         'safetySettings' => [
                             [
                                 'category' => 'HARM_CATEGORY_HARASSMENT',
-                                'threshold' => 'BLOCK_MEDIUM_AND_ABOVE'
+                                'threshold' => 'BLOCK_NONE'
                             ],
                             [
                                 'category' => 'HARM_CATEGORY_HATE_SPEECH',
-                                'threshold' => 'BLOCK_MEDIUM_AND_ABOVE'
+                                'threshold' => 'BLOCK_NONE'
                             ],
                             [
                                 'category' => 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-                                'threshold' => 'BLOCK_MEDIUM_AND_ABOVE'
+                                'threshold' => 'BLOCK_NONE'
                             ],
                             [
                                 'category' => 'HARM_CATEGORY_DANGEROUS_CONTENT',
-                                'threshold' => 'BLOCK_MEDIUM_AND_ABOVE'
+                                'threshold' => 'BLOCK_NONE'
                             ]
                         ]
                     ]);
@@ -155,8 +180,13 @@ class GeminiSummarizationService
 
             $text = $response['candidates'][0]['content']['parts'][0]['text'];
             
-            // Extract JSON from the response text
-            preg_match('/\{[\s\S]*\}/', $text, $matches);
+            // Clean the text first - remove markdown code blocks if present
+            $cleanText = preg_replace('/```json\s*/', '', $text);
+            $cleanText = preg_replace('/```\s*/', '', $cleanText);
+            $cleanText = trim($cleanText);
+            
+            // Try to extract JSON from the response text with improved regex
+            preg_match('/\{[\s\S]*\}/', $cleanText, $matches);
             
             if (empty($matches)) {
                 throw new Exception('No JSON found in Gemini API response');
@@ -168,12 +198,21 @@ class GeminiSummarizationService
                 throw new Exception('Failed to parse JSON from Gemini response: ' . json_last_error_msg());
             }
 
+            $summary = $jsonData['summary'] ?? $this->extractSummaryFallback($cleanText);
+            $keyPoints = $jsonData['key_points'] ?? [];
+            
+            // Validate and sanitize summary length
+            $wordCount = str_word_count($summary);
+            if ($wordCount > 300) {
+                $summary = implode(' ', array_slice(str_word_count($summary, 1), 0, 300)) . '...';
+            }
+
             return [
-                'summary' => $jsonData['summary'] ?? $this->extractSummaryFallback($text),
-                'key_points' => $jsonData['key_points'] ?? [],
+                'summary' => $summary,
+                'key_points' => is_array($keyPoints) ? array_slice($keyPoints, 0, 5) : [],
                 'raw_response' => $text,
                 'tokens_used' => $response['usageMetadata']['totalTokenCount'] ?? 0,
-                'model' => 'gemini-pro'
+                'model' => 'gemini-2.5-flash'
             ];
             
         } catch (Exception $e) {
@@ -211,7 +250,7 @@ class GeminiSummarizationService
     private function generateCacheKey(string $content, int $maxWords, string $language): string
     {
         $contentHash = md5($content);
-        return "gemini_summary:{$contentHash}:{$maxWords}:{$language}";
+        return "gemini_summary:v2:{$contentHash}:{$maxWords}:{$language}";
     }
 
     /**
