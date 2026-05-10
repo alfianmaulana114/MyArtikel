@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Article;
 use App\Models\User;
+use App\Models\Summary;
 use App\Services\ArticleExtractionService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -154,6 +155,8 @@ class ProcessArticleIngestion extends BaseJob
             $this->addMetadata('article_id', $article->id);
             $this->addMetadata('word_count', str_word_count($article->content));
 
+            $this->autoGenerateSummary($article);
+
         } catch (Exception $e) {
             Log::error('Article ingestion failed', [
                 'user_id' => $this->userId,
@@ -212,6 +215,87 @@ class ProcessArticleIngestion extends BaseJob
     }
 
     /**
+     * Auto-generate summary for the article
+     */
+    private function autoGenerateSummary(Article $article): void
+    {
+        try {
+            if ($article->processing_status !== 'ready') {
+                return;
+            }
+
+            $textExtracted = $article->text_extracted;
+            if (empty($textExtracted) || str_word_count($textExtracted) < 50) {
+                Log::info('Article content too short for summarization', [
+                    'article_id' => $article->id,
+                    'word_count' => str_word_count($textExtracted ?? '')
+                ]);
+                return;
+            }
+
+            $existingSummary = Summary::where('article_id', $article->id)
+                ->where('user_id', $this->userId)
+                ->where('status', 'completed')
+                ->first();
+
+            if ($existingSummary) {
+                Log::info('Summary already exists for article', [
+                    'article_id' => $article->id,
+                    'summary_id' => $existingSummary->id
+                ]);
+                return;
+            }
+
+            $summary = Summary::create([
+                'article_id' => $article->id,
+                'user_id' => $this->userId,
+                'content' => '',
+                'word_count' => 0,
+                'type' => 'ai_generated',
+                'source' => 'gemini',
+                'status' => 'pending',
+                'processing_started_at' => now()
+            ]);
+
+            $summarizationService = app(\App\Services\SummarizationService::class);
+            $options = [
+                'max_words' => 150,
+                'language' => 'id',
+                'prefer_ai' => true,
+                'force_regenerate' => false
+            ];
+
+            $result = $summarizationService->generateSummary(
+                $article->id,
+                $this->userId,
+                $options
+            );
+
+            if ($result['success']) {
+                Log::info('Auto summary generated successfully', [
+                    'article_id' => $article->id,
+                    'summary_id' => $summary->id
+                ]);
+            } else {
+                Log::warning('Auto summary generation failed', [
+                    'article_id' => $article->id,
+                    'error' => $result['error'] ?? 'Unknown error'
+                ]);
+                $summary->update([
+                    'status' => 'failed',
+                    'error_message' => $result['error'] ?? 'Generation failed'
+                ]);
+            }
+
+        } catch (Exception $e) {
+            Log::warning('Auto summary generation error', [
+                'article_id' => $article->id,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
      * Save additional metadata
      */
     private function saveMetadata(Article $article, array $metadata): void
@@ -247,7 +331,7 @@ class ProcessArticleIngestion extends BaseJob
      */
     protected function isBusinessLogicException(Exception $exception): bool
     {
-        // Article already exists is business logic, not a system error
         return str_contains($exception->getMessage(), 'already exists');
     }
 }
+
