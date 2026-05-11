@@ -10,7 +10,12 @@
                 </a>
             </div>
             <div class="flex flex-wrap items-center gap-2 text-sm theme-text-muted">
-                @if ($article->source_domain)
+                @if ($article->source_type === 'pdf')
+                    <span class="flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                        PDF Upload
+                    </span>
+                @elseif ($article->source_domain)
                     <span>{{ $article->source_domain }}</span>
                 @endif
                 @if ($article->fetched_at)
@@ -20,6 +25,10 @@
                 @if ($article->processing_status)
                     <span>·</span>
                     <span>{{ $article->processing_status }}</span>
+                @endif
+                @if ($article->research_title)
+                    <span>·</span>
+                    <span class="text-[#AA5F3C]" title="{{ $article->research_title }}">Riset: {{ \Illuminate\Support\Str::limit($article->research_title, 40) }}</span>
                 @endif
             </div>
         </div>
@@ -58,7 +67,7 @@
                         $raw = $article->text_extracted ?: ($article->content_sanitized ?: $article->content);
                         $text = trim(preg_replace('/\s+/', ' ', strip_tags((string) $raw)));
                     @endphp
-                    <div class="mt-5 theme-text-primary leading-relaxed">
+                    <div class="mt-5 theme-text-primary leading-relaxed whitespace-pre-wrap">
                         {{ $text }}
                     </div>
                 </div>
@@ -80,12 +89,54 @@
             @endif
                 </div>
 
-                <div class="lg:col-span-4 space-y-6 lg:sticky lg:top-24 self-start">
+                {{-- Sidebar: Tab Rangkuman & Saran Kutipan --}}
+                <div class="lg:col-span-4 space-y-6 lg:sticky lg:top-24 self-start" x-data="{
+                    activeTab: 'summary',
+                    init() {
+                        @if (!empty($article->ai_quotation_suggestions))
+                            this.activeTab = 'citations';
+                        @endif
+                    }
+                }">
+                    {{-- Tab Navigation --}}
                     <div class="card sm:rounded-lg overflow-hidden">
-                        <div class="p-6">
+                        <div class="flex border-b theme-border-primary">
+                            <button
+                                @click="activeTab = 'summary'"
+                                :class="activeTab === 'summary'
+                                    ? 'theme-text-primary border-b-2 border-[#AA5F3C]'
+                                    : 'theme-text-muted border-b-2 border-transparent hover:theme-text-secondary'"
+                                class="flex-1 px-4 py-3 text-sm font-medium transition-colors text-center"
+                            >
+                                <span class="flex items-center justify-center gap-1.5">
+                                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    Rangkuman
+                                </span>
+                            </button>
+                            <button
+                                @click="activeTab = 'citations'"
+                                :class="activeTab === 'citations'
+                                    ? 'theme-text-primary border-b-2 border-[#AA5F3C]'
+                                    : 'theme-text-muted border-b-2 border-transparent hover:theme-text-secondary'"
+                                class="flex-1 px-4 py-3 text-sm font-medium transition-colors text-center"
+                            >
+                                <span class="flex items-center justify-center gap-1.5">
+                                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                                    Saran Kutipan
+                                </span>
+                                @if (!empty($article->ai_quotation_suggestions))
+                                    <span class="ml-1 text-xs px-1.5 py-0.5 rounded-full bg-[#AA5F3C] text-white">
+                                        {{ count($article->ai_quotation_suggestions) }}
+                                    </span>
+                                @endif
+                            </button>
+                        </div>
+
+                        {{-- Summary Tab Content --}}
+                        <div x-show="activeTab === 'summary'" class="p-6">
                             <div class="flex items-start justify-between gap-3">
                                 <div>
-                                    <div class="font-semibold theme-text-primary">Ringkasan</div>
+                                    <div class="font-semibold theme-text-primary">Ringkasan AI</div>
                                     <div class="mt-1 text-sm theme-text-muted">
                                         Generate ringkasan on-demand.
                                     </div>
@@ -141,14 +192,80 @@
 
                             <div id="summary-result" class="hidden mt-4 space-y-4">
                                 <div class="rounded-xl border theme-border-primary bg-[color:var(--surface-primary)] p-4">
-                                    <div class="text-xs theme-text-muted">Summary</div>
+                                    <div class="text-xs theme-text-muted">Ringkasan</div>
                                     <div id="summary-content" class="mt-2 text-sm theme-text-secondary leading-relaxed whitespace-pre-wrap"></div>
                                 </div>
                                 <div class="rounded-xl border theme-border-primary bg-[color:var(--surface-primary)] p-4">
-                                    <div class="text-xs theme-text-muted">Key points</div>
+                                    <div class="text-xs theme-text-muted">Poin Kunci</div>
                                     <div id="summary-points" class="mt-2 flex flex-wrap gap-2"></div>
                                 </div>
                             </div>
+                        </div>
+
+                        {{-- Citations Tab Content --}}
+                        <div x-show="activeTab === 'citations'" class="p-6">
+                            <div class="font-semibold theme-text-primary">Saran Kutipan</div>
+                            <div class="mt-1 text-sm theme-text-muted">
+                                Kutipan yang direkomendasikan AI untuk riset Anda.
+                            </div>
+
+                            @if (!empty($article->ai_quotation_suggestions))
+                                <div class="mt-4 space-y-4">
+                                    @foreach ($article->ai_quotation_suggestions as $index => $citation)
+                                        <div class="rounded-xl border theme-border-primary bg-[color:var(--surface-primary)] p-4">
+                                            <div class="flex items-center gap-2 mb-2">
+                                                <span class="text-xs px-2 py-0.5 rounded-full bg-[color:var(--bg-tertiary)] text-[#AA5F3C] font-medium">
+                                                    #{{ $index + 1 }}
+                                                </span>
+                                                @if (!empty($citation['position']))
+                                                    <span class="text-xs px-2 py-0.5 rounded-full bg-[color:var(--bg-tertiary)] theme-text-muted">
+                                                        {{ $citation['position'] }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                            <blockquote class="border-l-3 border-[#AA5F3C] pl-3 italic text-sm theme-text-secondary">
+                                                "{{ $citation['quote'] ?? '' }}"
+                                            </blockquote>
+                                            @if (!empty($citation['relevance']))
+                                                <div class="mt-2 text-xs theme-text-muted leading-relaxed">
+                                                    {{ $citation['relevance'] }}
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @elseif ($article->research_title)
+                                <div class="mt-4 rounded-xl border theme-border-primary bg-[color:var(--surface-primary)] p-4 text-center">
+                                    <svg class="mx-auto w-8 h-8 theme-text-muted mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <div class="text-sm theme-text-muted">
+                                        Saran kutipan sedang dibuat oleh AI…
+                                    </div>
+                                    <div class="mt-1 text-xs theme-text-muted">
+                                        Judul riset: "{{ $article->research_title }}"
+                                    </div>
+                                </div>
+                            @else
+                                <div class="mt-4 rounded-xl border theme-border-primary bg-[color:var(--surface-primary)] p-4 text-center">
+                                    <svg class="mx-auto w-8 h-8 theme-text-muted mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                                    <div class="text-sm theme-text-muted">
+                                        Tidak ada Judul Penelitian.
+                                    </div>
+                                    <div class="mt-1 text-xs theme-text-muted">
+                                        Isi judul penelitian saat submit artikel untuk mendapat saran kutipan AI.
+                                    </div>
+                                </div>
+                            @endif
+
+                            @if ($article->processing_status === 'ready' && !empty($article->text_extracted) && $article->research_title && empty($article->ai_quotation_suggestions))
+                                <div class="mt-4">
+                                    <button id="generate-citations-btn" type="button" class="btn btn-primary w-full text-sm" onclick="generateCitations()">
+                                        <span class="flex items-center justify-center gap-1.5">
+                                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                            Generate Saran Kutipan
+                                        </span>
+                                    </button>
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -421,6 +538,41 @@
                 loadQuota();
                 loadExistingLatest();
             })();
+        </script>
+
+        <script>
+            window.generateCitations = async function() {
+                const btn = document.getElementById('generate-citations-btn');
+                if (!btn) return;
+                btn.disabled = true;
+                const origHtml = btn.innerHTML;
+                btn.innerHTML = '<span class="flex items-center justify-center gap-1.5"><svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" class="opacity-25"/><path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="3" class="opacity-75"/></svg> Memproses…</span>';
+
+                try {
+                    const res = await fetch(`/articles/{{ $article->id }}/generate-citations`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    });
+
+                    const json = await res.json();
+                    if (json.success) {
+                        window.location.reload();
+                    } else {
+                        alert(json.error || 'Gagal menghasilkan saran kutipan.');
+                        btn.disabled = false;
+                        btn.innerHTML = origHtml;
+                    }
+                } catch (e) {
+                    alert('Gagal menghasilkan saran kutipan.');
+                    btn.disabled = false;
+                    btn.innerHTML = origHtml;
+                }
+            };
         </script>
     @endpush
 </x-app-layout>

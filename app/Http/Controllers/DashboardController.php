@@ -75,6 +75,13 @@ class DashboardController extends Controller
     public function ingest(ArticleSubmissionRequest $request, BackgroundProcessingService $bg)
     {
         $userId = Auth::id();
+        $sourceType = $request->input('source_type', 'url');
+        $researchTitle = $request->string('research_title', '')->trim()->toString() ?: null;
+
+        if ($sourceType === 'pdf') {
+            return $this->ingestPdf($request, $bg, $userId, $researchTitle);
+        }
+
         $url = $request->string('url')->toString();
 
         $article = Article::create([
@@ -84,6 +91,8 @@ class DashboardController extends Controller
             'source_url' => $url,
             'canonical_url' => $url,
             'source_domain' => parse_url($url, PHP_URL_HOST),
+            'source_type' => 'url',
+            'research_title' => $researchTitle,
             'content' => '',
             'processing_status' => 'queued',
             'status' => 'draft',
@@ -109,6 +118,69 @@ class DashboardController extends Controller
         $statusMessage = $queue === 'sync'
             ? 'URL diterima. Artikel diproses langsung.'
             : 'URL diterima. Artikel sedang diproses (pastikan queue worker jalan).';
+
+        return redirect()
+            ->route('dashboard')
+            ->with('status', $statusMessage);
+    }
+
+    private function ingestPdf(ArticleSubmissionRequest $request, BackgroundProcessingService $bg, int $userId, ?string $researchTitle)
+    {
+        $file = $request->file('pdf_file');
+
+        $securityService = app(\App\Services\FileUploadSecurityService::class);
+        $validation = $securityService->validateUpload($file, 'pdf');
+
+        if (!$validation['valid']) {
+            return back()->withErrors([
+                'pdf_file' => $validation['message'],
+            ]);
+        }
+
+        $filePath = $securityService->storeSecurely($file, 'journals');
+
+        if (!$filePath) {
+            return back()->withErrors([
+                'pdf_file' => 'Gagal menyimpan file PDF.',
+            ]);
+        }
+
+        $originalName = $file->getClientOriginalName();
+        $title = $request->string('title', '')->trim()->toString() ?: pathinfo($originalName, PATHINFO_FILENAME);
+
+        $article = Article::create([
+            'user_id' => $userId,
+            'title' => $title,
+            'slug' => 'pdf-' . \Illuminate\Support\Str::slug($title) . '-' . uniqid(),
+            'source_type' => 'pdf',
+            'file_path' => $filePath,
+            'research_title' => $researchTitle,
+            'source_domain' => 'pdf-upload',
+            'content' => '',
+            'processing_status' => 'queued',
+            'status' => 'draft',
+        ]);
+
+        $result = $bg->processPdfIngestion($userId, $filePath, [
+            'article_id' => $article->id,
+        ]);
+
+        if (!$result['success']) {
+            $error = \Illuminate\Support\Str::limit((string) ($result['error'] ?? 'Gagal memproses PDF.'), 1000, '…');
+            $article->update([
+                'processing_status' => 'failed',
+                'processing_error' => $error,
+            ]);
+
+            return back()->withErrors([
+                'pdf_file' => $error,
+            ]);
+        }
+
+        $queue = $result['queue'] ?? null;
+        $statusMessage = $queue === 'sync'
+            ? 'PDF berhasil diunggah dan diproses langsung.'
+            : 'PDF berhasil diunggah. Sedang diproses (pastikan queue worker jalan).';
 
         return redirect()
             ->route('dashboard')

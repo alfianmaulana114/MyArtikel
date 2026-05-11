@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Jobs\ProcessArticleIngestion;
+use App\Jobs\ProcessPdfIngestion;
 use App\Jobs\ProcessSummaryGeneration;
 use App\Jobs\ProcessPdfExport;
 use Illuminate\Support\Facades\Bus;
@@ -26,6 +27,51 @@ class BackgroundProcessingService
     private function shouldForceSync(): bool
     {
         return app()->environment('local') && (bool) env('MYARTIKEL_FORCE_SYNC_JOBS', true);
+    }
+
+    /**
+     * Process PDF ingestion in background
+     */
+    public function processPdfIngestion(int $userId, string $filePath, array $options = []): array
+    {
+        try {
+            $job = new ProcessPdfIngestion($userId, $filePath, $options);
+
+            if ($this->shouldForceSync()) {
+                Bus::dispatchSync($job);
+                $jobId = null;
+                $queue = 'sync';
+            } else {
+                $jobId = dispatch($job->onQueue('low-priority'));
+                $queue = 'low-priority';
+            }
+
+            Log::info('PDF ingestion job dispatched', [
+                'user_id' => $userId,
+                'file_path' => $filePath,
+                'job_id' => $jobId,
+                'queue' => $queue
+            ]);
+
+            return [
+                'success' => true,
+                'job_id' => $jobId,
+                'message' => $queue === 'sync' ? 'PDF ingestion processed immediately' : 'PDF ingestion queued for processing',
+                'queue' => $queue
+            ];
+
+        } catch (\Throwable $e) {
+            Log::error('Failed to dispatch PDF ingestion job', [
+                'user_id' => $userId,
+                'file_path' => $filePath,
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
     }
 
     /**

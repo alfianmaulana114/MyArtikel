@@ -14,13 +14,15 @@ class FileUploadSecurityService
         'image/gif',
         'image/webp',
         'image/svg+xml',
+        'application/pdf',
     ];
 
     private array $allowedExtensions = [
-        'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'
+        'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'pdf'
     ];
 
-    private int $maxFileSize = 2 * 1024 * 1024; // 2MB
+    private int $maxFileSize = 2 * 1024 * 1024; // 2MB (images)
+    private int $maxPdfFileSize = 10 * 1024 * 1024; // 10MB (PDF)
     private int $maxImageWidth = 2048;
     private int $maxImageHeight = 2048;
 
@@ -48,8 +50,8 @@ class FileUploadSecurityService
                 return $extensionValidation;
             }
 
-            // File size validation
-            $sizeValidation = $this->validateFileSize($file);
+            // File size validation (different limits for PDF vs images)
+            $sizeValidation = $this->validateFileSize($file, $type);
             if (!$sizeValidation['valid']) {
                 return $sizeValidation;
             }
@@ -59,6 +61,14 @@ class FileUploadSecurityService
                 $imageValidation = $this->validateImage($file);
                 if (!$imageValidation['valid']) {
                     return $imageValidation;
+                }
+            }
+
+            // PDF-specific validation
+            if ($type === 'pdf') {
+                $pdfValidation = $this->validatePdf($file);
+                if (!$pdfValidation['valid']) {
+                    return $pdfValidation;
                 }
             }
 
@@ -168,16 +178,43 @@ class FileUploadSecurityService
     /**
      * Validate file size
      */
-    private function validateFileSize(UploadedFile $file): array
+    private function validateFileSize(UploadedFile $file, string $type = 'image'): array
     {
-        if ($file->getSize() > $this->maxFileSize) {
+        $maxSize = $type === 'pdf' ? $this->maxPdfFileSize : $this->maxFileSize;
+        $maxMB = $maxSize / 1024 / 1024;
+
+        if ($file->getSize() > $maxSize) {
             return [
                 'valid' => false,
-                'message' => 'File size exceeds maximum allowed size of ' . ($this->maxFileSize / 1024 / 1024) . 'MB',
+                'message' => 'File size exceeds maximum allowed size of ' . $maxMB . 'MB',
             ];
         }
 
         return ['valid' => true];
+    }
+
+    /**
+     * Validate PDF file
+     */
+    private function validatePdf(UploadedFile $file): array
+    {
+        try {
+            // Check PDF magic bytes (%PDF-)
+            $handle = fopen($file->getPathname(), 'rb');
+            if (!$handle) {
+                return ['valid' => false, 'message' => 'Cannot read file'];
+            }
+            $header = fread($handle, 5);
+            fclose($handle);
+
+            if ($header !== '%PDF-') {
+                return ['valid' => false, 'message' => 'File is not a valid PDF'];
+            }
+
+            return ['valid' => true];
+        } catch (\Exception $e) {
+            return ['valid' => false, 'message' => 'PDF validation failed'];
+        }
     }
 
     /**

@@ -63,7 +63,10 @@ class SummarizationService
                 
                 if ($quotaCheck) {
                     try {
-                        $aiSummary = $this->generateAiSummary($articleId, $userId, $content, $options);
+                        $article = Article::findOrFail($articleId);
+                        $aiSummary = $this->generateAiSummary(
+                            $articleId, $userId, $content, $options, $article->research_title
+                        );
                         
                         return [
                             'success' => true,
@@ -106,7 +109,7 @@ class SummarizationService
     /**
      * Generate summary using AI service
      */
-    private function generateAiSummary(int $articleId, int $userId, string $content, array $options): Summary
+    private function generateAiSummary(int $articleId, int $userId, string $content, array $options, ?string $researchTitle = null): Summary
     {
         // Create processing record
         $summary = Summary::create([
@@ -122,11 +125,12 @@ class SummarizationService
         ]);
         
         try {
-            // Generate summary
+            // Generate summary with research title context
             $aiResult = $this->geminiService->generateSummary(
                 $content,
                 $options['max_words'],
-                $options['language']
+                $options['language'],
+                $researchTitle
             );
             
             // Update summary

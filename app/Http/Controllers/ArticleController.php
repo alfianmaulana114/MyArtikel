@@ -248,6 +248,80 @@ class ArticleController extends Controller
             'message' => 'Article deleted successfully'
         ]);
     }
+
+    /**
+     * Generate AI citation suggestions for an article.
+     */
+    public function generateCitations(Request $request, string $id): JsonResponse
+    {
+        $user = Auth::user();
+        $article = Article::where('user_id', $user->id)->findOrFail($id);
+
+        if ($article->processing_status !== 'ready') {
+            return response()->json([
+                'success' => false,
+                'error' => 'Artikel belum selesai diproses.',
+            ], 400);
+        }
+
+        if (empty($article->text_extracted)) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Teks artikel kosong.',
+            ], 400);
+        }
+
+        if (empty($article->research_title)) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Judul penelitian belum diisi.',
+            ], 400);
+        }
+
+        try {
+            $geminiService = app(\App\Services\GeminiSummarizationService::class);
+
+            if (!$geminiService->isAvailable()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Layanan AI tidak tersedia saat ini.',
+                ], 503);
+            }
+
+            $result = $geminiService->generateResearchCitations(
+                $article->text_extracted,
+                $article->research_title
+            );
+
+            if ($result['success']) {
+                $article->update([
+                    'ai_quotation_suggestions' => $result['citations'],
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Saran kutipan berhasil dibuat.',
+                    'data' => $result['citations'],
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'error' => $result['error'] ?? 'Gagal membuat saran kutipan.',
+            ], 500);
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Citation generation failed', [
+                'article_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Gagal membuat saran kutipan.',
+            ], 500);
+        }
+    }
     
     /**
      * Process tags for an article

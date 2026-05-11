@@ -59,10 +59,10 @@ abstract class BaseJob implements ShouldQueue
     /**
      * Handle a job failure.
      *
-     * @param  \Exception  $exception
+     * @param  \Throwable  $exception
      * @return void
      */
-    public function failed(Exception $exception): void
+    public function failed(\Throwable $exception): void
     {
         Log::error('Job failed', [
             'job' => get_class($this),
@@ -142,7 +142,7 @@ abstract class BaseJob implements ShouldQueue
      * @param Exception $exception
      * @return void
      */
-    protected function recordJobFailure(Exception $exception): void
+    protected function recordJobFailure(\Throwable $exception): void
     {
         // Override in child classes if tracking is needed
     }

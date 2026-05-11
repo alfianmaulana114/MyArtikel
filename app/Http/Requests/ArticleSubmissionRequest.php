@@ -23,7 +23,27 @@ class ArticleSubmissionRequest extends FormRequest
      */
     public function rules(): array
     {
+        $sourceType = $this->input('source_type', 'url');
+
+        if ($sourceType === 'pdf') {
+            return [
+                'source_type' => ['required', 'string', 'in:url,pdf'],
+                'pdf_file' => [
+                    'required',
+                    'file',
+                    'mimes:pdf',
+                    'max:10240',
+                ],
+                'research_title' => ['nullable', 'string', 'max:500'],
+                'title' => ['nullable', 'string', 'max:255'],
+                'tags' => ['nullable', 'array', 'max:10'],
+                'tags.*' => ['string', 'max:50', 'regex:/^[a-zA-Z0-9\s-]+$/'],
+                'notes' => ['nullable', 'string', 'max:1000'],
+            ];
+        }
+
         return [
+            'source_type' => ['required', 'string', 'in:url,pdf'],
             'url' => [
                 'required',
                 'string',
@@ -38,6 +58,7 @@ class ArticleSubmissionRequest extends FormRequest
                     }
                 },
             ],
+            'research_title' => ['nullable', 'string', 'max:500'],
             'title' => ['nullable', 'string', 'max:255'],
             'tags' => ['nullable', 'array', 'max:10'],
             'tags.*' => ['string', 'max:50', 'regex:/^[a-zA-Z0-9\s-]+$/'],

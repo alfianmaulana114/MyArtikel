@@ -15,6 +15,7 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/ingest', fn () => redirect()->route('dashboard'));
     Route::post('/dashboard/ingest', [DashboardController::class, 'ingest'])->name('dashboard.ingest');
     Route::post('/dashboard/articles/{article}/retry', [DashboardController::class, 'retry'])->name('dashboard.retry');
 });
@@ -26,6 +27,7 @@ Route::middleware('auth')->group(function () {
     
     // Articles Routes
     Route::get('articles/data', [ArticleController::class, 'data'])->name('articles.data');
+    Route::post('articles/{article}/generate-citations', [ArticleController::class, 'generateCitations'])->name('articles.generate-citations');
     Route::resource('articles', ArticleController::class);
     
     // Tags Routes

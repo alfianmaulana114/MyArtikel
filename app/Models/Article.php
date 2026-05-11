@@ -14,11 +14,15 @@ class Article extends SecureModel
         'source_url',
         'canonical_url',
         'source_domain',
+        'source_type',
+        'file_path',
+        'research_title',
         'content',
         'content_sanitized',
         'text_extracted',
         'content_hash',
         'metadata',
+        'ai_quotation_suggestions',
         'excerpt',
         'featured_image',
         'user_id',
@@ -37,6 +41,7 @@ class Article extends SecureModel
         'is_featured' => 'boolean',
         'view_count' => 'integer',
         'metadata' => 'array',
+        'ai_quotation_suggestions' => 'array',
     ];
     
     public function user(): BelongsTo

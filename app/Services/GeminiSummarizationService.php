@@ -22,7 +22,7 @@ class GeminiSummarizationService
     /**
      * Generate summary using Gemini API
      */
-    public function generateSummary(string $content, int $maxWords = 150, string $language = 'id'): array
+    public function generateSummary(string $content, int $maxWords = 150, string $language = 'id', ?string $researchTitle = null): array
     {
         if (empty($this->apiKey)) {
             throw new Exception('Gemini API key is not configured');
@@ -35,7 +35,7 @@ class GeminiSummarizationService
             return $cachedSummary;
         }
 
-        $prompt = $this->buildPrompt($content, $maxWords, $language);
+        $prompt = $this->buildPrompt($content, $maxWords, $language, $researchTitle);
         
         $response = $this->makeApiRequest($prompt);
         
@@ -48,20 +48,135 @@ class GeminiSummarizationService
     }
 
     /**
+     * Generate research citations/quotation suggestions
+     */
+    public function generateResearchCitations(string $content, string $researchTitle, string $language = 'id'): array
+    {
+        if (empty($this->apiKey)) {
+            throw new Exception('Gemini API key is not configured');
+        }
+
+        $cacheKey = 'gemini_citations:' . md5($content . $researchTitle);
+
+        if ($cached = Cache::get($cacheKey)) {
+            return $cached;
+        }
+
+        $langText = $language === 'id' ? 'Bahasa Indonesia' : 'English';
+
+        // Limit content to avoid token overflow, keep enough for meaningful quotes
+        $maxContentLen = 15000;
+        $truncatedContent = mb_strlen($content) > $maxContentLen
+            ? mb_substr($content, 0, $maxContentLen) . '...'
+            : $content;
+
+        $prompt = "Anda adalah asisten riset tingkat lanjut yang ahli dalam analisis literatur akademik.
+
+Berikut adalah teks jurnal/artikel (mungkin terpotong):
+
+\"\"\"
+{$truncatedContent}
+\"\"\"
+
+Topik/Judul penelitian user: \"{$researchTitle}\"
+
+Tugas Anda:
+1. Carikan 3 kutipan PERSIS (kata per kata, verbatim) dari teks jurnal di atas yang sangat relevan dengan penelitian user berjudul \"{$researchTitle}\".
+2. Untuk setiap kutipan, berikan:
+   - \"quote\": Kalimat/kutipan persis persis dari teks (jangan diparafrase, harus verbatim).
+   - \"relevance\": Penjelasan SINGKAT dalam {$langText} mengapa kutipan tersebut cocok.
+   - \"position\": Di bagian mana kutipan ini paling cocok digunakan (latar_belakang / tinjauan_pustaka / metodologi / pembahasan / kesimpulan).
+
+PENTING: Hanya output JSON. Jangan tambahkan markdown, penjelasan, atau teks apapun selain JSON.
+
+{
+    \"citations\": [
+        {
+            \"quote\": \"...\",
+            \"relevance\": \"...\",
+            \"position\": \"...\"
+        }
+    ]
+}";
+
+        $response = $this->makeApiRequest($prompt, 4096);
+
+        try {
+            if (!isset($response['candidates'][0]['content']['parts'][0]['text'])) {
+                Log::error('Gemini citation: invalid response structure', ['response' => $response]);
+                throw new Exception('Invalid response structure from Gemini API');
+            }
+
+            $text = $response['candidates'][0]['content']['parts'][0]['text'];
+
+            // Clean markdown and extract JSON
+            $cleanText = preg_replace('/```json\s*/i', '', $text);
+            $cleanText = preg_replace('/```\s*/', '', $cleanText);
+            $cleanText = trim($cleanText);
+
+            // Try multiple regex patterns to find JSON
+            $jsonStr = null;
+            if (preg_match('/\{[\s\S]*\}/', $cleanText, $matches)) {
+                $jsonStr = $matches[0];
+            }
+
+            if (!$jsonStr) {
+                Log::error('Gemini citation: no JSON found', ['raw_text' => $text]);
+                throw new Exception('No JSON found in Gemini API response');
+            }
+
+            $jsonData = json_decode($jsonStr, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                Log::error('Gemini citation: JSON parse failed', [
+                    'json_error' => json_last_error_msg(),
+                    'json_str' => mb_substr($jsonStr, 0, 500),
+                ]);
+                throw new Exception('Failed to parse JSON from Gemini response: ' . json_last_error_msg());
+            }
+
+            $citations = $jsonData['citations'] ?? [];
+
+            $result = [
+                'success' => true,
+                'citations' => array_slice($citations, 0, 5),
+                'tokens_used' => $response['usageMetadata']['totalTokenCount'] ?? 0,
+            ];
+
+            Cache::put($cacheKey, $result, now()->addHours(24));
+
+            return $result;
+
+        } catch (Exception $e) {
+            Log::error('Failed to parse Gemini citation response: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'citations' => [],
+            ];
+        }
+    }
+
+    /**
      * Build structured prompt for Gemini
      */
-    private function buildPrompt(string $content, int $maxWords, string $language): string
+    private function buildPrompt(string $content, int $maxWords, string $language, ?string $researchTitle = null): string
     {
         $langText = $language === 'id' ? 'Bahasa Indonesia' : 'English';
         $topicIndicator = $this->detectTopic($content);
-        
+
+        $researchSection = '';
+        if (!empty($researchTitle)) {
+            $researchSection = "\nKONTEKS RISET:\nTopik/Judul penelitian user adalah: \"{$researchTitle}\"\n\nPastikan ringkasan menyoroti bagian-bagian yang relevan dengan judul penelitian tersebut.\n";
+        }
+
         return "Kamu adalah seorang penulis ringkasan artikel profesional yang ahli dalam membuat ringkasan yang informatif dan mudah dipahami.
 
 BUAT RINGKASAN ARTIKEL BERIKUT DALAM {$langText}:
 
 KONTEN ARTIKEL:
 {$content}
-
+{$researchSection}
 INSTRUKSI:
 1. Buat ringkasan dalam bentuk paragraf yang PADAT dan INFORMATIF (maksimal {$maxWords} kata)
 2. Ringkasan harus mencakup:
@@ -104,7 +219,7 @@ FORMAT OUTPUT (WAJIB JSON - tanpa markdown atau penjelasan tambahan):
     /**
      * Make API request with retry logic
      */
-    private function makeApiRequest(string $prompt): array
+    private function makeApiRequest(string $prompt, int $maxOutputTokens = 2048): array
     {
         $retries = 0;
         
@@ -126,7 +241,7 @@ FORMAT OUTPUT (WAJIB JSON - tanpa markdown atau penjelasan tambahan):
                             'temperature' => 0.3,
                             'topK' => 1,
                             'topP' => 1,
-                            'maxOutputTokens' => 2048,
+                            'maxOutputTokens' => $maxOutputTokens,
                             'stopSequences' => []
                         ],
                         'safetySettings' => [
