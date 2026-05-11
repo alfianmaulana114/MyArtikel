@@ -65,6 +65,13 @@ class Note extends Model
         return $this->belongsTo(Article::class);
     }
     
+    public function projects(): BelongsToMany
+    {
+        return $this->belongsToMany(Project::class, 'project_notes')
+            ->withPivot('outline_id')
+            ->withTimestamps();
+    }
+    
     /**
      * Scope for searching notes
      */

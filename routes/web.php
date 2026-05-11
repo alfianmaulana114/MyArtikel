@@ -7,6 +7,7 @@ use App\Http\Controllers\NoteController;
 use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\SummaryController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ProjectController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -64,6 +65,15 @@ Route::middleware('auth')->group(function () {
     Route::delete('summaries/{id}', [SummaryController::class, 'destroy'])->name('summaries.destroy');
     Route::get('summaries/{id}/status', [SummaryController::class, 'status'])->name('summaries.status');
     Route::post('summaries/{articleId}/regenerate', [SummaryController::class, 'regenerate'])->name('summaries.regenerate');
+    
+    // Projects / Workspace Routes
+    Route::get('projects/data', [ProjectController::class, 'data'])->name('projects.data');
+    Route::post('projects/{project}/duplicate', [ProjectController::class, 'duplicate'])->name('projects.duplicate');
+    Route::post('projects/{project}/add-article', [ProjectController::class, 'addArticle'])->name('projects.add-article');
+    Route::delete('projects/{project}/remove-article/{article}', [ProjectController::class, 'removeArticle'])->name('projects.remove-article');
+    Route::get('projects/{project}/bibliography', [ProjectController::class, 'generateBibliography'])->name('projects.bibliography');
+    Route::get('projects/{project}/bibliography/export', [ProjectController::class, 'exportBibliography'])->name('projects.bibliography-export');
+    Route::resource('projects', ProjectController::class);
     
     // Search Routes (commented out for now)
     // Route::prefix('search')->name('search.')->group(function () {

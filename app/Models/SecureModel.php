@@ -118,8 +118,16 @@ abstract class SecureModel extends Model
                     return true;
                 }
 
-                // Remove table prefix if present
-                $column = last(explode('.', $column));
+                // Handle table.column notation (e.g., project_articles.project_id)
+                // This is essential for pivot tables and join queries
+                $parts = explode('.', $column);
+                $columnName = last($parts);
+
+                // If column has table prefix (common in joins/pivots), allow it
+                // but still check for dangerous characters
+                if (count($parts) > 1) {
+                    return !preg_match('/[;\'"`\\x00\\n\\r]/', $columnName);
+                }
 
                 // Check if column contains dangerous characters
                 if (preg_match('/[;\'"`\\x00\\n\\r]/', $column)) {

@@ -1,0 +1,531 @@
+<x-app-layout>
+    <x-slot name="header">
+        <div class="flex items-center justify-between gap-3">
+            <div class="min-w-0 flex-1">
+                <h2 class="font-semibold text-xl theme-text-primary leading-tight truncate">
+                    {{ $project->title }}
+                </h2>
+                @if ($project->description)
+                    <p class="text-sm theme-text-muted mt-1">{{ Str::limit($project->description, 100) }}</p>
+                @endif
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="{{ route('projects.index') }}" class="btn btn-secondary">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m2 14l7-7m-7 7l-7-7"/></svg>
+                    Kembali
+                </a>
+            </div>
+        </div>
+    </x-slot>
+
+    <div class="py-6" x-data="projectWorkspace()">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            {{-- Project Info Bar --}}
+            <div class="card rounded-xl mb-6">
+                <div class="p-5">
+                    <div class="flex flex-col lg:flex-row lg:items-center gap-4">
+                        <div class="flex items-center gap-3 flex-1">
+                            <span class="text-xs px-3 py-1.5 rounded-full
+                                @if ($project->status === 'drafting') bg-yellow-500/10 text-yellow-600 dark:text-yellow-400
+                                @elseif ($project->status === 'reviewing') bg-purple-500/10 text-purple-600 dark:text-purple-400
+                                @else bg-green-500/10 text-green-600 dark:text-green-400
+                                @endif">
+                                {{ ucfirst($project->status) }}
+                            </span>
+                        </div>
+
+                        <div class="flex items-center gap-4 text-sm theme-text-muted">
+                            <span class="flex items-center gap-1">
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                                {{ $stats['articles_count'] }} Artikel
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                {{ $stats['word_count'] }} Kata
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Tabs --}}
+            <div class="card rounded-xl overflow-hidden" x-data="{ activeTab: 'articles' }">
+                <div class="flex border-b theme-border-primary bg-[color:var(--bg-tertiary)]">
+                    <button @click="activeTab = 'articles'" :class="activeTab === 'articles' ? 'theme-text-primary border-b-[3px] border-[#AA5F3C] bg-[color:var(--surface-primary)]' : 'theme-text-muted border-b-[3px] border-transparent hover:theme-text-secondary'" class="flex-1 px-6 py-4 text-sm font-medium transition-all text-center">
+                        <span class="flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                            Artikel & Referensi
+                        </span>
+                    </button>
+                    <button @click="activeTab = 'bibliography'" :class="activeTab === 'bibliography' ? 'theme-text-primary border-b-[3px] border-[#AA5F3C] bg-[color:var(--surface-primary)]' : 'theme-text-muted border-b-[3px] border-transparent hover:theme-text-secondary'" class="flex-1 px-6 py-4 text-sm font-medium transition-all text-center">
+                        <span class="flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                            Daftar Pustaka
+                        </span>
+                    </button>
+                    <button @click="activeTab = 'settings'" :class="activeTab === 'settings' ? 'theme-text-primary border-b-[3px] border-[#AA5F3C] bg-[color:var(--surface-primary)]' : 'theme-text-muted border-b-[3px] border-transparent hover:theme-text-secondary'" class="flex-1 px-6 py-4 text-sm font-medium transition-all text-center">
+                        <span class="flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            Settings
+                        </span>
+                    </button>
+                </div>
+
+                {{-- Articles Tab --}}
+                <div x-show="activeTab === 'articles'" class="p-6">
+                    <div class="flex items-center justify-between mb-5">
+                        <h3 class="text-lg font-semibold theme-text-primary">Artikel & Referensi</h3>
+                        <button @click="showAddArticleModal = true" class="btn btn-primary text-sm">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            Tambah Artikel
+                        </button>
+                    </div>
+
+                    <div id="project-articles-list" class="space-y-4">
+                        @forelse ($project->articles as $article)
+                            <div class="card rounded-lg p-5" x-data="{ showSummary: false, showCitations: false }">
+                                <div class="flex items-start justify-between gap-4 mb-3">
+                                    <div class="flex-1 min-w-0">
+                                        <h4 class="font-semibold theme-text-primary text-lg">
+                                            <a href="{{ route('articles.show', $article->id) }}" class="hover:text-[#AA5F3C] transition-colors">
+                                                {{ $article->title }}
+                                            </a>
+                                        </h4>
+                                        @if ($article->excerpt)
+                                            <p class="text-sm theme-text-secondary mt-1 line-clamp-2">{{ Str::limit($article->excerpt, 200) }}</p>
+                                        @endif
+                                        <div class="flex items-center gap-3 mt-2 text-xs theme-text-muted">
+                                            @if ($article->source_domain)
+                                                <span class="flex items-center gap-1">
+                                                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+                                                    {{ $article->source_domain }}
+                                                </span>
+                                            @endif
+                                            @if ($article->fetched_at)
+                                                <span>{{ $article->fetched_at->format('d M Y') }}</span>
+                                            @endif
+                                            <span class="px-2 py-0.5 rounded-full bg-[color:var(--bg-tertiary)]">
+                                                {{ ucfirst($article->pivot->role) }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <button @click="removeArticle({{ $article->id }})" class="p-2 rounded-lg hover:bg-red-500/10 text-red-500 transition-colors flex-shrink-0" title="Hapus dari project">
+                                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    </button>
+                                </div>
+
+                                {{-- Action Buttons --}}
+                                <div class="flex flex-wrap gap-2 mt-4 pt-4 border-t theme-border-primary">
+                                    <button @click="showSummary = !showSummary" class="btn btn-secondary text-xs">
+                                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        <span x-text="showSummary ? 'Sembunyikan Rangkuman' : 'Lihat Rangkuman'"></span>
+                                    </button>
+                                    <button @click="showCitations = !showCitations" class="btn btn-secondary text-xs">
+                                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                                        <span x-text="showCitations ? 'Sembunyikan Kutipan' : 'Lihat Kutipan'"></span>
+                                        @if (!empty($article->ai_quotation_suggestions))
+                                            <span class="ml-1 text-xs px-1.5 py-0.5 rounded-full bg-[#AA5F3C] text-white" x-show="!showCitations">
+                                                {{ count($article->ai_quotation_suggestions) }}
+                                            </span>
+                                        @endif
+                                    </button>
+                                </div>
+
+                                {{-- Summary Section --}}
+                                <div x-show="showSummary" x-transition class="mt-4 p-4 rounded-lg bg-[color:var(--bg-tertiary)]">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <h5 class="text-sm font-semibold theme-text-primary">Rangkuman</h5>
+                                        <a href="{{ route('summaries.page', ['article_id' => $article->id]) }}" class="text-xs text-[#AA5F3C] hover:underline">Lihat semua</a>
+                                    </div>
+                                    @php
+                                        $latestSummary = $article->summaries->first();
+                                    @endphp
+                                    @if ($latestSummary)
+                                        <div class="text-sm theme-text-secondary leading-relaxed whitespace-pre-wrap">{{ $latestSummary->content }}</div>
+                                        @if (!empty($latestSummary->key_points))
+                                            <div class="mt-3 flex flex-wrap gap-2">
+                                                @foreach ($latestSummary->key_points as $point)
+                                                    <span class="text-xs px-2 py-1 rounded-full bg-[color:var(--surface-primary)] theme-text-secondary">{{ $point }}</span>
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                    @else
+                                        <div class="text-sm theme-text-muted">Belum ada rangkuman.</div>
+                                        <button onclick="generateSummaryForArticle({{ $article->id }})" class="mt-2 btn btn-secondary text-xs">
+                                            <svg class="w-3.5 h-3.5 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                            Generate Rangkuman
+                                        </button>
+                                    @endif
+                                </div>
+
+                                {{-- Citations Section --}}
+                                <div x-show="showCitations" x-transition class="mt-4 p-4 rounded-lg bg-[color:var(--bg-tertiary)]">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <h5 class="text-sm font-semibold theme-text-primary">Saran Kutipan</h5>
+                                    </div>
+                                    @if (!empty($article->ai_quotation_suggestions))
+                                        <div class="space-y-3">
+                                            @foreach ($article->ai_quotation_suggestions as $index => $citation)
+                                                <div class="p-3 rounded-lg bg-[color:var(--surface-primary)]">
+                                                    <div class="flex items-center gap-2 mb-2">
+                                                        <span class="text-xs px-2 py-0.5 rounded-full bg-[#AA5F3C] text-white">Kutipan #{{ $index + 1 }}</span>
+                                                        @if (!empty($citation['position']))
+                                                            <span class="text-xs theme-text-muted">{{ $citation['position'] }}</span>
+                                                        @endif
+                                                    </div>
+                                                    <blockquote class="border-l-3 border-[#AA5F3C] pl-3 italic text-sm theme-text-secondary">
+                                                        "{{ $citation['quote'] ?? '' }}"
+                                                    </blockquote>
+                                                    @if (!empty($citation['relevance']))
+                                                        <div class="mt-2 text-xs theme-text-muted">{{ $citation['relevance'] }}</div>
+                                                    @endif
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @elseif ($article->research_title)
+                                        <div class="text-sm theme-text-muted mb-3">Saran kutipan sedang dibuat oleh AI…</div>
+                                        <button onclick="generateCitationsForArticle({{ $article->id }})" class="btn btn-secondary text-xs">
+                                            <svg class="w-3.5 h-3.5 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                            Generate Kutipan
+                                        </button>
+                                    @else
+                                        <div class="text-sm theme-text-muted">Isi judul penelitian saat submit artikel untuk mendapat saran kutipan.</div>
+                                    @endif
+                                </div>
+                            </div>
+                        @empty
+                            <div class="text-center py-12">
+                                <svg class="mx-auto w-16 h-16 theme-text-muted mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                                <div class="text-lg font-medium theme-text-primary">Belum ada artikel</div>
+                                <div class="mt-2 text-sm theme-text-muted">Tambahkan artikel referensi untuk project ini.</div>
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+
+                {{-- Bibliography Tab --}}
+                <div x-show="activeTab === 'bibliography'" class="p-6">
+                    <div class="flex items-center justify-between mb-5">
+                        <h3 class="text-lg font-semibold theme-text-primary">Daftar Pustaka</h3>
+                        <div class="flex gap-2">
+                            <select x-model="bibStyle" @change="loadBibliography" class="rounded-lg shadow-sm border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] text-sm focus:border-[#AA5F3C] focus:ring-[#AA5F3C]">
+                                <option value="apa">APA 7th</option>
+                                <option value="mla">MLA 9th</option>
+                                <option value="ieee">IEEE</option>
+                                <option value="chicago">Chicago</option>
+                                <option value="harvard">Harvard</option>
+                            </select>
+                            <button @click="copyBibliography" class="btn btn-secondary text-sm" :disabled="bibliography.length === 0">
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                                Copy
+                            </button>
+                            <a :href="'/projects/{{ $project->id }}/bibliography/export?style=' + bibStyle + '&format=txt'" class="btn btn-secondary text-sm">
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                Export .txt
+                            </a>
+                            <a :href="'/projects/{{ $project->id }}/bibliography/export?style=' + bibStyle + '&format=bib'" class="btn btn-secondary text-sm">
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                Export .bib
+                            </a>
+                        </div>
+                    </div>
+
+                    <div x-show="loading" class="text-center py-8">
+                        <svg class="animate-spin mx-auto w-8 h-8 theme-text-muted" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" class="opacity-25"/><path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="3" class="opacity-75"/></svg>
+                        <div class="mt-3 text-sm theme-text-muted">Memuat daftar pustaka...</div>
+                    </div>
+
+                    <div x-show="!loading && bibliography.length === 0" class="text-center py-12">
+                        <svg class="mx-auto w-16 h-16 theme-text-muted mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                        <div class="text-lg font-medium theme-text-primary">Belum ada artikel</div>
+                        <div class="mt-2 text-sm theme-text-muted">Tambahkan artikel terlebih dahulu untuk generate daftar pustaka.</div>
+                    </div>
+
+                    <div x-show="!loading && bibliography.length > 0" class="space-y-3">
+                        <template x-for="(citation, index) in bibliography" :key="index">
+                            <div class="p-4 rounded-lg border theme-border-primary hover:bg-[color:var(--bg-tertiary)] transition-colors">
+                                <div class="flex items-start gap-3">
+                                    <span class="flex-shrink-0 w-6 h-6 rounded-full bg-[#AA5F3C]/10 flex items-center justify-center text-xs font-semibold text-[#AA5F3C]" x-text="index + 1"></span>
+                                    <div class="flex-1 text-sm theme-text-secondary leading-relaxed" x-text="citation.formatted"></div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                {{-- Settings Tab --}}
+                <div x-show="activeTab === 'settings'" class="p-6">
+                    <h3 class="text-lg font-semibold theme-text-primary mb-5">Pengaturan Project</h3>
+
+                    <div class="space-y-6 max-w-2xl">
+                        <div>
+                            <label class="block text-sm font-medium theme-text-secondary mb-2">Judul Project</label>
+                            <input type="text" id="edit-project-title" value="{{ $project->title }}" class="block w-full rounded-lg shadow-sm border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C]" />
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium theme-text-secondary mb-2">Deskripsi</label>
+                            <textarea id="edit-project-description" rows="3" class="block w-full rounded-lg shadow-sm border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C]">{{ $project->description }}</textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium theme-text-secondary mb-2">Status</label>
+                            <select id="edit-project-status" class="block w-full rounded-lg shadow-sm border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C]">
+                                <option value="drafting" {{ $project->status === 'drafting' ? 'selected' : '' }}>Drafting</option>
+                                <option value="reviewing" {{ $project->status === 'reviewing' ? 'selected' : '' }}>Reviewing</option>
+                                <option value="completed" {{ $project->status === 'completed' ? 'selected' : '' }}>Completed</option>
+                            </select>
+                        </div>
+
+                        <div class="flex gap-3 pt-4">
+                            <button @click="saveProjectSettings()" class="btn btn-primary">Simpan Perubahan</button>
+                            <button @click="duplicateProject()" class="btn btn-secondary">Duplikasi Project</button>
+                            <button @click="deleteProject()" class="btn btn-secondary text-red-500 hover:text-red-600">Hapus Project</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Add Article Modal --}}
+            <div x-show="showAddArticleModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+                <div class="flex items-center justify-center min-h-screen px-4">
+                    <div class="fixed inset-0 bg-black/50" @click="showAddArticleModal = false"></div>
+                    <div class="relative card rounded-2xl max-w-2xl w-full p-6 z-10 max-h-[80vh] overflow-y-auto">
+                        <div class="flex items-center justify-between mb-5">
+                            <h3 class="text-lg font-semibold theme-text-primary">Tambah Artikel Referensi</h3>
+                            <button @click="showAddArticleModal = false" class="theme-text-muted hover:theme-text-primary">
+                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            </button>
+                        </div>
+                        <div class="mb-4">
+                            <input type="text" x-model="articleSearch" @input="searchArticles" placeholder="Cari artikel..." class="block w-full rounded-lg shadow-sm border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C]" />
+                        </div>
+                        <div class="space-y-2 max-h-96 overflow-y-auto">
+                            <template x-for="article in availableArticles" :key="article.id">
+                                <div class="p-3 rounded-lg border theme-border-primary hover:bg-[color:var(--bg-tertiary)] cursor-pointer transition-colors" @click="addArticleToProject(article.id)">
+                                    <div class="font-medium theme-text-primary" x-text="article.title"></div>
+                                    <div class="text-sm theme-text-secondary mt-1 line-clamp-1" x-text="article.excerpt || 'Tidak ada excerpt'"></div>
+                                    <div class="text-xs theme-text-muted mt-1" x-text="article.source_domain || ''"></div>
+                                </div>
+                            </template>
+                            <div x-show="availableArticles.length === 0" class="text-center py-8 theme-text-muted">
+                                Tidak ada artikel ditemukan
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @push('scripts')
+        <script>
+            document.addEventListener('alpine:init', () => {
+                Alpine.data('projectWorkspace', () => ({
+                    projectId: {{ $project->id }},
+                    csrf: document.querySelector('meta[name="csrf-token"]').content,
+                    loading: false,
+                    showAddArticleModal: false,
+                    articleSearch: '',
+                    availableArticles: [],
+                    allArticles: [],
+                    bibStyle: 'apa',
+                    bibliography: [],
+
+                    async init() {
+                        await this.loadArticles();
+                        await this.loadBibliography();
+                    },
+
+                    async loadArticles() {
+                        try {
+                            const res = await fetch('/articles/data?per_page=100', {
+                                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                            });
+                            const data = await res.json();
+                            this.allArticles = data.articles?.data || [];
+                            this.availableArticles = this.allArticles;
+                        } catch (e) {
+                            console.error('Failed to load articles:', e);
+                        }
+                    },
+
+                    searchArticles() {
+                        if (!this.articleSearch) {
+                            this.availableArticles = this.allArticles;
+                            return;
+                        }
+                        const search = this.articleSearch.toLowerCase();
+                        this.availableArticles = this.allArticles.filter(a =>
+                            a.title.toLowerCase().includes(search) ||
+                            (a.excerpt && a.excerpt.toLowerCase().includes(search))
+                        );
+                    },
+
+                    async loadBibliography() {
+                        this.loading = true;
+                        try {
+                            const res = await fetch(`/projects/${this.projectId}/bibliography?style=${this.bibStyle}`, {
+                                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                            });
+                            const json = await res.json();
+                            if (json.success) {
+                                this.bibliography = json.citations;
+                            }
+                        } catch (e) {
+                            console.error('Failed to load bibliography:', e);
+                        } finally {
+                            this.loading = false;
+                        }
+                    },
+
+                    async copyBibliography() {
+                        const text = this.bibliography.map((c, i) => `${i + 1}. ${c.formatted}`).join('\n\n');
+                        try {
+                            await navigator.clipboard.writeText(text);
+                            alert('Daftar pustaka berhasil disalin!');
+                        } catch (e) {
+                            alert('Gagal menyalin ke clipboard');
+                        }
+                    },
+
+                    async addArticleToProject(articleId) {
+                        try {
+                            const res = await fetch(`/projects/${this.projectId}/add-article`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': this.csrf,
+                                    'Accept': 'application/json',
+                                },
+                                body: JSON.stringify({ article_id: articleId, role: 'reference' }),
+                            });
+                            const json = await res.json();
+                            if (json.success) {
+                                window.location.reload();
+                            } else {
+                                alert(json.message || json.error || 'Gagal menambah artikel');
+                            }
+                        } catch (e) {
+                            alert('Gagal menambah artikel');
+                        }
+                    },
+
+                    async removeArticle(articleId) {
+                        if (!confirm('Hapus artikel dari project?')) return;
+                        try {
+                            await fetch(`/projects/${this.projectId}/remove-article/${articleId}`, {
+                                method: 'DELETE',
+                                headers: { 'X-CSRF-TOKEN': this.csrf, 'Accept': 'application/json' },
+                            });
+                            window.location.reload();
+                        } catch (e) {
+                            alert('Gagal hapus artikel');
+                        }
+                    },
+
+                    async saveProjectSettings() {
+                        this.loading = true;
+                        try {
+                            const data = {
+                                title: document.getElementById('edit-project-title').value,
+                                description: document.getElementById('edit-project-description').value,
+                                status: document.getElementById('edit-project-status').value,
+                            };
+                            const res = await fetch(`/projects/${this.projectId}`, {
+                                method: 'PUT',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': this.csrf,
+                                    'Accept': 'application/json',
+                                },
+                                body: JSON.stringify(data),
+                            });
+                            const json = await res.json();
+                            if (json.success) {
+                                alert('Project berhasil diupdate');
+                                window.location.reload();
+                            } else {
+                                alert(json.message || json.error || 'Gagal update project');
+                            }
+                        } catch (e) {
+                            alert('Gagal update project');
+                        } finally {
+                            this.loading = false;
+                        }
+                    },
+
+                    async duplicateProject() {
+                        if (!confirm('Duplikasi project ini?')) return;
+                        this.loading = true;
+                        try {
+                            const res = await fetch(`/projects/${this.projectId}/duplicate`, {
+                                method: 'POST',
+                                headers: { 'X-CSRF-TOKEN': this.csrf, 'Accept': 'application/json' },
+                            });
+                            const json = await res.json();
+                            if (json.success) {
+                                window.location.href = `/projects/${json.project.id}`;
+                            } else {
+                                alert(json.message || json.error || 'Gagal duplikasi project');
+                            }
+                        } catch (e) {
+                            alert('Gagal duplikasi project');
+                        } finally {
+                            this.loading = false;
+                        }
+                    },
+
+                    async deleteProject() {
+                        if (!confirm('Hapus project ini? Tindakan ini tidak bisa dibatalkan.')) return;
+                        if (!confirm('Yakin? Semua data project akan hilang.')) return;
+                        this.loading = true;
+                        try {
+                            const res = await fetch(`/projects/${this.projectId}`, {
+                                method: 'DELETE',
+                                headers: { 'X-CSRF-TOKEN': this.csrf, 'Accept': 'application/json' },
+                            });
+                            const json = await res.json();
+                            if (json.success) {
+                                window.location.href = '/projects';
+                            } else {
+                                alert(json.message || json.error || 'Gagal hapus project');
+                            }
+                        } catch (e) {
+                            alert('Gagal hapus project');
+                        } finally {
+                            this.loading = false;
+                        }
+                    },
+                }));
+            });
+
+            // Helper functions for article-level actions
+            function generateSummaryForArticle(articleId) {
+                window.location.href = `/summaries?article_id=${articleId}`;
+            }
+
+            async function generateCitationsForArticle(articleId) {
+                if (!confirm('Generate saran kutipan dengan AI?')) return;
+                try {
+                    const res = await fetch(`/articles/${articleId}/generate-citations`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json',
+                        },
+                    });
+                    const json = await res.json();
+                    if (json.success) {
+                        window.location.reload();
+                    } else {
+                        alert(json.error || 'Gagal generate kutipan');
+                    }
+                } catch (e) {
+                    alert('Gagal generate kutipan');
+                }
+            }
+        </script>
+    @endpush
+</x-app-layout>

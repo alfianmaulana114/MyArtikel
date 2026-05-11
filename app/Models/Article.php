@@ -68,6 +68,13 @@ class Article extends SecureModel
     {
         return $this->hasMany(Summary::class);
     }
+    
+    public function projects(): BelongsToMany
+    {
+        return $this->belongsToMany(Project::class, 'project_articles')
+            ->withPivot('role', 'notes')
+            ->withTimestamps();
+    }
 
     /**
      * Secure scope for filtering by status
