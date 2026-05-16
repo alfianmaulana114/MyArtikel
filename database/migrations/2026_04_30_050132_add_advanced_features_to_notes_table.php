@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -40,7 +41,10 @@ return new class extends Migration
             $table->index('sync_status');
             $table->index('paragraph_index');
             $table->index('paragraph_id');
-            $table->fullText(['title', 'content', 'search_vector']);
+            
+            if (DB::connection()->getDriverName() !== 'sqlite') {
+                $table->fullText(['title', 'content', 'search_vector']);
+            }
         });
     }
 
@@ -50,7 +54,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('notes', function (Blueprint $table) {
-            $table->dropFullText(['title', 'content', 'search_vector']);
+            if (DB::connection()->getDriverName() !== 'sqlite') {
+                $table->dropFullText(['title', 'content', 'search_vector']);
+            }
             $table->dropColumn([
                 'content_json', 'is_rich_text', 'paragraph_index', 'paragraph_id',
                 'start_offset', 'end_offset', 'category', 'tags', 'device_id',

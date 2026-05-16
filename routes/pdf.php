@@ -12,7 +12,7 @@ use App\Http\Controllers\PdfExportController;
 |
 */
 
-Route::middleware(['auth'])->prefix('pdf')->name('pdf.')->group(function () {
+Route::middleware(['auth', 'redirect.admin'])->prefix('pdf')->name('pdf.')->group(function () {
     
     // Main export form
     Route::get('/export', [PdfExportController::class, 'create'])

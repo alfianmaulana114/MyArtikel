@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'redirect.admin'])->group(function () {
     // Bookmark routes
     Route::prefix('bookmarks')->group(function () {
         Route::get('/', [BookmarkController::class, 'index'])->name('bookmarks.index');

@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Article extends SecureModel
 {
+    use HasFactory;
+
     protected $fillable = [
         'title',
         'slug',
@@ -17,6 +20,7 @@ class Article extends SecureModel
         'source_type',
         'file_path',
         'research_title',
+        'research_context',
         'content',
         'content_sanitized',
         'text_extracted',

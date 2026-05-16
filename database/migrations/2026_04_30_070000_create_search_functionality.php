@@ -85,10 +85,11 @@ return new class extends Migration
         }
         
         // Create article search index (PostgreSQL specific)
-        if (DB::connection()->getDriverName() === 'pgsql') {
+        $driver = DB::connection()->getDriverName();
+        if ($driver === 'pgsql') {
             try { DB::statement('CREATE INDEX articles_search_vector_gin ON articles USING GIN (to_tsvector(\'english\', search_vector))'); } catch (\Throwable $e) {}
             try { DB::statement('CREATE INDEX notes_search_vector_gin ON notes USING GIN (to_tsvector(\'english\', search_vector))'); } catch (\Throwable $e) {}
-        } else {
+        } elseif ($driver !== 'sqlite') {
             // MySQL full-text indexes
             try { DB::statement('ALTER TABLE articles ADD FULLTEXT INDEX articles_fulltext (title, content, excerpt)'); } catch (\Throwable $e) {}
             try { DB::statement('ALTER TABLE notes ADD FULLTEXT INDEX notes_fulltext (content)'); } catch (\Throwable $e) {}

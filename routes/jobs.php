@@ -13,7 +13,7 @@ use App\Http\Controllers\JobMonitoringController;
 |
 */
 
-Route::middleware(['auth'])->prefix('jobs')->group(function () {
+Route::middleware(['auth', 'redirect.admin'])->prefix('jobs')->group(function () {
     // Job monitoring dashboard
     Route::get('/monitoring', [JobMonitoringController::class, 'index'])
         ->name('jobs.monitoring');

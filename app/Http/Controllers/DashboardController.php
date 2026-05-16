@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ArticleSubmissionRequest;
 use App\Models\Article;
-use App\Models\Tag;
 use App\Services\BackgroundProcessingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,8 +16,6 @@ class DashboardController extends Controller
 
         $query = Article::query()
             ->where('user_id', $userId)
-            ->with(['tags'])
-            ->withCount(['notes', 'bookmarks'])
             ->orderByDesc('created_at');
 
         if ($request->filled('q')) {
@@ -30,44 +27,20 @@ class DashboardController extends Controller
             });
         }
 
-        if ($request->filled('tag')) {
-            $tagId = (int) $request->input('tag');
-            $query->whereHas('tags', function ($t) use ($tagId) {
-                $t->where('tags.id', $tagId);
-            });
-        }
-
-        if ($request->boolean('bookmarked')) {
-            $query->whereHas('bookmarks', function ($b) use ($userId) {
-                $b->where('user_id', $userId);
-            });
-        }
-
         $articles = $query->paginate(20)->withQueryString();
-
-        $tags = Tag::query()
-            ->where('user_id', $userId)
-            ->orderBy('name')
-            ->get(['id', 'name']);
 
         $stats = [
             'total' => Article::where('user_id', $userId)->count(),
             'ready' => Article::where('user_id', $userId)->where('processing_status', 'ready')->count(),
             'processing' => Article::where('user_id', $userId)->whereIn('processing_status', ['queued', 'fetching', 'extracting'])->count(),
             'failed' => Article::where('user_id', $userId)->where('processing_status', 'failed')->count(),
-            'bookmarked' => Article::where('user_id', $userId)->whereHas('bookmarks', function ($b) use ($userId) {
-                $b->where('user_id', $userId);
-            })->count(),
         ];
 
         return view('dashboard', [
             'articles' => $articles,
-            'tags' => $tags,
             'stats' => $stats,
             'filters' => [
                 'q' => $request->input('q', ''),
-                'tag' => $request->input('tag', ''),
-                'bookmarked' => $request->boolean('bookmarked'),
             ],
         ]);
     }
@@ -77,9 +50,10 @@ class DashboardController extends Controller
         $userId = Auth::id();
         $sourceType = $request->input('source_type', 'url');
         $researchTitle = $request->string('research_title', '')->trim()->toString() ?: null;
+        $researchContext = $request->string('research_context', '')->trim()->toString() ?: null;
 
         if ($sourceType === 'pdf') {
-            return $this->ingestPdf($request, $bg, $userId, $researchTitle);
+            return $this->ingestPdf($request, $bg, $userId, $researchTitle, $researchContext);
         }
 
         $url = $request->string('url')->toString();
@@ -93,6 +67,7 @@ class DashboardController extends Controller
             'source_domain' => parse_url($url, PHP_URL_HOST),
             'source_type' => 'url',
             'research_title' => $researchTitle,
+            'research_context' => $researchContext,
             'content' => '',
             'processing_status' => 'queued',
             'status' => 'draft',
@@ -124,7 +99,7 @@ class DashboardController extends Controller
             ->with('status', $statusMessage);
     }
 
-    private function ingestPdf(ArticleSubmissionRequest $request, BackgroundProcessingService $bg, int $userId, ?string $researchTitle)
+    private function ingestPdf(ArticleSubmissionRequest $request, BackgroundProcessingService $bg, int $userId, ?string $researchTitle, ?string $researchContext)
     {
         $file = $request->file('pdf_file');
 
@@ -155,6 +130,7 @@ class DashboardController extends Controller
             'source_type' => 'pdf',
             'file_path' => $filePath,
             'research_title' => $researchTitle,
+            'research_context' => $researchContext,
             'source_domain' => 'pdf-upload',
             'content' => '',
             'processing_status' => 'queued',

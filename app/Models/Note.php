@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Builder;
 
 class Note extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'title',
         'content',
@@ -160,7 +163,7 @@ class Note extends Model
             $this->category,
             is_array($this->tags) ? implode(' ', $this->tags) : '',
         ]));
-        $this->save();
+        $this->saveQuietly();
     }
     
     /**
@@ -172,7 +175,12 @@ class Note extends Model
         
         static::saving(function ($note) {
             if ($note->isDirty(['title', 'content', 'category', 'tags'])) {
-                $note->setSearchVector();
+                $note->search_vector = implode(' ', array_filter([
+                    $note->title,
+                    $note->content,
+                    $note->category,
+                    is_array($note->tags) ? implode(' ', $note->tags) : '',
+                ]));
             }
         });
     }

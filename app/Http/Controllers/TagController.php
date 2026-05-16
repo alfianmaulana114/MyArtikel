@@ -96,7 +96,7 @@ class TagController extends Controller
         ]);
         
         $user = Auth::user();
-        $query = $request->query;
+        $query = $request->input('query', '');
         
         $tags = Tag::where(function ($q) use ($user) {
                 $q->where('user_id', $user->id)

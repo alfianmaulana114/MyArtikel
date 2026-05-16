@@ -8,24 +8,30 @@ use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\SummaryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\Admin\AdminController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
+Route::middleware('redirect.admin')->group(function () {
+    Route::get('/', function () {
+        return view('welcome');
+    });
 });
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'redirect.admin'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/ingest', fn () => redirect()->route('dashboard'));
     Route::post('/dashboard/ingest', [DashboardController::class, 'ingest'])->name('dashboard.ingest');
     Route::post('/dashboard/articles/{article}/retry', [DashboardController::class, 'retry'])->name('dashboard.retry');
 });
 
+// Profile routes — accessible by both admin and regular users
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    
+});
+
+Route::middleware(['auth', 'redirect.admin'])->group(function () {
     // Articles Routes
     Route::get('articles/data', [ArticleController::class, 'data'])->name('articles.data');
     Route::post('articles/{article}/generate-citations', [ArticleController::class, 'generateCitations'])->name('articles.generate-citations');
@@ -75,16 +81,16 @@ Route::middleware('auth')->group(function () {
     Route::get('projects/{project}/bibliography/export', [ProjectController::class, 'exportBibliography'])->name('projects.bibliography-export');
     Route::resource('projects', ProjectController::class);
     
-    // Search Routes (commented out for now)
-    // Route::prefix('search')->name('search.')->group(function () {
-    //     Route::get('/', [SearchController::class, 'search'])->name('index');
-    //     Route::get('/suggestions', [SearchController::class, 'suggestions'])->name('suggestions');
-    //     Route::get('/history', [SearchController::class, 'history'])->name('history');
-    //     Route::get('/analytics', [SearchController::class, 'analytics'])->name('analytics');
-    //     Route::post('/click', [SearchController::class, 'recordClick'])->name('click');
-    //     Route::get('/quick', [SearchController::class, 'quickSearch'])->name('quick');
-    //     Route::post('/advanced', [SearchController::class, 'advancedSearch'])->name('advanced');
-    // });
+    });
+
+// Admin Routes
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/users', [AdminController::class, 'users'])->name('users');
+    Route::post('/users/{user}/toggle', [AdminController::class, 'toggleUser'])->name('users.toggle');
+    Route::delete('/users/{user}/delete', [AdminController::class, 'deleteUser'])->name('users.delete');
+    Route::get('/articles', [AdminController::class, 'articles'])->name('articles');
+    Route::get('/system', [AdminController::class, 'system'])->name('system');
 });
 
 require __DIR__.'/auth.php';

@@ -88,15 +88,21 @@ class QuotaManagementService
         try {
             $today = Carbon::today();
             
-            SummaryQuotaTracking::updateOrCreate([
+            $quota = SummaryQuotaTracking::firstOrCreate([
                 'user_id' => $userId,
                 'service' => 'gemini',
                 'quota_date' => $today
             ], [
-                'requests_count' => \DB::raw('requests_count + 1'),
-                'tokens_used' => \DB::raw('tokens_used + ' . $tokensUsed),
-                'metadata' => $metadata
+                'requests_count' => 0,
+                'tokens_used' => 0,
             ]);
+            
+            $quota->increment('requests_count');
+            $quota->increment('tokens_used', $tokensUsed);
+            
+            if (!empty($metadata)) {
+                $quota->update(['metadata' => $metadata]);
+            }
             
         } catch (Exception $e) {
             \Log::error('Failed to record Gemini usage for user ' . $userId . ': ' . $e->getMessage());
@@ -111,15 +117,21 @@ class QuotaManagementService
         try {
             $today = Carbon::today();
             
-            SummaryQuotaTracking::updateOrCreate([
+            $quota = SummaryQuotaTracking::firstOrCreate([
                 'user_id' => $userId,
                 'service' => 'local',
                 'quota_date' => $today
             ], [
-                'requests_count' => \DB::raw('requests_count + 1'),
-                'tokens_used' => \DB::raw('tokens_used + ' . intval($contentLength / 4)), // Rough token estimation
-                'metadata' => $metadata
+                'requests_count' => 0,
+                'tokens_used' => 0,
             ]);
+            
+            $quota->increment('requests_count');
+            $quota->increment('tokens_used', intval($contentLength / 4));
+            
+            if (!empty($metadata)) {
+                $quota->update(['metadata' => $metadata]);
+            }
             
         } catch (Exception $e) {
             \Log::error('Failed to record local usage for user ' . $userId . ': ' . $e->getMessage());

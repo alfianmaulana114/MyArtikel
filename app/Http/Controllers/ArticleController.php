@@ -179,6 +179,8 @@ class ArticleController extends Controller
             'content' => 'sometimes|string',
             'excerpt' => 'nullable|string',
             'featured_image' => 'nullable|string|max:500',
+            'research_title' => 'nullable|string|max:500',
+            'research_context' => 'nullable|string|max:1000',
             'status' => ['sometimes', Rule::in(['draft', 'published', 'archived'])],
             'tags' => 'nullable|array',
             'tags.*' => 'string|max:50',
@@ -217,7 +219,15 @@ class ArticleController extends Controller
         if (isset($validated['published_at'])) {
             $article->published_at = $validated['published_at'];
         }
-        
+
+        if (array_key_exists('research_title', $validated)) {
+            $article->research_title = $validated['research_title'];
+        }
+
+        if (array_key_exists('research_context', $validated)) {
+            $article->research_context = $validated['research_context'];
+        }
+
         $article->save();
         
         // Handle tags
@@ -290,7 +300,9 @@ class ArticleController extends Controller
 
             $result = $geminiService->generateResearchCitations(
                 $article->text_extracted,
-                $article->research_title
+                $article->research_title ?? 'General',
+                'id',
+                $article->research_context
             );
 
             if ($result['success']) {

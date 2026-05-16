@@ -10,13 +10,17 @@ use Exception;
 class GeminiSummarizationService
 {
     private string $apiKey;
-    private string $apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+    private string $apiUrl;
     private int $maxRetries = 3;
     private int $retryDelay = 1; // seconds
+    private CitationExtractorService $extractor;
     
     public function __construct()
     {
         $this->apiKey = config('services.gemini.api_key');
+        $model = config('services.gemini.model', 'gemini-2.0-flash');
+        $this->apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";
+        $this->extractor = new CitationExtractorService();
     }
 
     /**
@@ -35,7 +39,7 @@ class GeminiSummarizationService
             return $cachedSummary;
         }
 
-        $prompt = $this->buildPrompt($content, $maxWords, $language, $researchTitle);
+        $prompt = $this->buildPrompt($this->preFilter($content, $researchTitle), $maxWords, $language, $researchTitle);
         
         $response = $this->makeApiRequest($prompt);
         
@@ -50,75 +54,68 @@ class GeminiSummarizationService
     /**
      * Generate research citations/quotation suggestions
      */
-    public function generateResearchCitations(string $content, string $researchTitle, string $language = 'id'): array
+    public function generateResearchCitations(string $content, string $researchTitle, string $language = 'id', ?string $researchContext = null): array
     {
         if (empty($this->apiKey)) {
             throw new Exception('Gemini API key is not configured');
         }
 
-        $cacheKey = 'gemini_citations:' . md5($content . $researchTitle);
+        $cacheKey = 'gemini_citations:v2:' . md5($content . $researchTitle . ($researchContext ?? ''));
 
         if ($cached = Cache::get($cacheKey)) {
-            return $cached;
+            if (isset($cached['success']) && $cached['success'] === true) {
+                return $cached;
+            }
         }
 
         $langText = $language === 'id' ? 'Bahasa Indonesia' : 'English';
 
-        // Limit content to avoid token overflow
-        $maxContentLen = 10000;
-        $truncatedContent = mb_strlen($content) > $maxContentLen
-            ? mb_substr($content, 0, $maxContentLen)
-            : $content;
+        $preFiltered = $this->preFilter($content, $researchTitle, $researchContext);
 
-        $prompt = <<<PROMPT
-Cari 3 kutipan verbatim dari teks berikut yang relevan dengan riset: "{$researchTitle}"
+        if (empty(trim($preFiltered))) {
+            return [
+                'success' => false,
+                'error' => 'Konten artikel kosong, tidak bisa membuat kutipan.',
+                'citations' => [],
+            ];
+        }
 
-Teks:
-{$truncatedContent}
-
-Untuk tiap kutipan beri: quote (verbatim), relevance (singkat, {$langText}), position (latar_belakang/tinjauan_pustaka/metodologi/pembahasan/kesimpulan).
-
-Output JSON saja:
-{"citations":[{"quote":"...","relevance":"...","position":"..."}]}
-PROMPT;
-
-        $response = $this->makeApiRequest($prompt, 4096);
+        $prompt = $this->buildCitationPrompt($preFiltered, $researchTitle, $language, $researchContext);
 
         try {
+            $response = $this->makeApiRequest($prompt, 2048);
+
             if (!isset($response['candidates'][0]['content']['parts'][0]['text'])) {
-                Log::error('Gemini citation: invalid response structure', ['response' => $response]);
-                throw new Exception('Invalid response structure from Gemini API');
+                $finishReason = $response['candidates'][0]['finishReason'] ?? 'UNKNOWN';
+                Log::error('Gemini citation: invalid response structure', [
+                    'finish_reason' => $finishReason,
+                    'response_keys' => array_keys($response),
+                ]);
+
+                if ($finishReason === 'SAFETY' || $finishReason === 'RECITATION') {
+                    Log::warning('Gemini citation: blocked by safety, using local fallback');
+                    return $this->localCitationFallback($content, $researchTitle);
+                }
+
+                throw new Exception('Gemini tidak merespons dengan benar (finishReason: ' . $finishReason . ')');
             }
 
             $text = $response['candidates'][0]['content']['parts'][0]['text'];
+            Log::info('Gemini citation raw response', ['text_preview' => mb_substr($text, 0, 300)]);
 
-            // Clean markdown and extract JSON
-            $cleanText = preg_replace('/```json\s*/i', '', $text);
-            $cleanText = preg_replace('/```\s*/', '', $cleanText);
-            $cleanText = trim($cleanText);
+            $jsonData = $this->extractJsonFromText($text);
 
-            // Try multiple regex patterns to find JSON
-            $jsonStr = null;
-            if (preg_match('/\{[\s\S]*\}/', $cleanText, $matches)) {
-                $jsonStr = $matches[0];
-            }
-
-            if (!$jsonStr) {
-                Log::error('Gemini citation: no JSON found', ['raw_text' => $text]);
-                throw new Exception('No JSON found in Gemini API response');
-            }
-
-            $jsonData = json_decode($jsonStr, true);
-
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                Log::error('Gemini citation: JSON parse failed', [
-                    'json_error' => json_last_error_msg(),
-                    'json_str' => mb_substr($jsonStr, 0, 500),
-                ]);
-                throw new Exception('Failed to parse JSON from Gemini response: ' . json_last_error_msg());
+            if ($jsonData === null) {
+                Log::error('Gemini citation: no JSON found', ['raw_text' => mb_substr($text, 0, 2000)]);
+                return $this->localCitationFallback($content, $researchTitle);
             }
 
             $citations = $jsonData['citations'] ?? [];
+
+            if (!is_array($citations) || empty($citations)) {
+                Log::warning('Gemini citation: empty or invalid citations array', ['data' => $jsonData]);
+                return $this->localCitationFallback($content, $researchTitle);
+            }
 
             $result = [
                 'success' => true,
@@ -131,13 +128,118 @@ PROMPT;
             return $result;
 
         } catch (Exception $e) {
-            Log::error('Failed to parse Gemini citation response: ' . $e->getMessage());
+            Log::error('Gemini citation failed, using local fallback: ' . $e->getMessage());
+            return $this->localCitationFallback($content, $researchTitle);
+        }
+    }
+
+    private function localCitationFallback(string $content, string $researchTitle, ?string $researchContext = null): array
+    {
+        Log::info('Using local citation fallback', ['research_title' => $researchTitle, 'research_context' => $researchContext]);
+
+        $topic = implode(' ', array_filter([$researchTitle, $researchContext]));
+        $text = $content;
+        $relevant = $this->extractor->extractRelevantChunks($text, $topic, maxChars: 4000);
+
+        $positionMap = [
+            'Bab 1' => 'latar_belakang',
+            'Bab 2' => 'tinjauan_pustaka',
+            'Bab 3' => 'metodologi',
+            'Bab 4' => 'pembahasan',
+            'Bab 5' => 'kesimpulan',
+            'Landasan Teori' => 'tinjauan_pustaka',
+            'Kerangka Pemikiran' => 'tinjauan_pustaka',
+            'Analisis Data' => 'pembahasan',
+        ];
+
+        $defaultPosition = 'pembahasan';
+        if ($researchContext) {
+            foreach ($positionMap as $key => $pos) {
+                if (str_contains($researchContext, $key)) {
+                    $defaultPosition = $pos;
+                    break;
+                }
+            }
+        }
+
+        $sentences = preg_split('/(?<=[.!?])\s+/', $relevant, -1, PREG_SPLIT_NO_EMPTY);
+        $citations = [];
+        $positions = ['latar_belakang', 'tinjauan_pustaka', 'metodologi', 'pembahasan', 'kesimpulan'];
+
+        foreach ($sentences as $i => $sentence) {
+            $sentence = trim($sentence);
+            if (mb_strlen($sentence) < 30 || mb_strlen($sentence) > 500) {
+                continue;
+            }
+            if (count($citations) >= 5) {
+                break;
+            }
+            $position = $defaultPosition;
+            if ($i === 0) {
+                $position = $positions[0];
+            } elseif ($i <= 1) {
+                $position = $positions[1];
+            }
+            $citations[] = [
+                'quote' => $sentence,
+                'relevance' => 'Ditemukan relevan dengan topik: ' . mb_strimwidth($topic, 0, 80, '…') . ' (ekstraksi lokal).',
+                'position' => $position,
+            ];
+        }
+
+        if (empty($citations)) {
             return [
                 'success' => false,
-                'error' => $e->getMessage(),
+                'error' => 'Tidak ditemukan kutipan relevan. Coba ubah judul penelitian atau pastikan artikel sudah diproses.',
                 'citations' => [],
             ];
         }
+
+        return [
+            'success' => true,
+            'citations' => $citations,
+        ];
+    }
+
+    /**
+     * Pre-filter content using local extractor to reduce tokens
+     */
+    private function preFilter(string $content, ?string $researchTitle, ?string $researchContext = null): string
+    {
+        $topic = implode(' ', array_filter([$researchTitle, $researchContext]));
+        if (empty($topic)) {
+            return mb_substr($content, 0, 4000);
+        }
+        return $this->extractor->extractRelevantChunks($content, $topic, maxChars: 4000);
+    }
+
+    /**
+     * Build citation prompt with pre-filtered content
+     */
+    private function buildCitationPrompt(string $content, string $researchTitle, string $language, ?string $researchContext = null): string
+    {
+        $langText = $language === 'id' ? 'Bahasa Indonesia' : 'English';
+
+        $contextHint = '';
+        if (!empty($researchContext)) {
+            $contextHint = "\nContext: This is for \"{$researchContext}\" section of a research paper.";
+        }
+
+        return <<<PROMPT
+You are a research assistant. Given the text below, find 3 verbatim quotes relevant to: "{$researchTitle}"{$contextHint}
+
+For each quote provide:
+- quote: exact verbatim from the text
+- relevance: brief explanation (in {$langText})
+- position: one of latar_belakang, tinjauan_pustaka, metodologi, pembahasan, kesimpulan
+
+IMPORTANT: Respond with ONLY a valid JSON object, no other text before or after.
+
+{"citations":[{"quote":"...","relevance":"...","position":"..."}]}
+
+Text:
+{$content}
+PROMPT;
     }
 
     /**
@@ -147,24 +249,19 @@ PROMPT;
     {
         $lang = $language === 'id' ? 'ID' : 'EN';
         
-        // Truncate content to avoid token overflow (12K chars ≈ 3000 tokens)
-        $maxLen = 12000;
-        if (mb_strlen($content) > $maxLen) {
-            $content = mb_substr($content, 0, $maxLen);
-        }
-
         $researchHint = '';
         if (!empty($researchTitle)) {
             $researchHint = "\nFokus riset: \"{$researchTitle}\"\n";
         }
 
         return <<<PROMPT
-Ringkas artikel berikut dalam {$lang}, {$maxWords} kata maks, 3-5 poin kunci.
+Summarize the following article in {$lang}, maximum {$maxWords} words, with 3-5 key points.
 {$researchHint}
-Teks:
+Text:
 {$content}
 
-Output JSON saja:
+IMPORTANT: Respond with ONLY a valid JSON object, no other text before or after.
+
 {"summary":"...","key_points":["...","..."]}
 PROMPT;
     }
@@ -240,54 +337,85 @@ PROMPT;
     /**
      * Parse Gemini API response
      */
-    private function parseResponse(array $response): array
+private function parseResponse(array $response): array
     {
         try {
             if (!isset($response['candidates'][0]['content']['parts'][0]['text'])) {
-                throw new Exception('Invalid response structure from Gemini API');
+                $finishReason = $response['candidates'][0]['finishReason'] ?? 'UNKNOWN';
+                throw new Exception('Invalid response structure from Gemini API (finishReason: ' . $finishReason . ')');
             }
 
             $text = $response['candidates'][0]['content']['parts'][0]['text'];
-            
-            // Clean the text first - remove markdown code blocks if present
-            $cleanText = preg_replace('/```json\s*/', '', $text);
-            $cleanText = preg_replace('/```\s*/', '', $cleanText);
-            $cleanText = trim($cleanText);
-            
-            // Try to extract JSON from the response text with improved regex
-            preg_match('/\{[\s\S]*\}/', $cleanText, $matches);
-            
-            if (empty($matches)) {
-                throw new Exception('No JSON found in Gemini API response');
+
+            $jsonData = $this->extractJsonFromText($text);
+
+            if ($jsonData !== null) {
+                $summary = $jsonData['summary'] ?? $this->extractSummaryFallback($text);
+                $keyPoints = $jsonData['key_points'] ?? [];
+
+                $wordCount = str_word_count($summary);
+                if ($wordCount > 300) {
+                    $summary = implode(' ', array_slice(str_word_count($summary, 1), 0, 300)) . '...';
+                }
+
+                return [
+                    'summary' => $summary,
+                    'key_points' => is_array($keyPoints) ? array_slice($keyPoints, 0, 5) : [],
+                    'raw_response' => $text,
+                    'tokens_used' => $response['usageMetadata']['totalTokenCount'] ?? 0,
+                    'model' => 'gemini-2.5-flash',
+                ];
             }
 
-            $jsonData = json_decode($matches[0], true);
-            
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new Exception('Failed to parse JSON from Gemini response: ' . json_last_error_msg());
-            }
-
-            $summary = $jsonData['summary'] ?? $this->extractSummaryFallback($cleanText);
-            $keyPoints = $jsonData['key_points'] ?? [];
-            
-            // Validate and sanitize summary length
-            $wordCount = str_word_count($summary);
-            if ($wordCount > 300) {
-                $summary = implode(' ', array_slice(str_word_count($summary, 1), 0, 300)) . '...';
-            }
-
+            $summary = $this->extractSummaryFallback($text);
             return [
                 'summary' => $summary,
-                'key_points' => is_array($keyPoints) ? array_slice($keyPoints, 0, 5) : [],
+                'key_points' => [],
                 'raw_response' => $text,
                 'tokens_used' => $response['usageMetadata']['totalTokenCount'] ?? 0,
-                'model' => 'gemini-2.5-flash'
+                'model' => 'gemini-2.5-flash',
             ];
-            
+
         } catch (Exception $e) {
             Log::error('Failed to parse Gemini response: ' . $e->getMessage());
             throw new Exception('Failed to parse Gemini API response: ' . $e->getMessage());
         }
+    }
+
+    private function extractJsonFromText(string $text): ?array
+    {
+        $cleanText = preg_replace('/```json\s*/i', '', $text);
+        $cleanText = preg_replace('/```\s*/', '', $cleanText);
+        $cleanText = trim($cleanText);
+
+        if (preg_match('/\{([^{}]|(?R))*\}/s', $cleanText, $matches)) {
+            $decoded = json_decode($matches[0], true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        if (preg_match('/\{[\s\S]*\}/', $cleanText, $matches)) {
+            $candidate = $matches[0];
+            $lastBrace = strrpos($candidate, '}');
+            while ($lastBrace !== false) {
+                $sub = substr($candidate, 0, $lastBrace + 1);
+                if (preg_match('/\{.*\}/s', $sub)) {
+                    $decoded = json_decode($sub, true);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                        return $decoded;
+                    }
+                }
+                $lastBrace = strrpos(substr($candidate, 0, $lastBrace), '}');
+            }
+        }
+
+        $decoded = json_decode($cleanText, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            return $decoded;
+        }
+
+        return null;
     }
 
     /**

@@ -8,6 +8,8 @@ use App\Http\Middleware\AuthorMiddleware;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\RateLimitMiddleware;
 use App\Http\Middleware\HtmlSanitizationMiddleware;
+use App\Http\Middleware\RedirectIfAdmin;
+use App\Http\Middleware\RedirectIfNotAdmin;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -22,6 +24,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'security' => SecurityHeaders::class,
             'rate.limit' => RateLimitMiddleware::class,
             'sanitize.html' => HtmlSanitizationMiddleware::class,
+            'redirect.admin' => RedirectIfAdmin::class,
+            'redirect.not.admin' => RedirectIfNotAdmin::class,
         ]);
         
         // Global middleware

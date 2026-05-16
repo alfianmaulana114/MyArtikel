@@ -226,6 +226,7 @@ class ProcessPdfIngestion extends BaseJob
         try {
             $textExtracted = $article->text_extracted;
             $researchTitle = $article->research_title;
+            $researchContext = $article->research_context;
 
             if (empty($textExtracted) || empty($researchTitle)) {
                 return;
@@ -237,7 +238,7 @@ class ProcessPdfIngestion extends BaseJob
                 return;
             }
 
-            $result = $geminiService->generateResearchCitations($textExtracted, $researchTitle);
+            $result = $geminiService->generateResearchCitations($textExtracted, $researchTitle, 'id', $researchContext);
 
             if ($result['success']) {
                 $article->update([

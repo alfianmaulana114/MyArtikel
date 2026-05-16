@@ -1,5 +1,14 @@
-<x-app-layout>
-    <x-slot name="header">
+<?php if (isset($component)) { $__componentOriginal9ac128a9029c0e4701924bd2d73d7f54 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54 = $attributes; } ?>
+<?php $component = App\View\Components\AppLayout::resolve([] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('app-layout'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\App\View\Components\AppLayout::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes([]); ?>
+     <?php $__env->slot('header', null, []); ?> 
         <div class="flex flex-col gap-1">
             <h2 class="font-semibold text-xl theme-text-primary leading-tight">
                 Library
@@ -8,7 +17,7 @@
                 Tambah artikel dari URL atau upload jurnal PDF untuk dianalisis AI.
             </p>
         </div>
-    </x-slot>
+     <?php $__env->endSlot(); ?>
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div class="lg:col-span-8 space-y-6">
@@ -18,9 +27,9 @@
                 fileName: '',
                 dragOver: false,
                 init() {
-                    @if ($errors->has('pdf_file'))
+                    <?php if($errors->has('pdf_file')): ?>
                         this.sourceType = 'pdf';
-                    @endif
+                    <?php endif; ?>
                 }
             }" class="card overflow-hidden sm:rounded-lg">
                 <div class="p-6">
@@ -55,27 +64,34 @@
                         </div>
                     </div>
 
-                    <form id="ingest-form" method="POST" action="{{ route('dashboard.ingest') }}" enctype="multipart/form-data" class="space-y-4">
-                        @csrf
+                    <form id="ingest-form" method="POST" action="<?php echo e(route('dashboard.ingest')); ?>" enctype="multipart/form-data" class="space-y-4">
+                        <?php echo csrf_field(); ?>
                         <input type="hidden" name="source_type" x-model="sourceType">
 
-                        {{-- URL Input --}}
+                        
                         <div x-show="sourceType === 'url'" x-transition.opacity>
                             <label for="url" class="block font-medium text-sm theme-text-secondary mb-1.5">URL Artikel / Jurnal</label>
                             <input
                                 id="url"
                                 name="url"
                                 type="url"
-                                value="{{ old('url') }}"
+                                value="<?php echo e(old('url')); ?>"
                                 placeholder="https://example.com/artikel-jurnal"
                                 class="block w-full rounded-xl shadow-sm border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C] px-4 py-2.5"
                             />
-                            @error('url')
-                                <div class="mt-2 text-sm text-[color:var(--error)]">{{ $message }}</div>
-                            @enderror
+                            <?php $__errorArgs = ['url'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                <div class="mt-2 text-sm text-[color:var(--error)]"><?php echo e($message); ?></div>
+                            <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                         </div>
 
-                        {{-- PDF Upload --}}
+                        
                         <div x-show="sourceType === 'pdf'" x-transition.opacity>
                             <label class="block font-medium text-sm theme-text-secondary mb-1.5">Upload Jurnal (PDF)</label>
                             <div
@@ -108,12 +124,19 @@
                                     <div class="text-xs theme-text-muted">Klik untuk ganti file</div>
                                 </div>
                             </div>
-                            @error('pdf_file')
-                                <div class="mt-2 text-sm text-[color:var(--error)]">{{ $message }}</div>
-                            @enderror
+                            <?php $__errorArgs = ['pdf_file'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                <div class="mt-2 text-sm text-[color:var(--error)]"><?php echo e($message); ?></div>
+                            <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                         </div>
 
-                        {{-- Research Title --}}
+                        
                         <div>
                             <label for="research_title" class="block font-medium text-sm theme-text-secondary mb-1.5">
                                 Judul Penelitian / Topik Riset
@@ -123,13 +146,13 @@
                                 id="research_title"
                                 name="research_title"
                                 type="text"
-                                value="{{ old('research_title') }}"
+                                value="<?php echo e(old('research_title')); ?>"
                                 placeholder="contoh: Analisis Pengaruh Media Sosial terhadap Produktivitas Mahasiswa"
                                 class="block w-full rounded-xl shadow-sm border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C] px-4 py-2.5"
                             />
                         </div>
 
-                        {{-- Research Context --}}
+                        
                         <div>
                             <label for="research_context" class="block font-medium text-sm theme-text-secondary mb-1.5">
                                 Konteks / Kebutuhan Riset
@@ -152,7 +175,7 @@
                                 id="research_context"
                                 name="research_context"
                                 type="text"
-                                value="{{ old('research_context') }}"
+                                value="<?php echo e(old('research_context')); ?>"
                                 placeholder="misal: butuh kutipan untuk variabel X di bab 3"
                                 class="hidden block w-full rounded-xl shadow-sm border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C] px-4 py-2.5 text-sm mt-2"
                             />
@@ -188,7 +211,7 @@
                             })();
                         </script>
 
-                        {{-- Submit --}}
+                        
                         <div class="flex items-center gap-3 pt-1">
                             <button type="submit" class="btn btn-primary" :disabled="uploading">
                                 <span x-show="!uploading" class="flex items-center gap-1.5">
@@ -202,11 +225,12 @@
                             </button>
                         </div>
 
-                        @if (session('status'))
+                        <?php if(session('status')): ?>
                             <div class="text-sm rounded-xl p-3 bg-[color:var(--bg-tertiary)] text-[#8B9A7A] font-medium" role="status" aria-live="polite">
-                                {{ session('status') }}
+                                <?php echo e(session('status')); ?>
+
                             </div>
-                        @endif
+                        <?php endif; ?>
                     </form>
                 </div>
             </div>
@@ -214,14 +238,14 @@
             <div class="card overflow-hidden sm:rounded-lg">
                 <div class="p-6">
                     <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-                        <form method="GET" action="{{ route('dashboard') }}" class="flex flex-col sm:flex-row gap-3 sm:items-center w-full">
+                        <form method="GET" action="<?php echo e(route('dashboard')); ?>" class="flex flex-col sm:flex-row gap-3 sm:items-center w-full">
                             <div class="flex-1">
                                 <label for="q" class="sr-only">Cari</label>
                                 <input
                                     id="q"
                                     name="q"
                                     type="text"
-                                    value="{{ $filters['q'] ?? '' }}"
+                                    value="<?php echo e($filters['q'] ?? ''); ?>"
                                     placeholder="Cari judul / domain / URL…"
                                     class="block w-full rounded-xl shadow-sm border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C] px-4 py-2"
                                 />
@@ -235,12 +259,12 @@
                     </div>
 
                     <div class="mt-6 divide-y divide-black/5">
-                        @forelse ($articles as $article)
+                        <?php $__empty_1 = true; $__currentLoopData = $articles; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $article): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                             <div class="py-5 flex flex-col gap-3">
                                 <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                                     <div class="min-w-0 flex-1">
                                         <div class="flex items-center gap-2 flex-wrap">
-                                            @php
+                                            <?php
                                                 $statusColors = [
                                                     'ready' => 'bg-[color:var(--bg-tertiary)] text-[#8B9A7A]',
                                                     'queued' => 'bg-[color:var(--bg-tertiary)] theme-text-muted',
@@ -250,91 +274,99 @@
                                                 ];
                                                 $status = $article->processing_status ?? 'ready';
                                                 $badgeColor = $statusColors[$status] ?? 'bg-[color:var(--bg-tertiary)] theme-text-muted';
-                                            @endphp
-                                            <div class="text-xs px-2 py-1 rounded-full border theme-border-primary {{ $badgeColor }}">
-                                                {{ $status }}
+                                            ?>
+                                            <div class="text-xs px-2 py-1 rounded-full border theme-border-primary <?php echo e($badgeColor); ?>">
+                                                <?php echo e($status); ?>
+
                                             </div>
-                                            @if ($article->source_type === 'pdf')
+                                            <?php if($article->source_type === 'pdf'): ?>
                                                 <div class="text-xs px-2 py-1 rounded-full bg-[color:var(--bg-tertiary)] text-[#AA5F3C] border border-[#AA5F3C]/20">
                                                     <span class="flex items-center gap-1">
                                                         <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                                                         PDF
                                                     </span>
                                                 </div>
-                                            @endif
-                                            @if ($article->source_domain && $article->source_domain !== 'pdf-upload')
+                                            <?php endif; ?>
+                                            <?php if($article->source_domain && $article->source_domain !== 'pdf-upload'): ?>
                                                 <div class="text-xs theme-text-muted truncate">
-                                                    {{ $article->source_domain }}
+                                                    <?php echo e($article->source_domain); ?>
+
                                                 </div>
-                                            @endif
-                                            @if ($article->research_title)
-                                                <div class="text-xs px-2 py-1 rounded-full bg-[color:var(--bg-tertiary)] theme-text-muted truncate max-w-[16rem]" title="{{ $article->research_title }}">
-                                                    Riset: {{ $article->research_title }}
+                                            <?php endif; ?>
+                                            <?php if($article->research_title): ?>
+                                                <div class="text-xs px-2 py-1 rounded-full bg-[color:var(--bg-tertiary)] theme-text-muted truncate max-w-[16rem]" title="<?php echo e($article->research_title); ?>">
+                                                    Riset: <?php echo e($article->research_title); ?>
+
                                                 </div>
-                                            @endif
+                                            <?php endif; ?>
                                         </div>
                                         <div class="mt-2">
                                             <div class="font-semibold theme-text-primary truncate">
-                                                {{ $article->title }}
+                                                <?php echo e($article->title); ?>
+
                                             </div>
-                                            @if ($article->excerpt)
+                                            <?php if($article->excerpt): ?>
                                             <div class="mt-1 text-sm theme-text-secondary overflow-hidden line-clamp-2">
-                                                {{ $article->excerpt }}
+                                                <?php echo e($article->excerpt); ?>
+
                                             </div>
-                                            @endif
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                     <div class="text-sm theme-text-muted whitespace-nowrap">
-                                        {{ $article->created_at?->format('d M Y, H:i') }}
+                                        <?php echo e($article->created_at?->format('d M Y, H:i')); ?>
+
                                     </div>
                                 </div>
 
                                 <div class="flex flex-wrap items-center gap-2 text-sm">
-                                    @if (!empty($article->ai_quotation_suggestions))
+                                    <?php if(!empty($article->ai_quotation_suggestions)): ?>
                                         <span class="text-xs px-2 py-1 rounded-full bg-[color:var(--bg-tertiary)] text-[#D4A76A]">
                                             <span class="flex items-center gap-1">
                                                 <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
                                                 Saran Kutipan
                                             </span>
                                         </span>
-                                    @endif
+                                    <?php endif; ?>
                                 </div>
 
-                                @if ($article->processing_status === 'failed' && $article->processing_error)
+                                <?php if($article->processing_status === 'failed' && $article->processing_error): ?>
                                     <div class="text-sm bg-[color:var(--error-bg)] text-[color:var(--error)] border border-[color:var(--error-border)] rounded-lg px-3 py-2">
-                                        {{ $article->processing_error }}
+                                        <?php echo e($article->processing_error); ?>
+
                                     </div>
-                                @endif
+                                <?php endif; ?>
 
                                 <div class="flex items-center justify-end">
-                                    @if ($article->processing_status === 'ready')
-                                        <a class="btn btn-secondary" href="{{ route('articles.show', $article) }}">
+                                    <?php if($article->processing_status === 'ready'): ?>
+                                        <a class="btn btn-secondary" href="<?php echo e(route('articles.show', $article)); ?>">
                                             Baca
                                         </a>
-                                    @elseif ($article->processing_status === 'failed')
-                                        <form method="POST" action="{{ route('dashboard.retry', $article) }}">
-                                            @csrf
+                                    <?php elseif($article->processing_status === 'failed'): ?>
+                                        <form method="POST" action="<?php echo e(route('dashboard.retry', $article)); ?>">
+                                            <?php echo csrf_field(); ?>
                                             <button type="submit" class="btn btn-secondary">
                                                 Proses lagi
                                             </button>
                                         </form>
-                                    @else
+                                    <?php else: ?>
                                         <span class="text-sm theme-text-muted">Sedang diproses…</span>
-                                    @endif
+                                    <?php endif; ?>
                                 </div>
                             </div>
-                        @empty
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                             <div class="py-12 text-center">
                                 <svg class="mx-auto w-12 h-12 theme-text-muted mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                                 <div class="text-sm theme-text-muted">
                                     Belum ada artikel. Tambah URL atau upload PDF di atas untuk mulai.
                                 </div>
                             </div>
-                        @endforelse
+                        <?php endif; ?>
                     </div>
 
                     <div class="mt-6">
-                        {{ $articles->links() }}
+                        <?php echo e($articles->links()); ?>
+
                     </div>
                 </div>
             </div>
@@ -347,19 +379,19 @@
                     <div class="mt-4 grid grid-cols-2 gap-3">
                         <div class="rounded-xl border theme-border-primary bg-[color:var(--surface-primary)] p-4">
                             <div class="text-xs theme-text-muted">Total</div>
-                            <div class="mt-1 text-lg font-semibold theme-text-primary">{{ $stats['total'] ?? 0 }}</div>
+                            <div class="mt-1 text-lg font-semibold theme-text-primary"><?php echo e($stats['total'] ?? 0); ?></div>
                         </div>
                         <div class="rounded-xl border theme-border-primary bg-[color:var(--surface-primary)] p-4">
                             <div class="text-xs theme-text-muted">Ready</div>
-                            <div class="mt-1 text-lg font-semibold theme-text-primary">{{ $stats['ready'] ?? 0 }}</div>
+                            <div class="mt-1 text-lg font-semibold theme-text-primary"><?php echo e($stats['ready'] ?? 0); ?></div>
                         </div>
                         <div class="rounded-xl border theme-border-primary bg-[color:var(--surface-primary)] p-4">
                             <div class="text-xs theme-text-muted">Processing</div>
-                            <div class="mt-1 text-lg font-semibold theme-text-primary">{{ $stats['processing'] ?? 0 }}</div>
+                            <div class="mt-1 text-lg font-semibold theme-text-primary"><?php echo e($stats['processing'] ?? 0); ?></div>
                         </div>
                         <div class="rounded-xl border theme-border-primary bg-[color:var(--surface-primary)] p-4">
                             <div class="text-xs theme-text-muted">Failed</div>
-                            <div class="mt-1 text-lg font-semibold theme-text-primary">{{ $stats['failed'] ?? 0 }}</div>
+                            <div class="mt-1 text-lg font-semibold theme-text-primary"><?php echo e($stats['failed'] ?? 0); ?></div>
                         </div>
                     </div>
                 </div>
@@ -386,4 +418,14 @@
             </div>
         </div>
     </div>
-</x-app-layout>
+ <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>
+<?php $attributes = $__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54; ?>
+<?php unset($__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>
+<?php $component = $__componentOriginal9ac128a9029c0e4701924bd2d73d7f54; ?>
+<?php unset($__componentOriginal9ac128a9029c0e4701924bd2d73d7f54); ?>
+<?php endif; ?>
+<?php /**PATH C:\laragon\www\myartikel\resources\views/dashboard.blade.php ENDPATH**/ ?>

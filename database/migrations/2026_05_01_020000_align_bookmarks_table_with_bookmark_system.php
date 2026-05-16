@@ -66,7 +66,8 @@ return new class extends Migration
         if (
             Schema::hasColumn('bookmarks', 'category') &&
             Schema::hasColumn('bookmarks', 'category_id') &&
-            Schema::hasTable('bookmark_categories')
+            Schema::hasTable('bookmark_categories') &&
+            DB::connection()->getDriverName() !== 'sqlite'
         ) {
             DB::statement("
                 UPDATE bookmarks b
@@ -93,7 +94,7 @@ return new class extends Migration
             ");
         }
 
-        if (Schema::hasColumn('bookmarks', 'category') && Schema::hasColumn('bookmarks', 'is_favorite')) {
+        if (Schema::hasColumn('bookmarks', 'category') && Schema::hasColumn('bookmarks', 'is_favorite') && DB::connection()->getDriverName() !== 'sqlite') {
             DB::statement("UPDATE bookmarks SET is_favorite = 1 WHERE category = 'favorite'");
         }
     }

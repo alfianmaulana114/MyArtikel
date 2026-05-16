@@ -42,6 +42,104 @@
             {{-- Main Content --}}
             <div class="card sm:rounded-lg overflow-hidden mb-6">
                 <div class="p-6 sm:p-8">
+                    {{-- Source info --}}
+                    @if ($article->source_url)
+                        <div class="flex items-center gap-2 mb-4 text-sm theme-text-muted">
+                            <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                            <a href="{{ $article->source_url }}" target="_blank" rel="noopener noreferrer" class="hover:underline truncate">{{ $article->source_domain ?? parse_url($article->source_url, PHP_URL_HOST) }}</a>
+                        </div>
+                    @elseif ($article->source_type === 'pdf')
+                        <div class="flex items-center gap-2 mb-4 text-sm theme-text-muted">
+                            <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                            <span>Upload PDF</span>
+                        </div>
+                    @endif
+
+                    {{-- Research Title & Context --}}
+                    <div class="mb-4" x-data="{
+                        editing: false,
+                        saving: false,
+                        researchTitle: {{ Js::from($article->research_title ?? '') }},
+                        researchContext: {{ Js::from($article->research_context ?? '') }}
+                    }">
+                        <div class="space-y-2" x-show="!editing">
+                            @if ($article->research_title)
+                                <div class="flex items-start gap-2">
+                                    <div class="flex-1">
+                                        <div class="text-xs theme-text-muted mb-0.5">Judul Penelitian</div>
+                                        <div class="text-sm font-medium theme-text-secondary">{{ $article->research_title }}</div>
+                                    </div>
+                                </div>
+                            @endif
+                            @if ($article->research_context)
+                                <div class="flex items-start gap-2">
+                                    <div class="flex-1">
+                                        <div class="text-xs theme-text-muted mb-0.5">Konteks Riset</div>
+                                        <div class="text-sm theme-text-secondary">{{ $article->research_context }}</div>
+                                    </div>
+                                </div>
+                            @endif
+                            @if (! $article->research_title && ! $article->research_context)
+                                <button @click="editing = true" class="flex items-center gap-2 text-sm px-3 py-2 rounded-lg border border-dashed theme-border-primary hover:bg-[color:var(--bg-tertiary)] transition-colors w-full">
+                                    <svg class="w-4 h-4 text-[#AA5F3C]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                    <span class="theme-text-muted">Tambah Judul Penelitian & Konteks agar saran kutipan lebih relevan</span>
+                                </button>
+                            @else
+                                <button @click="editing = true" class="text-xs px-2 py-1 rounded-lg bg-[color:var(--bg-tertiary)] theme-text-muted hover:bg-[#AA5F3C] hover:text-white transition-colors" title="Edit">
+                                    <svg class="w-3.5 h-3.5 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                    Edit
+                                </button>
+                            @endif
+                        </div>
+
+                        <div x-show="editing" x-transition class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-medium theme-text-muted mb-1">Judul Penelitian / Topik Riset</label>
+                                <input type="text" x-model="researchTitle"
+                                    class="block w-full rounded-xl shadow-sm border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C] px-4 py-2 text-sm"
+                                    placeholder="contoh: Analisis Pengaruh Media Sosial terhadap Produktivitas Mahasiswa">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium theme-text-muted mb-1">Konteks Riset (bagian skripsi/kebutuhan)</label>
+                                <select x-model="researchContextSelect"
+                                    x-init="$watch('researchContextSelect', v => { if (v !== '__custom__') researchContext = v; })"
+                                    class="block w-full rounded-xl shadow-sm border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C] px-4 py-2 text-sm">
+                                    <option value="">— Pilih konteks —</option>
+                                    <option value="Bab 1 — Pendahuluan">Bab 1 — Pendahuluan</option>
+                                    <option value="Bab 2 — Tinjauan Pustaka">Bab 2 — Tinjauan Pustaka</option>
+                                    <option value="Bab 3 — Metodologi">Bab 3 — Metodologi</option>
+                                    <option value="Bab 4 — Pembahasan / Hasil">Bab 4 — Pembahasan / Hasil</option>
+                                    <option value="Bab 5 — Kesimpulan & Saran">Bab 5 — Kesimpulan & Saran</option>
+                                    <option value="Landasan Teori">Landasan Teori</option>
+                                    <option value="Kerangka Pemikiran">Kerangka Pemikiran</option>
+                                    <option value="Analisis Data">Analisis Data</option>
+                                    <option value="__custom__">Ketik manual…</option>
+                                </select>
+                                <input type="text" x-model="researchContext"
+                                    x-show="researchContextSelect === '__custom__'"
+                                    class="mt-2 block w-full rounded-xl shadow-sm border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C] px-4 py-2 text-sm"
+                                    placeholder="misal: kutipan untuk variabel X di bab 3">
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button @click="saving = true;
+                                    fetch('{{ route('articles.update', $article->id) }}', {
+                                        method: 'PUT',
+                                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                                        body: JSON.stringify({ research_title: researchTitle, research_context: researchContext })
+                                    }).then(r => r.json()).then(() => { saving = false; editing = false; window.location.reload(); }).catch(() => { saving = false; })"
+                                    :disabled="saving"
+                                    class="btn btn-primary text-xs px-3 py-1.5">
+                                    Simpan
+                                </button>
+                                <button @click="editing = false"
+                                    :disabled="saving"
+                                    class="btn btn-secondary text-xs px-3 py-1.5">
+                                    Batal
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     @if ($article->excerpt)
                         <div class="p-4 rounded-xl bg-[color:var(--bg-tertiary)] border-l-4 border-[#AA5F3C]">
                             <div class="text-sm theme-text-secondary leading-relaxed">
@@ -81,11 +179,6 @@
             {{-- Tab Section: Rangkuman & Saran Kutipan --}}
             <div class="card sm:rounded-lg overflow-hidden mb-6" x-data="{
                 activeTab: 'summary',
-                init() {
-                    @if (!empty($article->ai_quotation_suggestions))
-                        this.activeTab = 'citations';
-                    @endif
-                }
             }">
                 {{-- Tab Navigation --}}
                 <div class="flex border-b theme-border-primary bg-[color:var(--bg-tertiary)]">
@@ -205,12 +298,30 @@
 
                 {{-- Citations Tab Content --}}
                 <div x-show="activeTab === 'citations'" x-transition class="p-6 sm:p-8">
-                    <div class="mb-6">
-                        <h3 class="text-lg font-semibold theme-text-primary">Saran Kutipan</h3>
-                        <p class="text-sm theme-text-muted mt-1">
-                            Kutipan yang direkomendasikan AI untuk riset Anda.
-                        </p>
+                    <div class="flex items-start justify-between gap-3 mb-6">
+                        <div>
+                            <h3 class="text-lg font-semibold theme-text-primary">Saran Kutipan</h3>
+                            <p class="text-sm theme-text-muted mt-1">
+                                Kutipan yang disarankan AI dari artikel ini.
+                            </p>
+                        </div>
+                        @if ($article->processing_status === 'ready' && !empty($article->text_extracted))
+                            <button id="generate-citations-btn" type="button"
+                                class="btn btn-primary text-sm shrink-0"
+                                @if(empty($article->research_title)) disabled title="Isi Judul Penelitian terlebih dahulu" @endif>
+                                <span class="flex items-center gap-1.5">
+                                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                    Buat Kutipan
+                                </span>
+                            </button>
+                        @endif
                     </div>
+
+                    @if ($article->processing_status === 'ready' && empty($article->research_title))
+                        <div class="mb-4 p-3 rounded-lg bg-[color:var(--bg-tertiary)] border border-dashed theme-border-primary text-sm theme-text-muted">
+                            <span class="font-medium text-[#AA5F3C]">Judul Penelitian belum diisi.</span> Tambahkan judul penelitian di atas agar saran kutipan lebih relevan.
+                        </div>
+                    @endif
 
                     @if (!empty($article->ai_quotation_suggestions))
                         <div class="space-y-4">
@@ -240,36 +351,15 @@
                                 </div>
                             @endforeach
                         </div>
-                    @elseif ($article->research_title)
-                        <div class="rounded-xl border theme-border-primary bg-[color:var(--surface-primary)] p-8 text-center">
-                            <svg class="mx-auto w-12 h-12 theme-text-muted mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            <div class="text-sm theme-text-muted">
-                                Saran kutipan sedang dibuat oleh AI…
-                            </div>
-                            <div class="mt-2 text-xs theme-text-muted">
-                                Judul riset: "{{ $article->research_title }}"
-                            </div>
-                        </div>
                     @else
                         <div class="rounded-xl border theme-border-primary bg-[color:var(--surface-primary)] p-8 text-center">
-                            <svg class="mx-auto w-12 h-12 theme-text-muted mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                            <svg class="mx-auto w-12 h-12 theme-text-muted mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
                             <div class="text-sm theme-text-muted">
-                                Tidak ada Judul Penelitian.
+                                Belum ada kutipan.
                             </div>
                             <div class="mt-2 text-xs theme-text-muted">
-                                Isi judul penelitian saat submit artikel untuk mendapat saran kutipan AI.
+                                Klik tombol <strong>Generate Kutipan</strong> di atas untuk membuat saran kutipan dari artikel ini.
                             </div>
-                        </div>
-                    @endif
-
-                    @if ($article->processing_status === 'ready' && !empty($article->text_extracted) && $article->research_title && empty($article->ai_quotation_suggestions))
-                        <div class="mt-6">
-                            <button id="generate-citations-btn" type="button" class="btn btn-primary w-full" onclick="generateCitations()">
-                                <span class="flex items-center justify-center gap-2">
-                                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                                    Generate Saran Kutipan
-                                </span>
-                            </button>
                         </div>
                     @endif
                 </div>
@@ -539,44 +629,41 @@
                 els.generate.addEventListener("click", () => generate(!!els.async.checked));
                 els.regenerate.addEventListener("click", () => regenerate());
 
+                const genBtn = document.getElementById("generate-citations-btn");
+                if (genBtn) {
+                    genBtn.addEventListener("click", async () => {
+                        genBtn.disabled = true;
+                        const originalHTML = genBtn.querySelector("span").innerHTML;
+                        genBtn.querySelector("span").textContent = "Memproses…";
+                        try {
+                            const res = await fetch(`/articles/{{ $article->id }}/generate-citations`, {
+                                method: "POST",
+                                credentials: "same-origin",
+                                headers: {
+                                    Accept: "application/json",
+                                    "X-Requested-With": "XMLHttpRequest",
+                                    "X-CSRF-TOKEN": csrf,
+                                },
+                            });
+                            const json = await res.json();
+                            if (json.success) {
+                                window.location.reload();
+                            } else {
+                                alert(json.error || "Gagal membuat kutipan. Coba lagi nanti.");
+                                genBtn.disabled = false;
+                                genBtn.querySelector("span").innerHTML = originalHTML;
+                            }
+                        } catch (e) {
+                            alert("Gagal menghubungi server. Pastikan koneksi internet aktif.");
+                            genBtn.disabled = false;
+                            genBtn.querySelector("span").innerHTML = originalHTML;
+                        }
+                    });
+                }
+
                 loadQuota();
                 loadExistingLatest();
             })();
-        </script>
-
-        <script>
-            window.generateCitations = async function() {
-                const btn = document.getElementById('generate-citations-btn');
-                if (!btn) return;
-                btn.disabled = true;
-                const origHtml = btn.innerHTML;
-                btn.innerHTML = '<span class="flex items-center justify-center gap-2"><svg class="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" class="opacity-25"/><path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="3" class="opacity-75"/></svg> Memproses…</span>';
-
-                try {
-                    const res = await fetch(`/articles/{{ $article->id }}/generate-citations`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest',
-                        },
-                    });
-
-                    const json = await res.json();
-                    if (json.success) {
-                        window.location.reload();
-                    } else {
-                        alert(json.error || 'Gagal menghasilkan saran kutipan.');
-                        btn.disabled = false;
-                        btn.innerHTML = origHtml;
-                    }
-                } catch (e) {
-                    alert('Gagal menghasilkan saran kutipan.');
-                    btn.disabled = false;
-                    btn.innerHTML = origHtml;
-                }
-            };
         </script>
     @endpush
 </x-app-layout>
