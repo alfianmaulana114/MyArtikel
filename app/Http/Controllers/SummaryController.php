@@ -70,7 +70,7 @@ class SummaryController extends Controller
             return response()->json([
                 'success' => false,
                 'error' => 'Quota exceeded',
-                'quota_status' => $quotaStatus
+                ...($user->is_admin ? ['quota_status' => $quotaStatus] : [])
             ], 429);
         }
 
@@ -78,7 +78,7 @@ class SummaryController extends Controller
             return response()->json([
                 'success' => false,
                 'error' => 'Daily quota exceeded',
-                'quota_status' => $quotaStatus
+                ...($user->is_admin ? ['quota_status' => $quotaStatus] : [])
             ], 429);
         }
 
@@ -114,7 +114,7 @@ class SummaryController extends Controller
                         'status' => 'pending',
                         'message' => 'Summary generation queued for processing'
                     ],
-                    'quota_status' => $quotaStatus
+                    ...($user->is_admin ? ['quota_status' => $quotaStatus] : [])
                 ], 202);
             }
 
@@ -125,16 +125,16 @@ class SummaryController extends Controller
                 return response()->json([
                     'success' => false,
                     'error' => $result['error'],
-                    'quota_status' => $quotaStatus
+                    ...($user->is_admin ? ['quota_status' => $quotaStatus] : [])
                 ], 500);
             }
 
             return response()->json([
                 'success' => true,
                 'data' => $result['summary'],
-                'source' => $result['source'],
+                ...($user->is_admin ? ['source' => $result['source']] : []),
                 'message' => $result['message'],
-                'quota_status' => $this->quotaService->getQuotaStatus($user->id)
+                ...($user->is_admin ? ['quota_status' => $this->quotaService->getQuotaStatus($user->id)] : [])
             ]);
 
         } catch (\Exception $e) {
@@ -154,10 +154,14 @@ class SummaryController extends Controller
     public function show(string $id)
     {
         $user = Auth::user();
-        
+
         $summary = Summary::with(['article', 'user'])
             ->where('user_id', $user->id)
             ->findOrFail($id);
+
+        if (! $user->is_admin) {
+            $summary->makeHidden(['source', 'type']);
+        }
 
         return response()->json([
             'success' => true,
@@ -181,7 +185,7 @@ class SummaryController extends Controller
             'data' => [
                 'id' => $summary->id,
                 'status' => $summary->status,
-                'source' => $summary->source,
+                ...($user->is_admin ? ['source' => $summary->source] : []),
                 'processing_time_ms' => $summary->processing_time_ms,
                 'error_message' => $summary->error_message,
                 'created_at' => $summary->created_at,
@@ -243,7 +247,14 @@ class SummaryController extends Controller
     public function quota()
     {
         $user = Auth::user();
-        
+
+        if (! $user->is_admin) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Unauthorized'
+            ], 403);
+        }
+
         $quotaStatus = $this->quotaService->getQuotaStatus($user->id);
         $usageStats = $this->summarizationService->getUsageStats($user->id, 7);
 
@@ -292,7 +303,7 @@ class SummaryController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $result['summary'],
-                'source' => $result['source'],
+                ...($user->is_admin ? ['source' => $result['source']] : []),
                 'message' => $result['message']
             ]);
 

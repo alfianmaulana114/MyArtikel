@@ -54,24 +54,15 @@ Route::middleware(['auth', 'redirect.admin'])->group(function () {
     
     // Include bookmark routes
     require __DIR__.'/bookmarks.php';
-    
-    // Include job monitoring routes
-    require __DIR__.'/jobs.php';
-    
-    // Include PDF export routes
-    require __DIR__.'/pdf.php';
-    
-    // Summaries (page + JSON endpoints)
-    Route::view('summaries', 'summaries.index')->name('summaries.page');
+
+    // Summaries (JSON endpoints for article page)
     Route::get('summaries/data', [SummaryController::class, 'index'])->name('summaries.data');
     Route::post('summaries/generate', [SummaryController::class, 'store'])->name('summaries.generate');
     Route::get('summaries/quota', [SummaryController::class, 'quota'])->name('summaries.quota');
     Route::get('summaries/{id}', [SummaryController::class, 'show'])->name('summaries.show');
-    Route::put('summaries/{id}', [SummaryController::class, 'update'])->name('summaries.update');
-    Route::delete('summaries/{id}', [SummaryController::class, 'destroy'])->name('summaries.destroy');
     Route::get('summaries/{id}/status', [SummaryController::class, 'status'])->name('summaries.status');
     Route::post('summaries/{articleId}/regenerate', [SummaryController::class, 'regenerate'])->name('summaries.regenerate');
-    
+
     // Projects / Workspace Routes
     Route::get('projects/data', [ProjectController::class, 'data'])->name('projects.data');
     Route::post('projects/{project}/duplicate', [ProjectController::class, 'duplicate'])->name('projects.duplicate');

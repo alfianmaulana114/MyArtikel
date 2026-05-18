@@ -123,7 +123,7 @@
                                     <button @click="showCitations = !showCitations" class="btn btn-secondary text-xs">
                                         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
                                         <span x-text="showCitations ? 'Sembunyikan Kutipan' : 'Lihat Kutipan'"></span>
-                                        @if (!empty($article->ai_quotation_suggestions))
+                                        @if (auth()->user()?->is_admin && !empty($article->ai_quotation_suggestions))
                                             <span class="ml-1 text-xs px-1.5 py-0.5 rounded-full bg-[#AA5F3C] text-white" x-show="!showCitations">
                                                 {{ count($article->ai_quotation_suggestions) }}
                                             </span>
@@ -135,7 +135,7 @@
                                 <div x-show="showSummary" x-transition class="mt-4 p-4 rounded-lg bg-[color:var(--bg-tertiary)]">
                                     <div class="flex items-center justify-between mb-3">
                                         <h5 class="text-sm font-semibold theme-text-primary">Rangkuman</h5>
-                                        <a href="{{ route('summaries.page', ['article_id' => $article->id]) }}" class="text-xs text-[#AA5F3C] hover:underline">Lihat semua</a>
+
                                     </div>
                                     @php
                                         $latestSummary = $article->summaries->first();
@@ -502,11 +502,11 @@
 
             // Helper functions for article-level actions
             function generateSummaryForArticle(articleId) {
-                window.location.href = `/summaries?article_id=${articleId}`;
+                window.location.href = `/articles/${articleId}`;
             }
 
             async function generateCitationsForArticle(articleId) {
-                if (!confirm('Generate saran kutipan dengan AI?')) return;
+                if (!confirm('Generate saran kutipan{{ auth()->user()?->is_admin ? ' dengan AI' : '' }}?')) return;
                 try {
                     const res = await fetch(`/articles/${articleId}/generate-citations`, {
                         method: 'POST',

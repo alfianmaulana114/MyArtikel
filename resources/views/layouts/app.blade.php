@@ -94,16 +94,6 @@
                                 </svg>
                             </button>
 
-                            <select
-                                data-theme-select
-                                class="h-10 rounded-xl border theme-border-primary bg-[color:var(--surface-primary)] px-3 text-sm theme-text-primary hover:bg-[color:var(--hover-bg)] transition"
-                                aria-label="Tema"
-                            >
-                                <option value="auto">System</option>
-                                <option value="light">Light</option>
-                                <option value="dark">Dark</option>
-                            </select>
-
                             <x-dropdown align="right" width="48">
                                 <x-slot name="trigger">
                                     <button class="btn btn-secondary">

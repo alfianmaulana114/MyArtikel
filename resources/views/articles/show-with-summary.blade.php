@@ -19,15 +19,6 @@
                     <div class="article-content">
                         {!! $article->content !!}
                     </div>
-                    
-                    @if($article->tags->count() > 0)
-                        <div class="article-tags mt-3">
-                            <strong>Tags:</strong>
-                            @foreach($article->tags as $tag)
-                                <span class="badge badge-secondary">{{ $tag->name }}</span>
-                            @endforeach
-                        </div>
-                    @endif
                 </div>
             </div>
         </div>

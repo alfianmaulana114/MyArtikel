@@ -106,16 +106,6 @@
             </a>
 
             <a
-                href="{{ route('summaries.page') }}"
-                class="{{ $linkBase }} {{ request()->routeIs('summaries.*') ? $linkActive : $linkIdle }}"
-            >
-                <svg class="{{ $iconBase }}" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
-                </svg>
-                Summaries
-            </a>
-
-            <a
                 href="{{ route('projects.index') }}"
                 class="{{ $linkBase }} {{ request()->routeIs('projects.*') ? $linkActive : $linkIdle }}"
             >
@@ -123,40 +113,6 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                 </svg>
                 Workspace
-            </a>
-
-            <div class="px-3 pt-6 pb-2 text-xs font-semibold tracking-wider uppercase theme-text-muted">
-                Tools
-            </div>
-
-            <a
-                href="{{ route('pdf.export.form') }}"
-                class="{{ $linkBase }} {{ request()->routeIs('pdf.export.*') ? $linkActive : $linkIdle }}"
-            >
-                <svg class="{{ $iconBase }}" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-                Export PDF
-            </a>
-
-            <a
-                href="{{ route('pdf.history') }}"
-                class="{{ $linkBase }} {{ request()->routeIs('pdf.history') ? $linkActive : $linkIdle }}"
-            >
-                <svg class="{{ $iconBase }}" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Export History
-            </a>
-
-            <a
-                href="{{ route('jobs.monitoring') }}"
-                class="{{ $linkBase }} {{ request()->routeIs('jobs.*') ? $linkActive : $linkIdle }}"
-            >
-                <svg class="{{ $iconBase }}" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a2 2 0 012-2h2a2 2 0 012 2v2m-7 0h8m-8 0a2 2 0 01-2-2V7a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2" />
-                </svg>
-                Jobs
             </a>
         </nav>
     @endif

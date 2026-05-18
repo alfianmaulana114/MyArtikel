@@ -157,25 +157,6 @@
                 </div>
             </div>
 
-            {{-- Tags --}}
-            @if (!empty($article->tags))
-                <div class="card sm:rounded-lg mb-6">
-                    <div class="p-5">
-                        <div class="flex items-center gap-2 mb-3">
-                            <svg class="w-4 h-4 theme-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
-                            <span class="text-sm font-medium theme-text-secondary">Tags</span>
-                        </div>
-                        <div class="flex flex-wrap gap-2">
-                            @foreach ($article->tags as $tag)
-                                <span class="text-xs px-3 py-1.5 rounded-full bg-[color:var(--bg-tertiary)] theme-text-secondary hover:bg-[#AA5F3C] hover:text-white transition-colors cursor-default">
-                                    {{ $tag->name }}
-                                </span>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-            @endif
-
             {{-- Tab Section: Rangkuman & Saran Kutipan --}}
             <div class="card sm:rounded-lg overflow-hidden mb-6" x-data="{
                 activeTab: 'summary',
@@ -205,7 +186,7 @@
                             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
                             Saran Kutipan
                         </span>
-                        @if (!empty($article->ai_quotation_suggestions))
+                        @if (auth()->user()?->is_admin && !empty($article->ai_quotation_suggestions))
                             <span class="absolute top-2 right-4 text-xs px-2 py-0.5 rounded-full bg-[#AA5F3C] text-white">
                                 {{ count($article->ai_quotation_suggestions) }}
                             </span>
@@ -217,14 +198,12 @@
                 <div x-show="activeTab === 'summary'" x-transition class="p-6 sm:p-8">
                     <div class="flex items-start justify-between gap-3 mb-6">
                         <div>
-                            <h3 class="text-lg font-semibold theme-text-primary">Ringkasan AI</h3>
+                            <h3 class="text-lg font-semibold theme-text-primary">Ringkasan</h3>
                             <p class="text-sm theme-text-muted mt-1">
                                 Generate ringkasan on-demand sesuai kebutuhan.
                             </p>
                         </div>
-                        <a class="btn btn-secondary text-sm" href="{{ route('summaries.page', ['article_id' => $article->id]) }}">
-                            Semua Ringkasan
-                        </a>
+
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
@@ -245,6 +224,7 @@
                         </div>
                     </div>
 
+                    @if (auth()->user()?->is_admin)
                     <div class="flex items-center justify-between gap-4 mb-4 p-4 rounded-lg bg-[color:var(--bg-tertiary)]">
                         <label class="inline-flex items-center gap-2 text-sm theme-text-secondary">
                             <input id="summary-prefer-ai" type="checkbox" class="rounded theme-border-primary text-[#AA5F3C] shadow-sm focus:ring-[#AA5F3C]" checked>
@@ -257,6 +237,7 @@
                     </div>
 
                     <div class="text-xs theme-text-muted mb-4" id="summary-quota"></div>
+                    @endif
 
                     <div class="flex flex-wrap gap-3 mb-6">
                         <button id="summary-generate" type="button" class="btn btn-primary">
@@ -302,7 +283,7 @@
                         <div>
                             <h3 class="text-lg font-semibold theme-text-primary">Saran Kutipan</h3>
                             <p class="text-sm theme-text-muted mt-1">
-                                Kutipan yang disarankan AI dari artikel ini.
+                                Saran kutipan dari artikel ini.
                             </p>
                         </div>
                         @if ($article->processing_status === 'ready' && !empty($article->text_extracted))
@@ -442,6 +423,7 @@
                 }
 
                 async function loadQuota() {
+                    if (!els.quota) return;
                     try {
                         const res = await fetch("/summaries/quota", {
                             credentials: "same-origin",
@@ -508,7 +490,7 @@
                         article_id: articleId,
                         max_words: Number(els.words.value || 150),
                         language: els.language.value || "id",
-                        prefer_ai: !!els.preferAI.checked,
+                        prefer_ai: els.preferAI ? !!els.preferAI.checked : true,
                         async: !!asyncMode,
                     };
 
@@ -589,7 +571,7 @@
                     const body = {
                         max_words: Number(els.words.value || 150),
                         language: els.language.value || "id",
-                        prefer_ai: !!els.preferAI.checked,
+                        prefer_ai: els.preferAI ? !!els.preferAI.checked : true,
                     };
 
                     try {
@@ -626,7 +608,7 @@
                     }
                 }
 
-                els.generate.addEventListener("click", () => generate(!!els.async.checked));
+                els.generate.addEventListener("click", () => generate(els.async ? !!els.async.checked : false));
                 els.regenerate.addEventListener("click", () => regenerate());
 
                 const genBtn = document.getElementById("generate-citations-btn");

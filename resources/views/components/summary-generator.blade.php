@@ -23,6 +23,7 @@
                 </select>
             </div>
             
+            @if (auth()->user()?->is_admin)
             <div class="form-group">
                 <label>
                     <input type="checkbox" id="prefer-ai" checked> Use AI (Gemini)
@@ -34,6 +35,7 @@
                     <input type="checkbox" id="async-mode"> Async Processing
                 </label>
             </div>
+            @endif
         </div>
     </div>
 
@@ -68,6 +70,7 @@
         </div>
     </div>
 
+    @if (auth()->user()?->is_admin)
     <div id="summary-quota" class="summary-quota">
         <div class="quota-status">
             <h5>Quota Status</h5>
@@ -83,6 +86,7 @@
             </div>
         </div>
     </div>
+    @endif
 </div>
 
 <style>
@@ -298,8 +302,10 @@ async function generateSummary() {
     
     // Get options
     const maxWords = document.getElementById('max-words').value;
-    const preferAi = document.getElementById('prefer-ai').checked;
-    const asyncMode = document.getElementById('async-mode').checked;
+    const preferAiEl = document.getElementById('prefer-ai');
+    const asyncModeEl = document.getElementById('async-mode');
+    const preferAi = preferAiEl ? preferAiEl.checked : true;
+    const asyncMode = asyncModeEl ? asyncModeEl.checked : false;
     
     try {
         // Show loading state
@@ -381,7 +387,7 @@ function displaySummary(summary) {
     
     // Display metadata
     wordCountSpan.textContent = `${summary.word_count || 0} words`;
-    sourceSpan.textContent = `Source: ${summary.source || 'Unknown'}`;
+    sourceSpan.textContent = `Source: ${summary.source ? 'AI' : 'Unknown'}`;
     processingTimeSpan.textContent = `Time: ${summary.processing_time || 'N/A'}`;
     
     // Show result
@@ -440,6 +446,8 @@ async function pollSummaryStatus(summaryId) {
  * Load quota status
  */
 async function loadQuotaStatus() {
+    const quotaEl = document.getElementById('summary-quota');
+    if (!quotaEl) return;
     try {
         const response = await fetch('/summaries/quota');
         const result = await response.json();
@@ -491,7 +499,8 @@ async function regenerateSummary() {
     if (!currentArticleId) return;
     
     const maxWords = document.getElementById('max-words').value;
-    const preferAi = document.getElementById('prefer-ai').checked;
+    const preferAiEl = document.getElementById('prefer-ai');
+    const preferAi = preferAiEl ? preferAiEl.checked : true;
     
     try {
         const response = await fetch(`/summaries/${currentArticleId}/regenerate`, {
