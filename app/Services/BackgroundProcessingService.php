@@ -3,19 +3,24 @@
 namespace App\Services;
 
 use App\Jobs\ProcessArticleIngestion;
+use App\Jobs\ProcessPdfExport;
 use App\Jobs\ProcessPdfIngestion;
 use App\Jobs\ProcessSummaryGeneration;
-use App\Jobs\ProcessPdfExport;
-use Illuminate\Support\Facades\Bus;
-use Illuminate\Support\Facades\Queue;
-use Illuminate\Support\Facades\Log;
+use App\Models\Article;
+use App\Models\Export;
+use App\Models\Summary;
+use App\Models\User;
 use Exception;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Queue;
 
 class BackgroundProcessingService
 {
     private JobMonitoringService $monitoringService;
+
     private JobRetryService $retryService;
-    
+
     public function __construct(
         JobMonitoringService $monitoringService,
         JobRetryService $retryService
@@ -50,26 +55,26 @@ class BackgroundProcessingService
                 'user_id' => $userId,
                 'file_path' => $filePath,
                 'job_id' => $jobId,
-                'queue' => $queue
+                'queue' => $queue,
             ]);
 
             return [
                 'success' => true,
                 'job_id' => $jobId,
                 'message' => $queue === 'sync' ? 'PDF ingestion processed immediately' : 'PDF ingestion queued for processing',
-                'queue' => $queue
+                'queue' => $queue,
             ];
 
         } catch (\Throwable $e) {
             Log::error('Failed to dispatch PDF ingestion job', [
                 'user_id' => $userId,
                 'file_path' => $filePath,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return [
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ];
         }
     }
@@ -81,7 +86,7 @@ class BackgroundProcessingService
     {
         try {
             // Validate input
-            if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
+            if (empty($url) || ! filter_var($url, FILTER_VALIDATE_URL)) {
                 throw new Exception('Invalid URL provided');
             }
 
@@ -96,31 +101,31 @@ class BackgroundProcessingService
                 $jobId = dispatch($job->onQueue('low-priority'));
                 $queue = 'low-priority';
             }
-            
+
             Log::info('Article ingestion job dispatched', [
                 'user_id' => $userId,
                 'url' => $url,
                 'job_id' => $jobId,
-                'queue' => $queue
+                'queue' => $queue,
             ]);
 
             return [
                 'success' => true,
                 'job_id' => $jobId,
                 'message' => $queue === 'sync' ? 'Article ingestion processed immediately' : 'Article ingestion queued for processing',
-                'queue' => $queue
+                'queue' => $queue,
             ];
 
         } catch (Exception $e) {
             Log::error('Failed to dispatch article ingestion job', [
                 'user_id' => $userId,
                 'url' => $url,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return [
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ];
         }
     }
@@ -132,8 +137,8 @@ class BackgroundProcessingService
     {
         try {
             // Validate article exists
-            $article = \App\Models\Article::find($articleId);
-            if (!$article) {
+            $article = Article::find($articleId);
+            if (! $article) {
                 throw new Exception('Article not found');
             }
 
@@ -143,7 +148,7 @@ class BackgroundProcessingService
             }
 
             // Create summary record first
-            $summary = \App\Models\Summary::create([
+            $summary = Summary::create([
                 'article_id' => $articleId,
                 'user_id' => $userId,
                 'content' => '',
@@ -151,7 +156,7 @@ class BackgroundProcessingService
                 'type' => 'ai_generated',
                 'source' => 'pending',
                 'status' => 'pending',
-                'processing_started_at' => now()
+                'processing_started_at' => now(),
             ]);
 
             // Create job
@@ -165,13 +170,13 @@ class BackgroundProcessingService
                 $jobId = dispatch($job->onQueue('summarization'));
                 $queue = 'summarization';
             }
-            
+
             Log::info('Summary generation job dispatched', [
                 'article_id' => $articleId,
                 'user_id' => $userId,
                 'summary_id' => $summary->id,
                 'job_id' => $jobId,
-                'queue' => $queue
+                'queue' => $queue,
             ]);
 
             return [
@@ -179,19 +184,19 @@ class BackgroundProcessingService
                 'job_id' => $jobId,
                 'summary_id' => $summary->id,
                 'message' => $queue === 'sync' ? 'Summary processed immediately' : 'Summary generation queued for processing',
-                'queue' => $queue
+                'queue' => $queue,
             ];
 
         } catch (Exception $e) {
             Log::error('Failed to dispatch summary generation job', [
                 'article_id' => $articleId,
                 'user_id' => $userId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return [
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ];
         }
     }
@@ -203,13 +208,13 @@ class BackgroundProcessingService
     {
         try {
             // Validate user
-            $user = \App\Models\User::find($userId);
-            if (!$user) {
+            $user = User::find($userId);
+            if (! $user) {
                 throw new Exception('User not found');
             }
 
             // Validate articles belong to user
-            $validArticles = \App\Models\Article::where('user_id', $userId)
+            $validArticles = Article::where('user_id', $userId)
                 ->whereIn('id', $articleIds)
                 ->pluck('id')
                 ->toArray();
@@ -219,7 +224,7 @@ class BackgroundProcessingService
             }
 
             // Create export record
-            $export = \App\Models\Export::create([
+            $export = Export::create([
                 'user_id' => $userId,
                 'type' => 'pdf',
                 'file_path' => '',
@@ -227,10 +232,10 @@ class BackgroundProcessingService
                 'status' => 'pending',
                 'metadata' => [
                     'article_ids' => $validArticles,
-                    'export_options' => $options
+                    'export_options' => $options,
                 ],
                 'processing_started_at' => now(),
-                'expires_at' => now()->addDays(7)
+                'expires_at' => now()->addDays(7),
             ]);
 
             // Create job
@@ -244,13 +249,13 @@ class BackgroundProcessingService
                 $jobId = dispatch($job->onQueue('exports'));
                 $queue = 'exports';
             }
-            
+
             Log::info('PDF export job dispatched', [
                 'user_id' => $userId,
                 'article_count' => count($validArticles),
                 'export_id' => $export->id,
                 'job_id' => $jobId,
-                'queue' => $queue
+                'queue' => $queue,
             ]);
 
             return [
@@ -258,19 +263,19 @@ class BackgroundProcessingService
                 'job_id' => $jobId,
                 'export_id' => $export->id,
                 'message' => $queue === 'sync' ? 'PDF export processed immediately' : 'PDF export queued for processing',
-                'queue' => $queue
+                'queue' => $queue,
             ];
 
         } catch (Exception $e) {
             Log::error('Failed to dispatch PDF export job', [
                 'user_id' => $userId,
                 'article_ids' => $articleIds,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return [
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ];
         }
     }
@@ -282,7 +287,7 @@ class BackgroundProcessingService
     {
         try {
             $jobs = [];
-            
+
             foreach ($items as $item) {
                 switch ($operation) {
                     case 'summarize':
@@ -294,7 +299,7 @@ class BackgroundProcessingService
                         );
                         $jobs[] = $job->onQueue('summarization');
                         break;
-                        
+
                     case 'export':
                         $job = new ProcessPdfExport(
                             $item['user_id'],
@@ -303,7 +308,7 @@ class BackgroundProcessingService
                         );
                         $jobs[] = $job->onQueue('exports');
                         break;
-                        
+
                     case 'ingest':
                         $job = new ProcessArticleIngestion(
                             $item['user_id'],
@@ -312,48 +317,48 @@ class BackgroundProcessingService
                         );
                         $jobs[] = $job->onQueue('low-priority');
                         break;
-                        
+
                     default:
                         throw new Exception("Unknown batch operation: {$operation}");
                 }
             }
-            
+
             // Dispatch batch
             $batch = Bus::batch($jobs)
                 ->then(function ($batch) use ($operation) {
-                    Log::info("Batch operation completed", [
+                    Log::info('Batch operation completed', [
                         'operation' => $operation,
                         'batch_id' => $batch->id,
                         'total_jobs' => $batch->totalJobs,
-                        'processed_jobs' => $batch->processedJobs()
+                        'processed_jobs' => $batch->processedJobs(),
                     ]);
                 })
                 ->catch(function ($batch, $exception) use ($operation) {
-                    Log::error("Batch operation failed", [
+                    Log::error('Batch operation failed', [
                         'operation' => $operation,
                         'batch_id' => $batch->id,
-                        'error' => $exception->getMessage()
+                        'error' => $exception->getMessage(),
                     ]);
                 })
                 ->dispatch();
-            
+
             return [
                 'success' => true,
                 'batch_id' => $batch->id,
                 'total_jobs' => count($jobs),
-                'message' => 'Batch operation queued successfully'
+                'message' => 'Batch operation queued successfully',
             ];
-            
+
         } catch (Exception $e) {
             Log::error('Batch operation failed', [
                 'operation' => $operation,
                 'items_count' => count($items),
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
-            
+
             return [
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ];
         }
     }
@@ -371,13 +376,13 @@ class BackgroundProcessingService
                 'job_id' => $jobId,
                 'status' => 'processing',
                 'progress' => 50,
-                'message' => 'Job is being processed'
+                'message' => 'Job is being processed',
             ];
-            
+
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ];
         }
     }
@@ -393,13 +398,13 @@ class BackgroundProcessingService
             return [
                 'success' => true,
                 'job_id' => $jobId,
-                'message' => 'Job cancellation requested'
+                'message' => 'Job cancellation requested',
             ];
-            
+
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ];
         }
     }
@@ -420,32 +425,32 @@ class BackgroundProcessingService
         try {
             $stats = $this->getQueueStatistics();
             $recommendations = [];
-            
+
             // Check for high pending job count
             if ($stats['pending'] > 100) {
                 $recommendations[] = 'Consider scaling up workers for high-priority queues';
             }
-            
+
             // Check for high failed job count
             if ($stats['failed'] > 50) {
                 $recommendations[] = 'Review and address failed jobs to improve success rate';
             }
-            
+
             // Check performance metrics
             if ($stats['performance']['avg_batch_duration'] > 300) {
                 $recommendations[] = 'Average processing time is high - consider optimizing job logic';
             }
-            
+
             return [
                 'success' => true,
                 'statistics' => $stats,
-                'recommendations' => $recommendations
+                'recommendations' => $recommendations,
             ];
-            
+
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ];
         }
     }

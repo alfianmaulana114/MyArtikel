@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 /**
  * @extends Factory<Tag>
@@ -16,9 +17,10 @@ class TagFactory extends Factory
     public function definition(): array
     {
         $name = fake()->unique()->word();
+
         return [
             'name' => $name,
-            'slug' => \Illuminate\Support\Str::slug($name),
+            'slug' => Str::slug($name),
             'user_id' => User::factory(),
             'type' => 'custom',
             'is_auto_generated' => false,

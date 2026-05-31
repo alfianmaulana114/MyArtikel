@@ -1,10 +1,10 @@
 <?php
 
-use App\Http\Controllers\BookmarkController;
-use App\Http\Controllers\BookmarkCategoryController;
-use App\Http\Controllers\BookmarkSyncController;
 use App\Http\Controllers\BookmarkAnalyticsController;
+use App\Http\Controllers\BookmarkCategoryController;
+use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\BookmarkedArticlesController;
+use App\Http\Controllers\BookmarkSyncController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -24,7 +24,7 @@ Route::middleware(['auth', 'redirect.admin'])->group(function () {
         Route::post('/', [BookmarkController::class, 'store'])->name('bookmarks.store');
         Route::get('/check', [BookmarkController::class, 'checkArticle'])->name('bookmarks.check');
         Route::post('/bulk', [BookmarkController::class, 'bulkOperation'])->name('bookmarks.bulk');
-        
+
         Route::prefix('{bookmark}')->group(function () {
             Route::get('/', [BookmarkController::class, 'show'])->name('bookmarks.show');
             Route::put('/', [BookmarkController::class, 'update'])->name('bookmarks.update');
@@ -42,7 +42,7 @@ Route::middleware(['auth', 'redirect.admin'])->group(function () {
         Route::get('/', [BookmarkCategoryController::class, 'index'])->name('bookmark-categories.index');
         Route::post('/', [BookmarkCategoryController::class, 'store'])->name('bookmark-categories.store');
         Route::post('/reorder', [BookmarkCategoryController::class, 'reorder'])->name('bookmark-categories.reorder');
-        
+
         Route::prefix('{category}')->group(function () {
             Route::get('/', [BookmarkCategoryController::class, 'show'])->name('bookmark-categories.show');
             Route::put('/', [BookmarkCategoryController::class, 'update'])->name('bookmark-categories.update');

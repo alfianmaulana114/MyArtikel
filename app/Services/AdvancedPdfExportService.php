@@ -12,6 +12,7 @@ use Throwable;
 class AdvancedPdfExportService
 {
     private string $storageDisk = 'local';
+
     private string $exportPath = 'exports/pdf';
 
     public function getAvailableTemplates(): array
@@ -84,6 +85,7 @@ class AdvancedPdfExportService
     public function exportWithTemplate($articles, string $template, array $options = []): array
     {
         $options['template'] = $template;
+
         return $this->exportMultipleArticles($articles, $options);
     }
 
@@ -107,17 +109,17 @@ class AdvancedPdfExportService
         $options = array_merge($defaults, $options);
 
         $validTemplates = collect($this->getAvailableTemplates())->pluck('name')->all();
-        if (!in_array($options['template'], $validTemplates, true)) {
+        if (! in_array($options['template'], $validTemplates, true)) {
             $options['template'] = 'default';
         }
 
         $validFormats = ['A4', 'A3', 'Letter', 'Legal'];
-        if (!in_array($options['format'], $validFormats, true)) {
+        if (! in_array($options['format'], $validFormats, true)) {
             $options['format'] = 'A4';
         }
 
         $validOrientations = ['portrait', 'landscape'];
-        if (!in_array($options['orientation'], $validOrientations, true)) {
+        if (! in_array($options['orientation'], $validOrientations, true)) {
             $options['orientation'] = 'portrait';
         }
 
@@ -140,7 +142,7 @@ class AdvancedPdfExportService
     private function savePdfFile(string $pdfContent, array $options): string
     {
         $filename = $this->generateFilename($options);
-        $filePath = $this->exportPath . '/' . $filename;
+        $filePath = $this->exportPath.'/'.$filename;
 
         Storage::disk($this->storageDisk)->put($filePath, $pdfContent);
 
@@ -175,7 +177,7 @@ class AdvancedPdfExportService
             $toc .= '<h1>Table of Contents</h1>';
             $toc .= '<ol class="toc-list">';
             foreach ($articles as $article) {
-                $toc .= '<li>' . e((string) $article->title) . '</li>';
+                $toc .= '<li>'.e((string) $article->title).'</li>';
             }
             $toc .= '</ol>';
             $toc .= '</div><div class="page-break"></div>';
@@ -185,25 +187,25 @@ class AdvancedPdfExportService
         foreach ($articles as $index => $article) {
             $body .= '<div class="page">';
 
-            $body .= '<h1 class="article-title">' . e((string) $article->title) . '</h1>';
+            $body .= '<h1 class="article-title">'.e((string) $article->title).'</h1>';
 
             if ($options['include_metadata']) {
                 $createdAt = $article->created_at ? $article->created_at->format('Y-m-d H:i') : '';
                 $body .= '<div class="meta">';
                 if ($createdAt !== '') {
-                    $body .= '<span>Created: ' . e($createdAt) . '</span>';
+                    $body .= '<span>Created: '.e($createdAt).'</span>';
                 }
                 if ($article->relationLoaded('tags') && $article->tags && $article->tags->count() > 0) {
-                    $body .= '<span>Tags: ' . e($article->tags->pluck('name')->implode(', ')) . '</span>';
+                    $body .= '<span>Tags: '.e($article->tags->pluck('name')->implode(', ')).'</span>';
                 }
                 $body .= '</div>';
             }
 
-            if ($options['include_images'] && !empty($article->featured_image)) {
+            if ($options['include_images'] && ! empty($article->featured_image)) {
                 $src = $this->normalizeImageSrc((string) $article->featured_image);
                 if ($src !== null) {
                     $body .= '<div class="featured-image-wrap">';
-                    $body .= '<img class="featured-image" src="' . e($src) . '" alt="Featured image">';
+                    $body .= '<img class="featured-image" src="'.e($src).'" alt="Featured image">';
                     $body .= '</div>';
                 }
             }
@@ -212,7 +214,7 @@ class AdvancedPdfExportService
             $content = $options['clean_reader_format']
                 ? $this->cleanArticleHtml($content, $options['include_images'])
                 : $content;
-            $body .= '<div class="content">' . $content . '</div>';
+            $body .= '<div class="content">'.$content.'</div>';
 
             if ($options['include_summaries'] && $article->relationLoaded('summaries') && $article->summaries && $article->summaries->count() > 0) {
                 $body .= '<div class="summaries">';
@@ -222,8 +224,8 @@ class AdvancedPdfExportService
                         continue;
                     }
                     $body .= '<div class="summary">';
-                    $body .= '<div class="summary-source">' . e(Str::upper((string) ($summary->source ?? ''))) . '</div>';
-                    $body .= '<div class="summary-content">' . e((string) ($summary->content ?? '')) . '</div>';
+                    $body .= '<div class="summary-source">'.e(Str::upper((string) ($summary->source ?? ''))).'</div>';
+                    $body .= '<div class="summary-content">'.e((string) ($summary->content ?? '')).'</div>';
                     $body .= '</div>';
                 }
                 $body .= '</div>';
@@ -239,15 +241,15 @@ class AdvancedPdfExportService
         $footer = $this->buildFooterHtml($options);
 
         return '<!DOCTYPE html>'
-            . '<html lang="en"><head><meta charset="utf-8"><title>' . e($title) . '</title>'
-            . $css
-            . '</head><body>'
-            . $watermark
-            . '<div class="doc-header"><div class="doc-title">' . e($title) . '</div><div class="doc-date">' . e($exportDate) . '</div></div>'
-            . $toc
-            . $body
-            . $footer
-            . '</body></html>';
+            .'<html lang="en"><head><meta charset="utf-8"><title>'.e($title).'</title>'
+            .$css
+            .'</head><body>'
+            .$watermark
+            .'<div class="doc-header"><div class="doc-title">'.e($title).'</div><div class="doc-date">'.e($exportDate).'</div></div>'
+            .$toc
+            .$body
+            .$footer
+            .'</body></html>';
     }
 
     private function buildCss(array $options): string
@@ -283,31 +285,31 @@ class AdvancedPdfExportService
         $marginLeft = (int) (config('dompdf.typography.margin_left') ?? 15);
 
         return '<style>'
-            . '@page { margin: ' . $marginTop . 'px ' . $marginRight . 'px ' . $marginBottom . 'px ' . $marginLeft . 'px; }'
-            . 'body { font-family: ' . $font['body'] . '; font-size: ' . $fontSize . 'pt; line-height: 1.6; color: ' . $primary . '; }'
-            . '.doc-header { margin-bottom: 18px; padding-bottom: 10px; border-bottom: 2px solid ' . $accent . '; }'
-            . '.doc-title { font-family: ' . $font['heading'] . '; font-size: 18pt; font-weight: 700; color: ' . $accent . '; }'
-            . '.doc-date { font-size: 10pt; color: #6b7280; margin-top: 4px; }'
-            . '.page { }'
-            . '.article-title { font-family: ' . $font['heading'] . '; font-size: 20pt; margin: 0 0 8px 0; color: ' . $accent . '; }'
-            . '.meta { font-size: 10pt; color: #6b7280; margin-bottom: 14px; }'
-            . '.meta span { margin-right: 14px; }'
-            . '.featured-image-wrap { margin: 12px 0 16px 0; }'
-            . '.featured-image { max-width: 100%; height: auto; border-radius: 6px; }'
-            . '.content { }'
-            . '.content p { margin: 0 0 10px 0; }'
-            . '.content h2, .content h3 { color: ' . $primary . '; }'
-            . '.summaries { margin-top: 18px; padding-top: 12px; border-top: 1px solid #e5e7eb; }'
-            . '.summaries h2 { margin: 0 0 10px 0; font-size: 14pt; color: ' . $primary . '; }'
-            . '.summary { margin: 10px 0; padding: 10px; border: 1px solid #e5e7eb; border-radius: 6px; }'
-            . '.summary-source { font-size: 9pt; color: #6b7280; letter-spacing: 0.06em; margin-bottom: 6px; }'
-            . '.summary-content { white-space: pre-wrap; }'
-            . '.toc h1 { font-family: ' . $font['heading'] . '; color: ' . $accent . '; margin: 0 0 12px 0; }'
-            . '.toc-list { margin: 0; padding-left: 18px; }'
-            . '.toc-list li { margin: 6px 0; }'
-            . '.page-break { page-break-after: always; }'
-            . '.doc-footer { position: fixed; bottom: 8px; left: 0; right: 0; text-align: center; font-size: 9pt; color: #6b7280; }'
-            . '</style>';
+            .'@page { margin: '.$marginTop.'px '.$marginRight.'px '.$marginBottom.'px '.$marginLeft.'px; }'
+            .'body { font-family: '.$font['body'].'; font-size: '.$fontSize.'pt; line-height: 1.6; color: '.$primary.'; }'
+            .'.doc-header { margin-bottom: 18px; padding-bottom: 10px; border-bottom: 2px solid '.$accent.'; }'
+            .'.doc-title { font-family: '.$font['heading'].'; font-size: 18pt; font-weight: 700; color: '.$accent.'; }'
+            .'.doc-date { font-size: 10pt; color: #6b7280; margin-top: 4px; }'
+            .'.page { }'
+            .'.article-title { font-family: '.$font['heading'].'; font-size: 20pt; margin: 0 0 8px 0; color: '.$accent.'; }'
+            .'.meta { font-size: 10pt; color: #6b7280; margin-bottom: 14px; }'
+            .'.meta span { margin-right: 14px; }'
+            .'.featured-image-wrap { margin: 12px 0 16px 0; }'
+            .'.featured-image { max-width: 100%; height: auto; border-radius: 6px; }'
+            .'.content { }'
+            .'.content p { margin: 0 0 10px 0; }'
+            .'.content h2, .content h3 { color: '.$primary.'; }'
+            .'.summaries { margin-top: 18px; padding-top: 12px; border-top: 1px solid #e5e7eb; }'
+            .'.summaries h2 { margin: 0 0 10px 0; font-size: 14pt; color: '.$primary.'; }'
+            .'.summary { margin: 10px 0; padding: 10px; border: 1px solid #e5e7eb; border-radius: 6px; }'
+            .'.summary-source { font-size: 9pt; color: #6b7280; letter-spacing: 0.06em; margin-bottom: 6px; }'
+            .'.summary-content { white-space: pre-wrap; }'
+            .'.toc h1 { font-family: '.$font['heading'].'; color: '.$accent.'; margin: 0 0 12px 0; }'
+            .'.toc-list { margin: 0; padding-left: 18px; }'
+            .'.toc-list li { margin: 6px 0; }'
+            .'.page-break { page-break-after: always; }'
+            .'.doc-footer { position: fixed; bottom: 8px; left: 0; right: 0; text-align: center; font-size: 9pt; color: #6b7280; }'
+            .'</style>';
     }
 
     private function buildFooterHtml(array $options): string
@@ -318,11 +320,11 @@ class AdvancedPdfExportService
             return '';
         }
 
-        if (!($options['page_numbers'] ?? false)) {
-            return '<div class="doc-footer">' . e($text) . '</div>';
+        if (! ($options['page_numbers'] ?? false)) {
+            return '<div class="doc-footer">'.e($text).'</div>';
         }
 
-        return '<div class="doc-footer">' . e($text) . '</div>';
+        return '<div class="doc-footer">'.e($text).'</div>';
     }
 
     private function buildWatermarkHtml(): string
@@ -333,9 +335,9 @@ class AdvancedPdfExportService
         $angle = (int) (config('dompdf.watermark.angle') ?? -45);
         $color = (string) (config('dompdf.watermark.color') ?? '#cccccc');
 
-        return '<div style="position: fixed; top: 45%; left: 0; right: 0; text-align: center; z-index: -1; transform: rotate(' . $angle . 'deg); opacity: ' . $opacity . '; font-size: ' . $size . 'px; color: ' . e($color) . '; font-family: DejaVu Sans;">'
-            . e($text)
-            . '</div>';
+        return '<div style="position: fixed; top: 45%; left: 0; right: 0; text-align: center; z-index: -1; transform: rotate('.$angle.'deg); opacity: '.$opacity.'; font-size: '.$size.'px; color: '.e($color).'; font-family: DejaVu Sans;">'
+            .e($text)
+            .'</div>';
     }
 
     private function normalizeImageSrc(string $src): ?string
@@ -373,11 +375,11 @@ class AdvancedPdfExportService
 
         $html = preg_replace_callback('/<img\b[^>]*>/i', function ($matches) use ($includeImages) {
             $tag = $matches[0];
-            if (!$includeImages) {
+            if (! $includeImages) {
                 return '';
             }
 
-            if (!preg_match('/\bsrc\s*=\s*([\'"])(.*?)\1/i', $tag, $m)) {
+            if (! preg_match('/\bsrc\s*=\s*([\'"])(.*?)\1/i', $tag, $m)) {
                 return '';
             }
 
@@ -386,7 +388,7 @@ class AdvancedPdfExportService
                 return '';
             }
 
-            if (!Str::startsWith(Str::lower($src), ['data:'])) {
+            if (! Str::startsWith(Str::lower($src), ['data:'])) {
                 return '';
             }
 
@@ -396,4 +398,3 @@ class AdvancedPdfExportService
         return $html;
     }
 }
-

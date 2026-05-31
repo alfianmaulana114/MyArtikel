@@ -87,8 +87,8 @@ class ArticleFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'ai_quotation_suggestions' => [
-                ['quote' => 'This is a test citation from the article text content.', 'relevance' => 'Relevant to research topic', 'position' => 'pembahasan'],
-                ['quote' => 'Another important quote for citation purposes.', 'relevance' => 'Supports methodology claims', 'position' => 'metodologi'],
+                ['quote' => 'This is a test citation from the article text content.', 'paraphrase' => 'A test paraphrase of the original citation content.', 'relevance' => 'Relevant to research topic', 'position' => 'pembahasan', 'generated_for_title' => $attributes['research_title'] ?? 'Test Research Topic', 'generated_for_context' => $attributes['research_context'] ?? null, 'generated_at' => now()->toDateTimeString()],
+                ['quote' => 'Another important quote for citation purposes.', 'paraphrase' => 'A different wording of the important quote used for citations.', 'relevance' => 'Supports methodology claims', 'position' => 'metodologi', 'generated_for_title' => $attributes['research_title'] ?? 'Test Research Topic', 'generated_for_context' => $attributes['research_context'] ?? null, 'generated_at' => now()->toDateTimeString()],
             ],
         ]);
     }

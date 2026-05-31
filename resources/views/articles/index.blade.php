@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex flex-col gap-1">
             <h2 class="font-semibold text-xl theme-text-primary leading-tight">
-                Articles
+                Artikel
             </h2>
             <p class="text-sm theme-text-muted">
                 Daftar semua artikel yang tersimpan.
@@ -10,78 +10,71 @@
         </div>
     </x-slot>
 
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div class="lg:col-span-8 space-y-6">
-            <div class="card overflow-hidden sm:rounded-lg">
-                <div class="p-6">
-                    <div class="flex flex-col sm:flex-row gap-3 sm:items-end">
-                        <div class="flex-1">
-                            <label for="articles-search" class="block font-medium text-sm theme-text-secondary">Cari</label>
+    <div class="py-6">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+            
+            {{-- Search & Filters --}}
+            <div class="card rounded-xl p-5">
+                <div class="flex flex-col sm:flex-row gap-4 sm:items-end">
+                    <div class="flex-1">
+                        <label for="articles-search" class="block text-sm font-medium theme-text-secondary mb-1.5">Cari Artikel</label>
+                        <div class="relative">
+                            <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 theme-text-muted pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                             <input
                                 id="articles-search"
                                 type="text"
                                 placeholder="Cari judul / excerpt…"
-                                class="mt-1 block w-full rounded-lg shadow-sm border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C]"
+                                class="block w-full rounded-lg shadow-sm border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C] pl-10 pr-4 py-2.5 sm:text-sm"
                             />
                         </div>
+                    </div>
 
-                        <div class="sm:w-48">
-                            <label for="articles-status" class="block font-medium text-sm theme-text-secondary">Status</label>
-                            <select
-                                id="articles-status"
-                                class="mt-1 block w-full rounded-lg shadow-sm border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C]"
-                            >
-                                <option value="">Semua</option>
-                                <option value="ready">Ready</option>
-                                <option value="processing">Processing</option>
-                                <option value="failed">Failed</option>
-                            </select>
-                        </div>
+                    <div class="sm:w-48">
+                        <label for="articles-status" class="block text-sm font-medium theme-text-secondary mb-1.5">Status</label>
+                        <select
+                            id="articles-status"
+                            class="block w-full rounded-lg shadow-sm border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C] px-4 py-2.5 sm:text-sm"
+                        >
+                            <option value="">Semua</option>
+                            <option value="ready">Ready</option>
+                            <option value="processing">Processing</option>
+                            <option value="failed">Failed</option>
+                        </select>
+                    </div>
 
-                        <div class="sm:w-56">
-                            <label for="articles-sort" class="block font-medium text-sm theme-text-secondary">Urutkan</label>
-                            <select
-                                id="articles-sort"
-                                class="mt-1 block w-full rounded-lg shadow-sm border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C]"
-                            >
-                                <option value="created_at:desc">Terbaru</option>
-                                <option value="created_at:asc">Terlama</option>
-                                <option value="title:asc">Judul (A-Z)</option>
-                                <option value="title:desc">Judul (Z-A)</option>
-                            </select>
-                        </div>
+                    <div class="sm:w-56">
+                        <label for="articles-sort" class="block text-sm font-medium theme-text-secondary mb-1.5">Urutkan</label>
+                        <select
+                            id="articles-sort"
+                            class="block w-full rounded-lg shadow-sm border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C] px-4 py-2.5 sm:text-sm"
+                        >
+                            <option value="created_at:desc">Terbaru</option>
+                            <option value="created_at:asc">Terlama</option>
+                            <option value="title:asc">Judul (A-Z)</option>
+                            <option value="title:desc">Judul (Z-A)</option>
+                        </select>
                     </div>
                 </div>
             </div>
 
-            <div class="card overflow-hidden sm:rounded-lg">
-                <div class="p-6">
-                    <div id="articles-loading" class="hidden text-sm theme-text-muted">
-                        Memuat…
-                    </div>
-
-                    <div id="articles-empty" class="hidden py-10 text-center text-sm theme-text-muted">
-                        Belum ada artikel.
-                    </div>
-
-                    <div id="articles-error" class="hidden text-sm bg-[color:var(--error-bg)] text-[color:var(--error)] border border-[color:var(--error-border)] rounded-lg px-3 py-2"></div>
-
-                    <div id="articles-list" class="mt-4 divide-y divide-black/5"></div>
-
-                    <div id="articles-pagination" class="mt-6 flex flex-wrap gap-2"></div>
+            {{-- Article List --}}
+            <div>
+                <div id="articles-loading" class="hidden text-center py-12">
+                    <svg class="animate-spin mx-auto w-8 h-8 theme-text-muted" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" class="opacity-25"/><path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="3" class="opacity-75"/></svg>
+                    <div class="mt-3 text-sm theme-text-muted">Memuat artikel...</div>
                 </div>
-            </div>
-        </div>
 
-        <div class="lg:col-span-4 space-y-6 lg:sticky lg:top-24 self-start">
-            <div class="card overflow-hidden sm:rounded-lg">
-                <div class="p-6">
-                    <div class="font-semibold theme-text-primary">Tips</div>
-                    <ul class="mt-3 text-sm theme-text-secondary space-y-2">
-                        <li>Pakai filter status untuk cek artikel gagal diproses.</li>
-                        <li>Buka detail artikel untuk clean reader.</li>
-                    </ul>
+                <div id="articles-empty" class="hidden text-center py-12 card rounded-xl">
+                    <svg class="mx-auto w-16 h-16 theme-text-muted opacity-30 mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                    <div class="text-base font-medium theme-text-primary mb-1">Belum ada artikel</div>
+                    <div class="text-sm theme-text-muted">Tidak ada artikel yang cocok dengan pencarian Anda.</div>
                 </div>
+
+                <div id="articles-error" class="hidden text-sm bg-[color:var(--error-bg)] text-[color:var(--error)] border border-[color:var(--error-border)] rounded-lg px-4 py-3"></div>
+
+                <div id="articles-list" class="space-y-4"></div>
+
+                <div id="articles-pagination" class="mt-6 flex flex-wrap justify-center gap-2"></div>
             </div>
         </div>
     </div>
@@ -118,6 +111,7 @@
 
                 function setLoading(isLoading) {
                     els.loading.classList.toggle("hidden", !isLoading);
+                    if (isLoading) els.list.innerHTML = "";
                 }
 
                 function setError(message) {
@@ -138,53 +132,71 @@
                             const status = a.processing_status || a.status || "ready";
                             const tags = Array.isArray(a.tags) ? a.tags : [];
                             const createdAt = a.created_at
-                                ? new Date(a.created_at).toLocaleString()
+                                ? new Date(a.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
                                 : "";
+                            const isReady = status === 'ready';
 
                             return `
-                                <div class="py-5 flex flex-col gap-3">
-                                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-                                        <div class="min-w-0">
-                                            <div class="flex items-center gap-2">
-                                                <div class="text-xs px-2 py-1 rounded-full border theme-border-primary bg-[color:var(--surface-secondary)] text-[color:var(--text-muted)]">
-                                                    ${status}
-                                                </div>
-                                                ${domain ? `<div class="text-xs theme-text-muted truncate">${domain}</div>` : ""}
-                                            </div>
-                                            <div class="mt-2">
-                                                <div class="font-semibold theme-text-primary truncate">
-                                                    <a class="hover:text-[color:var(--text-link-hover)]" href="/articles/${a.id}">
-                                                        ${escapeHtml(title)}
-                                                    </a>
-                                                </div>
-                                                ${
-                                                    excerpt
-                                                        ? `<div class="mt-1 text-sm theme-text-secondary overflow-hidden">${escapeHtml(excerpt)}</div>`
-                                                        : ""
-                                                }
-                                            </div>
+                                <div class="card rounded-xl hover:shadow-md transition-shadow flex flex-col sm:flex-row gap-5 p-5">
+                                    <div class="shrink-0 w-12 h-12 rounded-xl bg-[#AA5F3C]/10 flex items-center justify-center">
+                                        ${a.source_type === 'pdf' 
+                                            ? '<svg class="w-6 h-6 text-[#AA5F3C]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>'
+                                            : '<svg class="w-6 h-6 text-[#AA5F3C]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>'
+                                        }
+                                    </div>
+                                    <div class="min-w-0 flex-1 flex flex-col justify-center">
+                                        <div class="font-semibold text-lg theme-text-primary truncate">
+                                            ${isReady ? `<a class="hover:text-[color:var(--text-link-hover)]" href="/articles/${a.id}">${escapeHtml(title)}</a>` : escapeHtml(title)}
                                         </div>
-                                        <div class="text-sm theme-text-muted whitespace-nowrap">${createdAt}</div>
-                                    </div>
+                                        
+                                        <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm theme-text-muted">
+                                            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${
+                                                isReady ? 'bg-[#8B9A7A]/10 text-[#8B9A7A] border-[#8B9A7A]/20' : 
+                                                status === 'failed' ? 'bg-[color:var(--error-bg)] text-[color:var(--error)] border-[color:var(--error-border)]' : 
+                                                'bg-[#D4A76A]/10 text-[#D4A76A] border-[#D4A76A]/20'
+                                            }">
+                                                ${status.toUpperCase()}
+                                            </span>
+                                            ${domain ? `
+                                                <span class="flex items-center gap-1">
+                                                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+                                                    ${domain}
+                                                </span>
+                                                <span class="text-gray-300 dark:text-gray-600">&bull;</span>
+                                            ` : ""}
+                                            <span class="flex items-center gap-1">
+                                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                                ${createdAt}
+                                            </span>
+                                        </div>
 
-                                    ${
-                                        tags.length
-                                            ? `<div class="flex flex-wrap items-center gap-2 text-sm">
-                                                    ${tags
-                                                        .map(
-                                                            (t) =>
-                                                                `<span class="text-xs px-2 py-1 rounded-full bg-[color:var(--bg-tertiary)] theme-text-secondary">${escapeHtml(
-                                                                    t.name ?? t,
-                                                                )}</span>`,
-                                                        )
-                                                        .join("")}
-                                               </div>`
-                                            : ""
-                                    }
+                                        ${
+                                            tags.length
+                                                ? `<div class="mt-3 flex flex-wrap items-center gap-2">
+                                                        ${tags
+                                                            .map(
+                                                                (t) =>
+                                                                    `<span class="inline-flex items-center text-xs px-2.5 py-1 rounded-md bg-[color:var(--bg-tertiary)] theme-text-secondary border theme-border-primary">#${escapeHtml(
+                                                                        t.name ?? t,
+                                                                    )}</span>`,
+                                                            )
+                                                            .join("")}
+                                                   </div>`
+                                                : ""
+                                        }
 
-                                    <div class="flex items-center justify-end">
-                                        <a class="btn btn-secondary" href="/articles/${a.id}">Baca</a>
+                                        ${
+                                            excerpt && isReady
+                                                ? `<div class="mt-3 text-sm theme-text-secondary line-clamp-2 leading-relaxed">${escapeHtml(excerpt)}</div>`
+                                                : ""
+                                        }
                                     </div>
+                                    
+                                    ${isReady ? `
+                                        <div class="flex items-center justify-end sm:flex-col sm:justify-center shrink-0">
+                                            <a class="btn btn-secondary w-full sm:w-auto" href="/articles/${a.id}">Baca Artikel</a>
+                                        </div>
+                                    ` : ""}
                                 </div>
                             `;
                         })
@@ -205,7 +217,11 @@
                         <button
                             type="button"
                             data-page="${page}"
-                            class="btn btn-secondary ${active ? "opacity-100" : "opacity-90"}"
+                            class="px-4 py-2 text-sm font-medium rounded-lg transition-colors border ${
+                                active 
+                                ? "bg-[#AA5F3C] text-white border-[#AA5F3C]" 
+                                : "bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] border-[color:var(--border-primary)] hover:bg-[color:var(--hover-bg)]"
+                            }"
                         >${label}</button>
                     `;
 

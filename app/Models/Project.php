@@ -70,7 +70,7 @@ class Project extends Model
     {
         return $query->where(function ($q) use ($search) {
             $q->where('title', 'like', "%{$search}%")
-              ->orWhere('description', 'like', "%{$search}%");
+                ->orWhere('description', 'like', "%{$search}%");
         });
     }
 
@@ -78,14 +78,15 @@ class Project extends Model
     {
         $outlines = $this->outlines()->get();
         $total = $outlines->count();
-        
+
         if ($total === 0) {
             return ['total' => 0, 'completed' => 0, 'percentage' => 0];
         }
 
         $completed = $outlines->filter(function ($outline) {
             $content = trim($outline->content ?? '');
-            return !empty($content) && strlen($content) > 50;
+
+            return ! empty($content) && strlen($content) > 50;
         })->count();
 
         return [
@@ -111,7 +112,7 @@ class Project extends Model
     public function addArticle(Article $article, string $role = 'reference', ?string $notes = null): void
     {
         $this->articles()->syncWithoutDetaching([
-            $article->id => ['role' => $role, 'notes' => $notes]
+            $article->id => ['role' => $role, 'notes' => $notes],
         ]);
     }
 
@@ -123,13 +124,14 @@ class Project extends Model
     public function getOutlineTree(): array
     {
         $outlines = $this->outlines()->get();
+
         return $this->buildTree($outlines, null);
     }
 
     protected function buildTree($outlines, $parentId): array
     {
         $tree = [];
-        
+
         foreach ($outlines as $outline) {
             if ($outline->parent_id === $parentId) {
                 $children = $this->buildTree($outlines, $outline->id);

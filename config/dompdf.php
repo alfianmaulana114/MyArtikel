@@ -20,7 +20,7 @@ return [
     'enable_javascript' => false,
     'enable_remote' => true,
     'enable_html5_parser' => true,
-    
+
     /*
     |--------------------------------------------------------------------------
     | Default paper size and orientation
@@ -199,13 +199,13 @@ return [
     'page_breaks' => [
         'avoid_break_inside' => [
             'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-            'img', 'table', 'blockquote', '.avoid-break'
+            'img', 'table', 'blockquote', '.avoid-break',
         ],
         'always_break_before' => [
-            'h1', '.page-break'
+            'h1', '.page-break',
         ],
         'avoid_break_after' => [
-            'h1', 'h2', 'h3'
+            'h1', 'h2', 'h3',
         ],
     ],
 

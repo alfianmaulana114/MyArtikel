@@ -1,20 +1,26 @@
 <?php
 
-require __DIR__ . '/../vendor/autoload.php';
+use App\Models\Article;
+use App\Models\User;
+use App\Services\AdvancedPdfExportService;
+use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Support\Facades\Storage;
 
-$app = require __DIR__ . '/../bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+require __DIR__.'/../vendor/autoload.php';
+
+$app = require __DIR__.'/../bootstrap/app.php';
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
-$user = App\Models\User::query()->first();
-$article = App\Models\Article::query()->with(['tags', 'summaries'])->first();
+$user = User::query()->first();
+$article = Article::query()->with(['tags', 'summaries'])->first();
 
-if (!$user || !$article) {
+if (! $user || ! $article) {
     fwrite(STDERR, "Need at least 1 user and 1 article in DB\n");
     exit(2);
 }
 
-$svc = $app->make(App\Services\AdvancedPdfExportService::class);
+$svc = $app->make(AdvancedPdfExportService::class);
 
 $baseOptions = [
     'template' => 'default',
@@ -37,16 +43,15 @@ foreach ([false, true] as $includeImages) {
 
     $result = $svc->exportSingleArticle($article, $options);
 
-    echo "include_images=" . ($includeImages ? 'true' : 'false') . "\n";
-    echo "success=" . (($result['success'] ?? false) ? 'true' : 'false') . "\n";
-    if (!($result['success'] ?? false)) {
-        echo "error=" . ($result['error'] ?? '') . "\n";
+    echo 'include_images='.($includeImages ? 'true' : 'false')."\n";
+    echo 'success='.(($result['success'] ?? false) ? 'true' : 'false')."\n";
+    if (! ($result['success'] ?? false)) {
+        echo 'error='.($result['error'] ?? '')."\n";
         exit(1);
     }
 
-    echo "file_path=" . $result['file_path'] . "\n";
-    echo "file_size=" . $result['file_size'] . "\n";
-    $exists = Illuminate\Support\Facades\Storage::disk('local')->exists($result['file_path']);
-    echo "storage_exists=" . ($exists ? 'true' : 'false') . "\n";
+    echo 'file_path='.$result['file_path']."\n";
+    echo 'file_size='.$result['file_size']."\n";
+    $exists = Storage::disk('local')->exists($result['file_path']);
+    echo 'storage_exists='.($exists ? 'true' : 'false')."\n";
 }
-

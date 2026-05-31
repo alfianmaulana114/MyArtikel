@@ -26,7 +26,7 @@ class Bookmark extends Model
         'position',
         'source_device',
         'source_browser',
-        'created_ip'
+        'created_ip',
     ];
 
     protected $casts = [
@@ -39,7 +39,7 @@ class Bookmark extends Model
         'reminder_at' => 'datetime',
         'read_at' => 'datetime',
         'created_at' => 'datetime',
-        'updated_at' => 'datetime'
+        'updated_at' => 'datetime',
     ];
 
     /**
@@ -128,7 +128,7 @@ class Bookmark extends Model
     public function scopeDueReminders($query)
     {
         return $query->whereNotNull('reminder_at')
-                    ->where('reminder_at', '<=', now());
+            ->where('reminder_at', '<=', now());
     }
 
     /**
@@ -154,11 +154,11 @@ class Bookmark extends Model
     {
         return $query->where(function ($q) use ($search) {
             $q->where('notes', 'like', "%{$search}%")
-              ->orWhereJsonContains('tags', $search)
-              ->orWhereHas('article', function ($q) use ($search) {
-                  $q->where('title', 'like', "%{$search}%")
-                    ->orWhere('content', 'like', "%{$search}%");
-              });
+                ->orWhereJsonContains('tags', $search)
+                ->orWhereHas('article', function ($q) use ($search) {
+                    $q->where('title', 'like', "%{$search}%")
+                        ->orWhere('content', 'like', "%{$search}%");
+                });
         });
     }
 
@@ -169,9 +169,9 @@ class Bookmark extends Model
     {
         $this->update([
             'read_at' => now(),
-            'read_count' => $this->read_count + 1
+            'read_count' => $this->read_count + 1,
         ]);
-        
+
         // Record analytics
         $this->recordAnalytics('read');
     }
@@ -189,7 +189,7 @@ class Bookmark extends Model
      */
     public function toggleFavorite(): void
     {
-        $this->update(['is_favorite' => !$this->is_favorite]);
+        $this->update(['is_favorite' => ! $this->is_favorite]);
     }
 
     /**
@@ -221,7 +221,7 @@ class Bookmark extends Model
             'session_id' => session()->getId(),
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),
-            'occurred_at' => now()
+            'occurred_at' => now(),
         ]);
     }
 
@@ -238,7 +238,7 @@ class Bookmark extends Model
      */
     public function getHasReminderAttribute(): bool
     {
-        return !is_null($this->reminder_at);
+        return ! is_null($this->reminder_at);
     }
 
     /**

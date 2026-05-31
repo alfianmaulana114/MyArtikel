@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ArticleSubmissionRequest;
 use App\Models\Article;
 use App\Services\BackgroundProcessingService;
+use App\Services\FileUploadSecurityService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class DashboardController extends Controller
 {
@@ -21,13 +23,13 @@ class DashboardController extends Controller
         if ($request->filled('q')) {
             $q = $request->string('q')->toString();
             $query->where(function ($sub) use ($q) {
-                $sub->where('title', 'like', '%' . $q . '%')
-                    ->orWhere('source_domain', 'like', '%' . $q . '%')
-                    ->orWhere('source_url', 'like', '%' . $q . '%');
+                $sub->where('title', 'like', '%'.$q.'%')
+                    ->orWhere('source_domain', 'like', '%'.$q.'%')
+                    ->orWhere('source_url', 'like', '%'.$q.'%');
             });
         }
 
-        $articles = $query->paginate(20)->withQueryString();
+        $articles = $query->with(['tags', 'user'])->paginate(20)->withQueryString();
 
         $stats = [
             'total' => Article::where('user_id', $userId)->count(),
@@ -61,7 +63,7 @@ class DashboardController extends Controller
         $article = Article::create([
             'user_id' => $userId,
             'title' => 'Memproses artikel…',
-            'slug' => 'processing-' . uniqid(),
+            'slug' => 'processing-'.uniqid(),
             'source_url' => $url,
             'canonical_url' => $url,
             'source_domain' => parse_url($url, PHP_URL_HOST),
@@ -77,8 +79,8 @@ class DashboardController extends Controller
             'article_id' => $article->id,
         ]);
 
-        if (!$result['success']) {
-            $error = \Illuminate\Support\Str::limit((string) ($result['error'] ?? 'Gagal memproses URL.'), 1000, '…');
+        if (! $result['success']) {
+            $error = Str::limit((string) ($result['error'] ?? 'Gagal memproses URL.'), 1000, '…');
             $article->update([
                 'processing_status' => 'failed',
                 'processing_error' => $error,
@@ -103,10 +105,10 @@ class DashboardController extends Controller
     {
         $file = $request->file('pdf_file');
 
-        $securityService = app(\App\Services\FileUploadSecurityService::class);
+        $securityService = app(FileUploadSecurityService::class);
         $validation = $securityService->validateUpload($file, 'pdf');
 
-        if (!$validation['valid']) {
+        if (! $validation['valid']) {
             return back()->withErrors([
                 'pdf_file' => $validation['message'],
             ]);
@@ -114,7 +116,7 @@ class DashboardController extends Controller
 
         $filePath = $securityService->storeSecurely($file, 'journals');
 
-        if (!$filePath) {
+        if (! $filePath) {
             return back()->withErrors([
                 'pdf_file' => 'Gagal menyimpan file PDF.',
             ]);
@@ -126,7 +128,7 @@ class DashboardController extends Controller
         $article = Article::create([
             'user_id' => $userId,
             'title' => $title,
-            'slug' => 'pdf-' . \Illuminate\Support\Str::slug($title) . '-' . uniqid(),
+            'slug' => 'pdf-'.Str::slug($title).'-'.uniqid(),
             'source_type' => 'pdf',
             'file_path' => $filePath,
             'research_title' => $researchTitle,
@@ -141,8 +143,8 @@ class DashboardController extends Controller
             'article_id' => $article->id,
         ]);
 
-        if (!$result['success']) {
-            $error = \Illuminate\Support\Str::limit((string) ($result['error'] ?? 'Gagal memproses PDF.'), 1000, '…');
+        if (! $result['success']) {
+            $error = Str::limit((string) ($result['error'] ?? 'Gagal memproses PDF.'), 1000, '…');
             $article->update([
                 'processing_status' => 'failed',
                 'processing_error' => $error,
@@ -172,7 +174,7 @@ class DashboardController extends Controller
         }
 
         $url = $article->source_url ?: $article->canonical_url;
-        if (!$url) {
+        if (! $url) {
             return redirect()
                 ->route('dashboard')
                 ->with('status', 'URL artikel tidak ditemukan untuk diproses ulang.');
@@ -187,8 +189,8 @@ class DashboardController extends Controller
             'article_id' => $article->id,
         ]);
 
-        if (!$result['success']) {
-            $error = \Illuminate\Support\Str::limit((string) ($result['error'] ?? 'Gagal memproses ulang.'), 1000, '…');
+        if (! $result['success']) {
+            $error = Str::limit((string) ($result['error'] ?? 'Gagal memproses ulang.'), 1000, '…');
             $article->update([
                 'processing_status' => 'failed',
                 'processing_error' => $error,

@@ -17,7 +17,7 @@
                 </div>
                 <div class="card-body">
                     <div class="article-content">
-                        {!! $article->content !!}
+                        {!! $article->content_sanitized ?? strip_tags($article->content) !!}
                     </div>
                 </div>
             </div>

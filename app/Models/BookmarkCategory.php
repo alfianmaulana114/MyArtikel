@@ -18,13 +18,13 @@ class BookmarkCategory extends Model
         'description',
         'position',
         'is_public',
-        'is_default'
+        'is_default',
     ];
 
     protected $casts = [
         'is_public' => 'boolean',
         'is_default' => 'boolean',
-        'position' => 'integer'
+        'position' => 'integer',
     ];
 
     /**
@@ -72,7 +72,7 @@ class BookmarkCategory extends Model
      */
     public function getFormattedColorAttribute(): string
     {
-        return str_starts_with($this->color, '#') ? $this->color : '#' . $this->color;
+        return str_starts_with($this->color, '#') ? $this->color : '#'.$this->color;
     }
 
     /**

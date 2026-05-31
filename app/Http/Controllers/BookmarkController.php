@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Article;
 use App\Models\Bookmark;
-use App\Models\BookmarkCategory;
 use App\Models\BookmarkAnalytics;
+use App\Models\BookmarkCategory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -30,14 +30,14 @@ class BookmarkController extends Controller
             'search' => 'nullable|string|max:255',
             'sort_by' => 'nullable|in:created_at,updated_at,priority,read_at,title',
             'sort_order' => 'nullable|in:asc,desc',
-            'per_page' => 'nullable|integer|min:1|max:100'
+            'per_page' => 'nullable|integer|min:1|max:100',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -58,12 +58,12 @@ class BookmarkController extends Controller
 
         $sortBy = $request->get('sort_by', 'created_at');
         $sortOrder = $request->get('sort_order', 'desc');
-        
+
         // Handle sorting by article title
         if ($sortBy === 'title') {
             $query->join('articles', 'bookmarks.article_id', '=', 'articles.id')
-                  ->orderBy('articles.title', $sortOrder)
-                  ->select('bookmarks.*');
+                ->orderBy('articles.title', $sortOrder)
+                ->select('bookmarks.*');
         } else {
             $query->orderBy($sortBy, $sortOrder);
         }
@@ -74,7 +74,7 @@ class BookmarkController extends Controller
         // Record analytics
         $this->recordAnalytics('bookmarks_viewed', [
             'filters' => $request->only(['category_id', 'is_favorite', 'is_archived', 'search']),
-            'count' => $bookmarks->total()
+            'count' => $bookmarks->total(),
         ]);
 
         return response()->json([
@@ -87,10 +87,10 @@ class BookmarkController extends Controller
                     'per_page' => $bookmarks->perPage(),
                     'total' => $bookmarks->total(),
                     'from' => $bookmarks->firstItem(),
-                    'to' => $bookmarks->lastItem()
+                    'to' => $bookmarks->lastItem(),
                 ],
-                'stats' => $this->getBookmarkStats()
-            ]
+                'stats' => $this->getBookmarkStats(),
+            ],
         ]);
     }
 
@@ -106,27 +106,32 @@ class BookmarkController extends Controller
             'tags' => 'nullable|array',
             'tags.*' => 'string|max:50',
             'priority' => 'nullable|integer|min:0|max:5',
-            'reminder_at' => 'nullable|date|after:now'
+            'reminder_at' => 'nullable|date|after:now',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
-        // Check if bookmark already exists
+        DB::beginTransaction();
+
+        // Check if bookmark already exists (with lock to prevent race condition)
         $existingBookmark = Bookmark::where('user_id', auth()->id())
             ->where('article_id', $request->article_id)
+            ->lockForUpdate()
             ->first();
 
         if ($existingBookmark) {
+            DB::rollBack();
+
             return response()->json([
                 'success' => false,
                 'message' => 'Article already bookmarked',
-                'bookmark' => $existingBookmark->load(['article', 'category'])
+                'bookmark' => $existingBookmark->load(['article', 'category']),
             ], 409);
         }
 
@@ -136,47 +141,48 @@ class BookmarkController extends Controller
                 ->where('id', $request->category_id)
                 ->first();
 
-            if (!$category) {
+            if (! $category) {
+                DB::rollBack();
+
                 return response()->json([
                     'success' => false,
-                    'message' => 'Category not found or not owned by user'
+                    'message' => 'Category not found or not owned by user',
                 ], 404);
             }
         }
 
-        $bookmark = DB::transaction(function () use ($request) {
-            $bookmark = Bookmark::create([
-                'user_id' => auth()->id(),
-                'article_id' => $request->article_id,
-                'category_id' => $request->category_id,
-                'notes' => $request->notes,
-                'tags' => $request->tags ?? [],
-                'priority' => $request->priority ?? 0,
-                'source_device' => $request->header('X-Device-Type', 'unknown'),
-                'source_browser' => $request->header('User-Agent'),
-                'created_ip' => $request->ip(),
-                'position' => $this->getNextPosition()
-            ]);
+        $bookmark = Bookmark::create([
+            'user_id' => auth()->id(),
+            'article_id' => $request->article_id,
+            'category_id' => $request->category_id,
+            'notes' => $request->notes,
+            'tags' => $request->tags ?? [],
+            'priority' => $request->priority ?? 0,
+            'source_device' => $request->header('X-Device-Type', 'unknown'),
+            'source_browser' => $request->header('User-Agent'),
+            'created_ip' => $request->ip(),
+            'position' => $this->getNextPosition(),
+        ]);
 
-            // Update article bookmark count
-            Article::where('id', $request->article_id)->increment('bookmarks_count');
+        // Update article bookmark count
+        Article::where('id', $request->article_id)->increment('bookmarks_count');
 
-            // Update user bookmark count
-            auth()->user()->increment('bookmarks_count');
+        // Update user bookmark count
+        auth()->user()->increment('bookmarks_count');
 
-            return $bookmark;
-        });
+        DB::commit();
 
         // Record analytics
         $this->recordAnalytics('bookmark_created', [
+            'bookmark_id' => $bookmark->id,
             'article_id' => $request->article_id,
-            'category_id' => $request->category_id
+            'category_id' => $request->category_id,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Article bookmarked successfully',
-            'data' => $bookmark->load(['article', 'category'])
+            'data' => $bookmark->load(['article', 'category']),
         ], 201);
     }
 
@@ -189,12 +195,12 @@ class BookmarkController extends Controller
 
         // Record analytics
         $this->recordAnalytics('bookmark_viewed', [
-            'bookmark_id' => $bookmark->id
+            'bookmark_id' => $bookmark->id,
         ]);
 
         return response()->json([
             'success' => true,
-            'data' => $bookmark->load(['article', 'category', 'analytics'])
+            'data' => $bookmark->load(['article', 'category', 'analytics']),
         ]);
     }
 
@@ -212,14 +218,14 @@ class BookmarkController extends Controller
             'tags.*' => 'string|max:50',
             'priority' => 'nullable|integer|min:0|max:5',
             'is_favorite' => 'nullable|boolean',
-            'reminder_at' => 'nullable|date|after:now'
+            'reminder_at' => 'nullable|date|after:now',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -229,30 +235,30 @@ class BookmarkController extends Controller
                 ->where('id', $request->category_id)
                 ->first();
 
-            if (!$category) {
+            if (! $category) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Category not found or not owned by user'
+                    'message' => 'Category not found or not owned by user',
                 ], 404);
             }
         }
 
         $bookmark->update($request->only([
-            'category_id', 'notes', 'tags', 'priority', 'is_favorite', 'reminder_at'
+            'category_id', 'notes', 'tags', 'priority', 'is_favorite', 'reminder_at',
         ]));
 
         // Record analytics
         $this->recordAnalytics('bookmark_updated', [
             'bookmark_id' => $bookmark->id,
             'fields_updated' => array_keys($request->only([
-                'category_id', 'notes', 'tags', 'priority', 'is_favorite', 'reminder_at'
-            ]))
+                'category_id', 'notes', 'tags', 'priority', 'is_favorite', 'reminder_at',
+            ])),
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Bookmark updated successfully',
-            'data' => $bookmark->load(['article', 'category'])
+            'data' => $bookmark->load(['article', 'category']),
         ]);
     }
 
@@ -265,7 +271,7 @@ class BookmarkController extends Controller
 
         DB::transaction(function () use ($bookmark) {
             $articleId = $bookmark->article_id;
-            
+
             $bookmark->delete();
 
             // Update article bookmark count
@@ -277,12 +283,12 @@ class BookmarkController extends Controller
 
         // Record analytics
         $this->recordAnalytics('bookmark_deleted', [
-            'bookmark_id' => $bookmark->id
+            'bookmark_id' => $bookmark->id,
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Bookmark deleted successfully'
+            'message' => 'Bookmark deleted successfully',
         ]);
     }
 
@@ -298,13 +304,13 @@ class BookmarkController extends Controller
         // Record analytics
         $this->recordAnalytics('bookmark_favorite_toggled', [
             'bookmark_id' => $bookmark->id,
-            'is_favorite' => $bookmark->is_favorite
+            'is_favorite' => $bookmark->is_favorite,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => $bookmark->is_favorite ? 'Added to favorites' : 'Removed from favorites',
-            'data' => ['is_favorite' => $bookmark->is_favorite]
+            'data' => ['is_favorite' => $bookmark->is_favorite],
         ]);
     }
 
@@ -320,7 +326,7 @@ class BookmarkController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Bookmark marked as read',
-            'data' => ['read_at' => $bookmark->read_at]
+            'data' => ['read_at' => $bookmark->read_at],
         ]);
     }
 
@@ -336,7 +342,7 @@ class BookmarkController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Bookmark marked as unread',
-            'data' => ['read_at' => null]
+            'data' => ['read_at' => null],
         ]);
     }
 
@@ -351,13 +357,13 @@ class BookmarkController extends Controller
 
         // Record analytics
         $this->recordAnalytics('bookmark_archived', [
-            'bookmark_id' => $bookmark->id
+            'bookmark_id' => $bookmark->id,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Bookmark archived successfully',
-            'data' => ['is_archived' => true]
+            'data' => ['is_archived' => true],
         ]);
     }
 
@@ -372,13 +378,13 @@ class BookmarkController extends Controller
 
         // Record analytics
         $this->recordAnalytics('bookmark_unarchived', [
-            'bookmark_id' => $bookmark->id
+            'bookmark_id' => $bookmark->id,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Bookmark unarchived successfully',
-            'data' => ['is_archived' => false]
+            'data' => ['is_archived' => false],
         ]);
     }
 
@@ -388,14 +394,14 @@ class BookmarkController extends Controller
     public function checkArticle(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'article_id' => 'required|exists:articles,id'
+            'article_id' => 'required|exists:articles,id',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -407,9 +413,9 @@ class BookmarkController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'is_bookmarked' => !is_null($bookmark),
-                'bookmark' => $bookmark
-            ]
+                'is_bookmarked' => ! is_null($bookmark),
+                'bookmark' => $bookmark,
+            ],
         ]);
     }
 
@@ -422,14 +428,14 @@ class BookmarkController extends Controller
             'bookmark_ids' => 'required|array',
             'bookmark_ids.*' => 'exists:bookmarks,id',
             'operation' => 'required|in:delete,archive,unarchive,favorite,unfavorite,mark_read,mark_unread,category',
-            'category_id' => 'required_if:operation,category|exists:bookmark_categories,id'
+            'category_id' => 'required_if:operation,category|exists:bookmark_categories,id',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -441,7 +447,7 @@ class BookmarkController extends Controller
         if ($bookmarks->count() !== count($request->bookmark_ids)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Some bookmarks not found or not owned by user'
+                'message' => 'Some bookmarks not found or not owned by user',
             ], 404);
         }
 
@@ -451,10 +457,10 @@ class BookmarkController extends Controller
                 ->where('id', $request->category_id)
                 ->first();
 
-            if (!$category) {
+            if (! $category) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Category not found or not owned by user'
+                    'message' => 'Category not found or not owned by user',
                 ], 404);
             }
         }
@@ -470,7 +476,7 @@ class BookmarkController extends Controller
                     $affectedCount = $query->count();
                     $articleIds = $query->pluck('article_id')->toArray();
                     $query->delete();
-                    
+
                     // Update counts
                     Article::whereIn('id', $articleIds)->decrement('bookmarks_count');
                     auth()->user()->decrement('bookmarks_count', $affectedCount);
@@ -508,14 +514,15 @@ class BookmarkController extends Controller
 
         // Record analytics
         $this->recordAnalytics('bulk_operation', [
+            'bookmark_id' => $request->bookmark_ids[0] ?? null,
             'operation' => $request->operation,
-            'bookmark_count' => $affectedCount
+            'bookmark_count' => $affectedCount,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => "{$affectedCount} bookmarks processed successfully",
-            'data' => ['affected_count' => $affectedCount]
+            'data' => ['affected_count' => $affectedCount],
         ]);
     }
 
@@ -525,14 +532,14 @@ class BookmarkController extends Controller
     private function getBookmarkStats(): array
     {
         $userId = auth()->id();
-        
+
         return [
             'total' => Bookmark::forUser($userId)->count(),
             'favorites' => Bookmark::forUser($userId)->favorites()->count(),
             'unread' => Bookmark::forUser($userId)->unread()->count(),
             'archived' => Bookmark::forUser($userId)->archived()->count(),
             'with_reminders' => Bookmark::forUser($userId)->withReminders()->count(),
-            'due_reminders' => Bookmark::forUser($userId)->dueReminders()->count()
+            'due_reminders' => Bookmark::forUser($userId)->dueReminders()->count(),
         ];
     }
 
@@ -549,20 +556,23 @@ class BookmarkController extends Controller
      */
     private function recordAnalytics(string $action, array $metadata = []): void
     {
-        if (!isset($metadata['bookmark_id'])) {
+        $bookmarkId = $metadata['bookmark_id'] ?? null;
+
+        // Skip if no bookmark_id is available for actions that require it
+        if ($bookmarkId === null) {
             return;
         }
 
         BookmarkAnalytics::create([
             'user_id' => auth()->id(),
-            'bookmark_id' => $metadata['bookmark_id'],
+            'bookmark_id' => $bookmarkId,
             'action' => $action,
             'metadata' => $metadata,
             'device_id' => request()->header('X-Device-ID'),
             'session_id' => session()->getId(),
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),
-            'occurred_at' => now()
+            'occurred_at' => now(),
         ]);
     }
 }

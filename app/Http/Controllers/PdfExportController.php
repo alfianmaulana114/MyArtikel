@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\AdvancedPdfExportService;
+use App\Jobs\ProcessPdfExport;
 use App\Models\Article;
-use App\Models\User;
 use App\Models\Export;
+use App\Models\User;
+use App\Services\AdvancedPdfExportService;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
-use Exception;
+use Illuminate\Support\Facades\Storage;
 
 class PdfExportController extends Controller
 {
@@ -27,15 +28,15 @@ class PdfExportController extends Controller
     public function create()
     {
         $user = Auth::user();
-        
+
         // Get user's articles
         $articles = Article::where('user_id', $user->id)
             ->orderBy('created_at', 'desc')
             ->get();
-        
+
         // Get available templates
         $templates = $this->pdfService->getAvailableTemplates();
-        
+
         // Get recent exports
         $recentExports = Export::where('user_id', $user->id)
             ->where('type', 'pdf')
@@ -47,7 +48,7 @@ class PdfExportController extends Controller
         return view('pdf.export-form', [
             'articles' => $articles,
             'templates' => $templates,
-            'recentExports' => $recentExports
+            'recentExports' => $recentExports,
         ]);
     }
 
@@ -86,13 +87,13 @@ class PdfExportController extends Controller
                 'page_numbers' => $request->boolean('page_numbers', true),
                 'watermark' => $request->boolean('watermark', false),
                 'clean_reader_format' => true,
-                'filename_prefix' => 'article_' . $article->id,
+                'filename_prefix' => 'article_'.$article->id,
             ];
 
             // Export to PDF
             $result = $this->pdfService->exportSingleArticle($article, $options);
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 throw new Exception($result['error']);
             }
 
@@ -121,7 +122,7 @@ class PdfExportController extends Controller
                 'article_id' => $article->id,
                 'export_id' => $export->id,
                 'file_size' => $result['file_size'],
-                'processing_time' => $result['processing_time']
+                'processing_time' => $result['processing_time'],
             ]);
 
             // Return download URL or redirect
@@ -134,8 +135,8 @@ class PdfExportController extends Controller
                         'download_url' => route('pdf.download', $export->id),
                         'preview_url' => route('pdf.preview', $export->id),
                         'file_size' => $result['file_size'],
-                        'processing_time' => $result['processing_time']
-                    ]
+                        'processing_time' => $result['processing_time'],
+                    ],
                 ]);
             }
 
@@ -147,17 +148,17 @@ class PdfExportController extends Controller
                 'user_id' => Auth::id(),
                 'article_id' => $articleId,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ], 500);
             }
 
-            return back()->with('error', 'Failed to export PDF: ' . $e->getMessage());
+            return back()->with('error', 'Failed to export PDF: '.$e->getMessage());
         }
     }
 
@@ -215,7 +216,7 @@ class PdfExportController extends Controller
             // Export to PDF
             $result = $this->pdfService->exportMultipleArticles($articles, $options);
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 throw new Exception($result['error']);
             }
 
@@ -245,7 +246,7 @@ class PdfExportController extends Controller
                 'article_count' => $articles->count(),
                 'export_id' => $export->id,
                 'file_size' => $result['file_size'],
-                'processing_time' => $result['processing_time']
+                'processing_time' => $result['processing_time'],
             ]);
 
             // Return download URL or redirect
@@ -259,8 +260,8 @@ class PdfExportController extends Controller
                         'preview_url' => route('pdf.preview', $export->id),
                         'file_size' => $result['file_size'],
                         'processing_time' => $result['processing_time'],
-                        'article_count' => $result['article_count']
-                    ]
+                        'article_count' => $result['article_count'],
+                    ],
                 ]);
             }
 
@@ -272,17 +273,17 @@ class PdfExportController extends Controller
                 'user_id' => Auth::id(),
                 'article_ids' => $request->input('article_ids', []),
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ], 500);
             }
 
-            return back()->with('error', 'Failed to export PDF collection: ' . $e->getMessage());
+            return back()->with('error', 'Failed to export PDF collection: '.$e->getMessage());
         }
     }
 
@@ -311,8 +312,8 @@ class PdfExportController extends Controller
             // Validate template exists
             $templates = $this->pdfService->getAvailableTemplates();
             $templateExists = collect($templates)->contains('name', $template);
-            
-            if (!$templateExists) {
+
+            if (! $templateExists) {
                 throw new Exception("Template '{$template}' not found");
             }
 
@@ -338,13 +339,13 @@ class PdfExportController extends Controller
                 'page_numbers' => $request->boolean('page_numbers', true),
                 'watermark' => $request->boolean('watermark', false),
                 'clean_reader_format' => true,
-                'filename_prefix' => 'template_' . $template . '_export',
+                'filename_prefix' => 'template_'.$template.'_export',
             ];
 
             // Export to PDF with template
             $result = $this->pdfService->exportWithTemplate($articles, $template, $options);
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 throw new Exception($result['error']);
             }
 
@@ -375,7 +376,7 @@ class PdfExportController extends Controller
                 'article_count' => $articles->count(),
                 'export_id' => $export->id,
                 'file_size' => $result['file_size'],
-                'processing_time' => $result['processing_time']
+                'processing_time' => $result['processing_time'],
             ]);
 
             // Return download URL or redirect
@@ -390,8 +391,8 @@ class PdfExportController extends Controller
                         'preview_url' => route('pdf.preview', $export->id),
                         'file_size' => $result['file_size'],
                         'processing_time' => $result['processing_time'],
-                        'article_count' => $articles->count()
-                    ]
+                        'article_count' => $articles->count(),
+                    ],
                 ]);
             }
 
@@ -404,17 +405,17 @@ class PdfExportController extends Controller
                 'template' => $template,
                 'article_ids' => $request->input('article_ids', []),
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ], 500);
             }
 
-            return back()->with('error', 'Failed to export PDF with template: ' . $e->getMessage());
+            return back()->with('error', 'Failed to export PDF with template: '.$e->getMessage());
         }
     }
 
@@ -425,7 +426,7 @@ class PdfExportController extends Controller
     {
         try {
             $user = Auth::user();
-            
+
             $export = Export::where('id', $exportId)
                 ->where('user_id', $user->id)
                 ->where('type', 'pdf')
@@ -440,8 +441,8 @@ class PdfExportController extends Controller
             }
 
             $filePath = $export->file_path;
-            
-            if (!Storage::disk('local')->exists($filePath)) {
+
+            if (! Storage::disk('local')->exists($filePath)) {
                 throw new Exception('Export file not found');
             }
 
@@ -456,7 +457,7 @@ class PdfExportController extends Controller
                 'user_id' => $user->id,
                 'export_id' => $export->id,
                 'file_path' => $filePath,
-                'file_size' => $export->file_size
+                'file_size' => $export->file_size,
             ]);
 
             return Storage::disk('local')->download($filePath, $this->generateDownloadFilename($export));
@@ -465,10 +466,10 @@ class PdfExportController extends Controller
             Log::error('PDF download failed', [
                 'user_id' => Auth::id(),
                 'export_id' => $exportId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'Failed to download PDF: ' . $e->getMessage());
+            return back()->with('error', 'Failed to download PDF: '.$e->getMessage());
         }
     }
 
@@ -479,7 +480,7 @@ class PdfExportController extends Controller
     {
         try {
             $user = Auth::user();
-            
+
             $export = Export::where('id', $exportId)
                 ->where('user_id', $user->id)
                 ->where('type', 'pdf')
@@ -494,25 +495,25 @@ class PdfExportController extends Controller
             }
 
             $filePath = $export->file_path;
-            
-            if (!Storage::disk('local')->exists($filePath)) {
+
+            if (! Storage::disk('local')->exists($filePath)) {
                 throw new Exception('Export file not found');
             }
 
             // Return file for inline viewing
             return Storage::disk('local')->response($filePath, null, [
                 'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'inline; filename="' . $this->generateDownloadFilename($export) . '"'
+                'Content-Disposition' => 'inline; filename="'.$this->generateDownloadFilename($export).'"',
             ]);
 
         } catch (Exception $e) {
             Log::error('PDF preview failed', [
                 'user_id' => Auth::id(),
                 'export_id' => $exportId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'Failed to preview PDF: ' . $e->getMessage());
+            return back()->with('error', 'Failed to preview PDF: '.$e->getMessage());
         }
     }
 
@@ -523,7 +524,7 @@ class PdfExportController extends Controller
     {
         try {
             $user = Auth::user();
-            
+
             $request->validate([
                 'limit' => 'nullable|integer|min:1|max:100',
                 'status' => 'nullable|string|in:pending,processing,completed,failed',
@@ -531,7 +532,7 @@ class PdfExportController extends Controller
             ]);
 
             $limit = $request->input('limit', 20);
-            
+
             $exports = Export::where('user_id', $user->id)
                 ->where('type', 'pdf')
                 ->when($request->status, function ($query) use ($request) {
@@ -548,40 +549,40 @@ class PdfExportController extends Controller
                 $export->is_downloadable = $export->isReady();
                 $export->download_url = $export->isReady() ? route('pdf.download', $export->id) : null;
                 $export->preview_url = $export->isReady() ? route('pdf.preview', $export->id) : null;
-                
+
                 // Extract article count from metadata
-                $export->article_count = $export->metadata['article_count'] ?? 
+                $export->article_count = $export->metadata['article_count'] ??
                     (isset($export->metadata['article_ids']) ? count($export->metadata['article_ids']) : 1);
-                
+
                 return $export;
             });
 
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => true,
-                    'data' => $exports
+                    'data' => $exports,
                 ]);
             }
 
             return view('pdf.export-history', [
                 'exports' => $exports,
-                'templates' => $this->pdfService->getAvailableTemplates()
+                'templates' => $this->pdfService->getAvailableTemplates(),
             ]);
 
         } catch (Exception $e) {
             Log::error('Export history retrieval failed', [
                 'user_id' => Auth::id(),
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ], 500);
             }
 
-            return back()->with('error', 'Failed to retrieve export history: ' . $e->getMessage());
+            return back()->with('error', 'Failed to retrieve export history: '.$e->getMessage());
         }
     }
 
@@ -592,7 +593,7 @@ class PdfExportController extends Controller
     {
         try {
             $user = Auth::user();
-            
+
             $export = Export::where('id', $exportId)
                 ->where('user_id', $user->id)
                 ->where('type', 'pdf')
@@ -609,24 +610,24 @@ class PdfExportController extends Controller
             Log::info('PDF export deleted', [
                 'user_id' => $user->id,
                 'export_id' => $exportId,
-                'file_path' => $export->file_path
+                'file_path' => $export->file_path,
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Export deleted successfully'
+                'message' => 'Export deleted successfully',
             ]);
 
         } catch (Exception $e) {
             Log::error('PDF export deletion failed', [
                 'user_id' => Auth::id(),
                 'export_id' => $exportId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -638,20 +639,20 @@ class PdfExportController extends Controller
     {
         try {
             $templates = $this->pdfService->getAvailableTemplates();
-            
+
             return response()->json([
                 'success' => true,
-                'data' => $templates
+                'data' => $templates,
             ]);
 
         } catch (Exception $e) {
             Log::error('Template retrieval failed', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -664,9 +665,9 @@ class PdfExportController extends Controller
         $metadata = $export->metadata ?? [];
         $template = $metadata['template'] ?? 'default';
         $articleCount = $metadata['article_count'] ?? 1;
-        
+
         $timestamp = now()->format('Y-m-d_H-i-s');
-        
+
         if ($articleCount === 1 && isset($metadata['article_id'])) {
             return "article_{$metadata['article_id']}_{$template}_{$timestamp}.pdf";
         } else {
@@ -732,7 +733,7 @@ class PdfExportController extends Controller
             ]);
 
             // Dispatch background job
-            dispatch(new \App\Jobs\ProcessPdfExport(
+            dispatch(new ProcessPdfExport(
                 $user->id,
                 $articles->pluck('id')->toArray(),
                 $request->all()
@@ -742,7 +743,7 @@ class PdfExportController extends Controller
                 'user_id' => $user->id,
                 'export_id' => $export->id,
                 'article_count' => $articles->count(),
-                'template' => $request->input('template', 'default')
+                'template' => $request->input('template', 'default'),
             ]);
 
             return response()->json([
@@ -751,20 +752,20 @@ class PdfExportController extends Controller
                 'data' => [
                     'export_id' => $export->id,
                     'status' => 'pending',
-                    'check_status_url' => route('pdf.status', $export->id)
-                ]
+                    'check_status_url' => route('pdf.status', $export->id),
+                ],
             ]);
 
         } catch (Exception $e) {
             Log::error('Background PDF export dispatch failed', [
                 'user_id' => Auth::id(),
                 'article_ids' => $request->input('article_ids', []),
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -776,7 +777,7 @@ class PdfExportController extends Controller
     {
         try {
             $user = Auth::user();
-            
+
             $export = Export::where('id', $exportId)
                 ->where('user_id', $user->id)
                 ->where('type', 'pdf')
@@ -788,7 +789,7 @@ class PdfExportController extends Controller
                 'is_expired' => $export->isExpired(),
                 'is_ready' => $export->isReady(),
                 'file_size' => $export->file_size,
-                'processing_time' => $export->processing_time_ms ? ($export->processing_time_ms / 1000) . 's' : null,
+                'processing_time' => $export->processing_time_ms ? ($export->processing_time_ms / 1000).'s' : null,
                 'created_at' => $export->created_at->toIso8601String(),
                 'expires_at' => $export->expires_at ? $export->expires_at->toIso8601String() : null,
             ];
@@ -804,13 +805,13 @@ class PdfExportController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $response
+                'data' => $response,
             ]);
 
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 404);
         }
     }

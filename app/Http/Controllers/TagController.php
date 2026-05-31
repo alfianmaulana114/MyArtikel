@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\TagRequest;
+use App\Models\Article;
 use App\Models\Tag;
 use App\Services\TagSuggestionService;
 use Illuminate\Http\JsonResponse;
@@ -13,12 +14,12 @@ use Illuminate\Support\Str;
 class TagController extends Controller
 {
     protected TagSuggestionService $tagSuggestionService;
-    
+
     public function __construct(TagSuggestionService $tagSuggestionService)
     {
         $this->tagSuggestionService = $tagSuggestionService;
     }
-    
+
     /**
      * Display a listing of the resource.
      */
@@ -31,40 +32,47 @@ class TagController extends Controller
     {
         $user = Auth::user();
         $query = Tag::query();
-        
+
         // Filter by user
         $query->where(function ($q) use ($user) {
             $q->where('user_id', $user->id)
-              ->orWhereNull('user_id'); // Include system tags
+                ->orWhereNull('user_id'); // Include system tags
         });
-        
+
         // Filter by type
         if ($request->has('type')) {
             $query->where('type', $request->type);
         }
-        
+
         // Search functionality
         if ($request->has('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                    ->orWhere('description', 'like', "%{$search}%");
             });
         }
-        
+
         // Sort options
+        $allowedSortFields = ['usage_count', 'created_at', 'updated_at', 'name', 'articles_count'];
         $sortBy = $request->get('sort_by', 'usage_count');
         $sortOrder = $request->get('sort_order', 'desc');
+        if (! in_array($sortBy, $allowedSortFields)) {
+            $sortBy = 'usage_count';
+        }
+        if (! in_array($sortOrder, ['asc', 'desc'])) {
+            $sortOrder = 'desc';
+        }
         $query->orderBy($sortBy, $sortOrder);
-        
+
         $tags = $query->paginate($request->get('per_page', 20));
-        
+
         return response()->json([
             'tags' => $tags,
-            'statistics' => $this->getTagStatistics($user->id)
+            'statistics' => $this->getTagStatistics($user->id),
         ]);
     }
-    
+
     /**
      * Get tag suggestions based on content
      */
@@ -72,65 +80,65 @@ class TagController extends Controller
     {
         $request->validate([
             'content' => 'required|string',
-            'article_id' => 'nullable|exists:articles,id'
+            'article_id' => 'nullable|exists:articles,id',
         ]);
-        
+
         $suggestions = $this->tagSuggestionService->suggestTags(
             $request->content,
             Auth::id(),
             $request->article_id
         );
-        
+
         return response()->json([
-            'suggestions' => $suggestions
+            'suggestions' => $suggestions,
         ]);
     }
-    
+
     /**
      * Autocomplete tags for input
      */
     public function autocomplete(Request $request)
     {
         $request->validate([
-            'query' => 'required|string|min:1'
+            'query' => 'required|string|min:1',
         ]);
-        
+
         $user = Auth::user();
         $query = $request->input('query', '');
-        
+
         $tags = Tag::where(function ($q) use ($user) {
-                $q->where('user_id', $user->id)
-                  ->orWhereNull('user_id');
-            })
+            $q->where('user_id', $user->id)
+                ->orWhereNull('user_id');
+        })
             ->where('name', 'like', "%{$query}%")
             ->orderBy('usage_count', 'desc')
             ->limit(10)
             ->get(['id', 'name', 'slug', 'color', 'description']);
-        
+
         return response()->json([
-            'tags' => $tags
+            'tags' => $tags,
         ]);
     }
-    
+
     /**
      * Store a newly created resource in storage.
      */
     public function store(TagRequest $request)
     {
         $user = Auth::user();
-        
+
         // Check if tag already exists for this user
         $existingTag = Tag::where('user_id', $user->id)
             ->where('name', $request->name)
             ->first();
-            
+
         if ($existingTag) {
             return response()->json([
                 'message' => 'Tag already exists',
-                'tag' => $existingTag
+                'tag' => $existingTag,
             ], 422);
         }
-        
+
         $tag = Tag::create([
             'name' => $request->name,
             'slug' => Str::slug($request->name),
@@ -140,13 +148,13 @@ class TagController extends Controller
             'type' => 'custom',
             'is_auto_generated' => false,
         ]);
-        
+
         return response()->json([
             'message' => 'Tag created successfully',
-            'tag' => $tag
+            'tag' => $tag,
         ], 201);
     }
-    
+
     /**
      * Display the specified resource.
      */
@@ -154,23 +162,23 @@ class TagController extends Controller
     {
         $user = Auth::user();
         $tag = Tag::where(function ($q) use ($user) {
-                $q->where('user_id', $user->id)
-                  ->orWhereNull('user_id');
-            })
+            $q->where('user_id', $user->id)
+                ->orWhereNull('user_id');
+        })
             ->with(['articles' => function ($query) use ($user) {
                 $query->where('user_id', $user->id)
-                      ->withCount('notes')
-                      ->withCount('bookmarks');
+                    ->withCount('notes')
+                    ->withCount('bookmarks');
             }])
             ->findOrFail($id);
-        
+
         return response()->json([
             'tag' => $tag,
             'articles_count' => $tag->articles->count(),
-            'related_tags' => $this->getRelatedTags($tag, $user->id)
+            'related_tags' => $this->getRelatedTags($tag, $user->id),
         ]);
     }
-    
+
     /**
      * Update the specified resource in storage.
      */
@@ -178,19 +186,19 @@ class TagController extends Controller
     {
         $user = Auth::user();
         $tag = Tag::where('user_id', $user->id)->findOrFail($id);
-        
+
         $tag->update([
             'name' => $request->name,
             'description' => $request->description,
             'color' => $request->color ?? $tag->color,
         ]);
-        
+
         return response()->json([
             'message' => 'Tag updated successfully',
-            'tag' => $tag
+            'tag' => $tag,
         ]);
     }
-    
+
     /**
      * Remove the specified resource from storage.
      */
@@ -198,21 +206,21 @@ class TagController extends Controller
     {
         $user = Auth::user();
         $tag = Tag::where('user_id', $user->id)->findOrFail($id);
-        
+
         // Check if tag is being used
         if ($tag->articles()->count() > 0) {
             return response()->json([
-                'message' => 'Cannot delete tag that is being used by articles'
+                'message' => 'Cannot delete tag that is being used by articles',
             ], 422);
         }
-        
+
         $tag->delete();
-        
+
         return response()->json([
-            'message' => 'Tag deleted successfully'
+            'message' => 'Tag deleted successfully',
         ]);
     }
-    
+
     /**
      * Bulk tag articles
      */
@@ -221,39 +229,39 @@ class TagController extends Controller
         $request->validate([
             'tag_id' => 'required|exists:tags,id',
             'article_ids' => 'required|array',
-            'article_ids.*' => 'exists:articles,id'
+            'article_ids.*' => 'exists:articles,id',
         ]);
-        
+
         $user = Auth::user();
         $tag = Tag::where(function ($q) use ($user) {
-                $q->where('user_id', $user->id)
-                  ->orWhereNull('user_id');
-            })
+            $q->where('user_id', $user->id)
+                ->orWhereNull('user_id');
+        })
             ->findOrFail($request->tag_id);
-        
+
         // Verify all articles belong to user
-        $articles = \App\Models\Article::where('user_id', $user->id)
+        $articles = Article::where('user_id', $user->id)
             ->whereIn('id', $request->article_ids)
             ->get();
-            
+
         if ($articles->count() !== count($request->article_ids)) {
             return response()->json([
-                'message' => 'Some articles do not belong to you'
+                'message' => 'Some articles do not belong to you',
             ], 403);
         }
-        
+
         // Attach tag to articles
         $tag->articles()->syncWithoutDetaching($request->article_ids);
-        
+
         // Update usage count
         $tag->increment('usage_count', count($request->article_ids));
-        
+
         return response()->json([
             'message' => 'Articles tagged successfully',
-            'tagged_count' => count($request->article_ids)
+            'tagged_count' => count($request->article_ids),
         ]);
     }
-    
+
     /**
      * Remove tag from articles
      */
@@ -261,27 +269,27 @@ class TagController extends Controller
     {
         $request->validate([
             'article_ids' => 'required|array',
-            'article_ids.*' => 'exists:articles,id'
+            'article_ids.*' => 'exists:articles,id',
         ]);
-        
+
         $user = Auth::user();
         $tag = Tag::where(function ($q) use ($user) {
-                $q->where('user_id', $user->id)
-                  ->orWhereNull('user_id');
-            })
+            $q->where('user_id', $user->id)
+                ->orWhereNull('user_id');
+        })
             ->findOrFail($tagId);
-        
+
         // Detach tag from articles
         $tag->articles()->detach($request->article_ids);
-        
+
         // Update usage count
         $tag->decrement('usage_count', count($request->article_ids));
-        
+
         return response()->json([
-            'message' => 'Tag removed from articles successfully'
+            'message' => 'Tag removed from articles successfully',
         ]);
     }
-    
+
     /**
      * Get tag statistics
      */
@@ -291,30 +299,30 @@ class TagController extends Controller
             'total_user_tags' => Tag::forUser($userId)->count(),
             'most_used_tag' => Tag::forUser($userId)->orderBy('usage_count', 'desc')->first(),
             'auto_generated_tags' => Tag::autoGenerated($userId)->count(),
-            'articles_with_tags' => \App\Models\Article::where('user_id', $userId)
+            'articles_with_tags' => Article::where('user_id', $userId)
                 ->whereHas('tags')
                 ->count(),
-            'total_tag_usage' => Tag::forUser($userId)->sum('usage_count')
+            'total_tag_usage' => Tag::forUser($userId)->sum('usage_count'),
         ];
     }
-    
+
     /**
      * Get related tags based on article overlap
      */
     private function getRelatedTags($tag, $userId)
     {
         $articleIds = $tag->articles()->where('user_id', $userId)->pluck('articles.id');
-        
+
         return Tag::whereHas('articles', function ($query) use ($articleIds, $userId) {
-                $query->whereIn('articles.id', $articleIds)
-                      ->where('articles.user_id', $userId);
-            })
+            $query->whereIn('articles.id', $articleIds)
+                ->where('articles.user_id', $userId);
+        })
             ->where('id', '!=', $tag->id)
             ->orderBy('usage_count', 'desc')
             ->limit(5)
             ->get(['id', 'name', 'slug', 'color', 'usage_count']);
     }
-    
+
     /**
      * Generate random color
      */
@@ -322,9 +330,9 @@ class TagController extends Controller
     {
         $colors = [
             '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
-            '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
+            '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
         ];
-        
+
         return $colors[array_rand($colors)];
     }
 }

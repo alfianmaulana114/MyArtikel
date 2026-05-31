@@ -9,56 +9,56 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasTable('bookmarks')) {
+        if (! Schema::hasTable('bookmarks')) {
             return;
         }
 
         Schema::table('bookmarks', function (Blueprint $table) {
-            if (!Schema::hasColumn('bookmarks', 'category_id')) {
+            if (! Schema::hasColumn('bookmarks', 'category_id')) {
                 $table->foreignId('category_id')->nullable()->constrained('bookmark_categories')->nullOnDelete();
             }
 
-            if (!Schema::hasColumn('bookmarks', 'tags')) {
+            if (! Schema::hasColumn('bookmarks', 'tags')) {
                 $table->json('tags')->nullable();
             }
 
-            if (!Schema::hasColumn('bookmarks', 'priority')) {
+            if (! Schema::hasColumn('bookmarks', 'priority')) {
                 $table->integer('priority')->default(0);
             }
 
-            if (!Schema::hasColumn('bookmarks', 'is_favorite')) {
+            if (! Schema::hasColumn('bookmarks', 'is_favorite')) {
                 $table->boolean('is_favorite')->default(false);
             }
 
-            if (!Schema::hasColumn('bookmarks', 'is_archived')) {
+            if (! Schema::hasColumn('bookmarks', 'is_archived')) {
                 $table->boolean('is_archived')->default(false);
             }
 
-            if (!Schema::hasColumn('bookmarks', 'reminder_at')) {
+            if (! Schema::hasColumn('bookmarks', 'reminder_at')) {
                 $table->timestamp('reminder_at')->nullable();
             }
 
-            if (!Schema::hasColumn('bookmarks', 'read_at')) {
+            if (! Schema::hasColumn('bookmarks', 'read_at')) {
                 $table->timestamp('read_at')->nullable();
             }
 
-            if (!Schema::hasColumn('bookmarks', 'read_count')) {
+            if (! Schema::hasColumn('bookmarks', 'read_count')) {
                 $table->integer('read_count')->default(0);
             }
 
-            if (!Schema::hasColumn('bookmarks', 'position')) {
+            if (! Schema::hasColumn('bookmarks', 'position')) {
                 $table->integer('position')->default(0);
             }
 
-            if (!Schema::hasColumn('bookmarks', 'source_device')) {
+            if (! Schema::hasColumn('bookmarks', 'source_device')) {
                 $table->string('source_device', 50)->nullable();
             }
 
-            if (!Schema::hasColumn('bookmarks', 'source_browser')) {
+            if (! Schema::hasColumn('bookmarks', 'source_browser')) {
                 $table->string('source_browser', 50)->nullable();
             }
 
-            if (!Schema::hasColumn('bookmarks', 'created_ip')) {
+            if (! Schema::hasColumn('bookmarks', 'created_ip')) {
                 $table->ipAddress('created_ip')->nullable();
             }
         });
@@ -101,7 +101,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        if (!Schema::hasTable('bookmarks')) {
+        if (! Schema::hasTable('bookmarks')) {
             return;
         }
 
@@ -145,4 +145,3 @@ return new class extends Migration
         });
     }
 };
-

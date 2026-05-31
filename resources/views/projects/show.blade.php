@@ -25,24 +25,13 @@
                 <div class="p-5">
                     <div class="flex flex-col lg:flex-row lg:items-center gap-4">
                         <div class="flex items-center gap-3 flex-1">
-                            <span class="text-xs px-3 py-1.5 rounded-full
-                                @if ($project->status === 'drafting') bg-yellow-500/10 text-yellow-600 dark:text-yellow-400
-                                @elseif ($project->status === 'reviewing') bg-purple-500/10 text-purple-600 dark:text-purple-400
-                                @else bg-green-500/10 text-green-600 dark:text-green-400
-                                @endif">
-                                {{ ucfirst($project->status) }}
-                            </span>
                         </div>
 
                         <div class="flex items-center gap-4 text-sm theme-text-muted">
-                            <span class="flex items-center gap-1">
-                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
-                                {{ $stats['articles_count'] }} Artikel
-                            </span>
-                            <span class="flex items-center gap-1">
-                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                {{ $stats['word_count'] }} Kata
-                            </span>
+                            <a href="{{ route('projects.graph', $project) }}" class="flex items-center gap-1 text-[#AA5F3C] hover:underline">
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                Knowledge Graph
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -163,6 +152,16 @@
                                     <div class="flex items-center justify-between mb-3">
                                         <h5 class="text-sm font-semibold theme-text-primary">Saran Kutipan</h5>
                                     </div>
+                                    @if ($article->research_context || $article->research_title)
+                                        <div class="mb-3 text-xs theme-text-muted">
+                                            Berdasarkan
+                                            @if ($article->research_context)
+                                                <span class="text-[#AA5F3C] font-medium">{{ $article->research_context }}</span>
+                                            @else
+                                                <span class="text-[#AA5F3C] font-medium">{{ $article->research_title }}</span>
+                                            @endif
+                                        </div>
+                                    @endif
                                     @if (!empty($article->ai_quotation_suggestions))
                                         <div class="space-y-3">
                                             @foreach ($article->ai_quotation_suggestions as $index => $citation)
@@ -173,11 +172,49 @@
                                                             <span class="text-xs theme-text-muted">{{ $citation['position'] }}</span>
                                                         @endif
                                                     </div>
-                                                    <blockquote class="border-l-3 border-[#AA5F3C] pl-3 italic text-sm theme-text-secondary">
-                                                        "{{ $citation['quote'] ?? '' }}"
-                                                    </blockquote>
+                                                    <div class="mb-2 space-y-2">
+                                                        <div>
+                                                            <div class="text-xs font-medium theme-text-primary mb-0.5">Kutipan Asli:</div>
+                                                            <blockquote class="border-l-3 border-[#AA5F3C] pl-3 italic text-sm theme-text-secondary">
+                                                                "{{ $citation['quote'] ?? '' }}"
+                                                            </blockquote>
+                                                        </div>
+                                                        @if (!empty($citation['paraphrase']))
+                                                            <div class="p-2 rounded-lg bg-[#F5F0EB] dark:bg-[#2A2520] border border-[#D4A76A]/30">
+                                                                <div class="text-xs font-medium text-[#AA5F3C] mb-0.5">Parafrase:</div>
+                                                                <blockquote class="text-sm theme-text-secondary leading-relaxed">
+                                                                    "{{ $citation['paraphrase'] }}"
+                                                                </blockquote>
+                                                            </div>
+                                                        @else
+                                                            <div class="paraphrase-action" data-article="{{ $article->id }}" data-index="{{ $index }}">
+                                                                <button type="button" class="btn-paraphrase inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-dashed border-[#D4A76A]/50 text-[#AA5F3C] hover:bg-[#F5F0EB] dark:hover:bg-[#2A2520] transition-colors">
+                                                                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                                                    Buat Parafrase
+                                                                </button>
+                                                                <span class="paraphrase-status hidden text-xs theme-text-muted ml-1"></span>
+                                                            </div>
+                                                        @endif
+                                                    </div>
                                                     @if (!empty($citation['relevance']))
-                                                        <div class="mt-2 text-xs theme-text-muted">{{ $citation['relevance'] }}</div>
+                                                        @php
+                                                            $rel = $citation['relevance'];
+                                                            // Clean up old format
+                                                            $rel = str_replace('(ekstraksi lokal)', '', $rel);
+                                                            $rel = trim($rel);
+                                                            if (str_starts_with($rel, 'Ditemukan relevan dengan topik:')) {
+                                                                $rel = str_replace('Ditemukan relevan dengan topik:', 'Relevan dengan topik penelitian', $rel);
+                                                            }
+                                                        @endphp
+                                                        <div class="mt-2 p-2 rounded bg-[color:var(--bg-tertiary)] border border-[color:var(--border-primary)]">
+                                                            <div class="flex items-center gap-1.5 mb-1.5">
+                                                                <div class="w-5 h-5 rounded-full bg-[#AA5F3C]/10 flex items-center justify-center shrink-0">
+                                                                    <svg class="w-3 h-3 text-[#AA5F3C]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                                </div>
+                                                                <span class="text-xs font-semibold theme-text-primary">Relevansi dengan riset</span>
+                                                            </div>
+                                                            <div class="text-xs theme-text-secondary leading-relaxed pl-6">{{ $rel }}</div>
+                                                        </div>
                                                     @endif
                                                 </div>
                                             @endforeach
@@ -268,14 +305,6 @@
                             <textarea id="edit-project-description" rows="3" class="block w-full rounded-lg shadow-sm border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C]">{{ $project->description }}</textarea>
                         </div>
 
-                        <div>
-                            <label class="block text-sm font-medium theme-text-secondary mb-2">Status</label>
-                            <select id="edit-project-status" class="block w-full rounded-lg shadow-sm border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C]">
-                                <option value="drafting" {{ $project->status === 'drafting' ? 'selected' : '' }}>Drafting</option>
-                                <option value="reviewing" {{ $project->status === 'reviewing' ? 'selected' : '' }}>Reviewing</option>
-                                <option value="completed" {{ $project->status === 'completed' ? 'selected' : '' }}>Completed</option>
-                            </select>
-                        </div>
 
                         <div class="flex gap-3 pt-4">
                             <button @click="saveProjectSettings()" class="btn btn-primary">Simpan Perubahan</button>
@@ -430,7 +459,6 @@
                             const data = {
                                 title: document.getElementById('edit-project-title').value,
                                 description: document.getElementById('edit-project-description').value,
-                                status: document.getElementById('edit-project-status').value,
                             };
                             const res = await fetch(`/projects/${this.projectId}`, {
                                 method: 'PUT',
@@ -526,6 +554,56 @@
                     alert('Gagal generate kutipan');
                 }
             }
+
+            // Handle individual paraphrase generation in project view
+            document.querySelectorAll(".paraphrase-action .btn-paraphrase").forEach((btn) => {
+                btn.addEventListener("click", async function () {
+                    const wrapper = this.closest(".paraphrase-action");
+                    const articleId = wrapper.dataset.article;
+                    const index = wrapper.dataset.index;
+                    const status = wrapper.querySelector(".paraphrase-status");
+                    this.disabled = true;
+                    this.classList.add("opacity-70");
+                    status.textContent = "Membuat parafrase…";
+                    status.classList.remove("hidden");
+                    try {
+                        const res = await fetch(`/articles/${articleId}/paraphrase-citation/${index}`, {
+                            method: "POST",
+                            credentials: "same-origin",
+                            headers: {
+                                Accept: "application/json",
+                                "X-Requested-With": "XMLHttpRequest",
+                                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+                            },
+                        });
+                        const json = await res.json();
+                        if (json.success && json.data?.paraphrase) {
+                            const paraBlock = document.createElement("div");
+                            paraBlock.className = "p-2 rounded-lg bg-[#F5F0EB] dark:bg-[#2A2520] border border-[#D4A76A]/30";
+                            paraBlock.innerHTML = `
+                                <div class="text-xs font-medium text-[#AA5F3C] mb-0.5">Parafrase:</div>
+                                <blockquote class="text-sm theme-text-secondary leading-relaxed">
+                                    "${json.data.paraphrase.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}"
+                                </blockquote>
+                            `;
+                            wrapper.replaceWith(paraBlock);
+                        } else {
+                            status.textContent = json.error || "Gagal memparafrase.";
+                            status.classList.add("text-red-500");
+                            this.disabled = false;
+                            this.classList.remove("opacity-70");
+                        }
+                    } catch (e) {
+                        status.textContent = "Gagal menghubungi server.";
+                        status.classList.add("text-red-500");
+                        this.disabled = false;
+                        this.classList.remove("opacity-70");
+                    }
+                });
+            });
         </script>
     @endpush
+
+    {{-- AI Chat Panel --}}
+    @include('projects.chat-panel', ['project' => $project])
 </x-app-layout>

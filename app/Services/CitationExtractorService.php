@@ -13,10 +13,10 @@ class CitationExtractorService
     /**
      * Extract top-N most relevant chunks (paragraphs) from text.
      *
-     * @param string $text Full article text
-     * @param string $researchTitle User's research title
-     * @param int $maxChars Total max characters to return (default ~6000 chars ≈ 1500 tokens)
-     * @param int $minChunkLen Minimum chunk length in characters
+     * @param  string  $text  Full article text
+     * @param  string  $researchTitle  User's research title
+     * @param  int  $maxChars  Total max characters to return (default ~6000 chars ≈ 1500 tokens)
+     * @param  int  $minChunkLen  Minimum chunk length in characters
      * @return string Concatenated relevant chunks
      */
     public function extractRelevantChunks(string $text, string $researchTitle, int $maxChars = 6000, int $minChunkLen = 80): string
@@ -94,8 +94,8 @@ class CitationExtractorService
             $p = trim($p);
             if (mb_strlen($p) < $minLen) {
                 // Merge short paragraph with previous if exists
-                if (!empty($chunks)) {
-                    $chunks[count($chunks) - 1] .= ' ' . $p;
+                if (! empty($chunks)) {
+                    $chunks[count($chunks) - 1] .= ' '.$p;
                 } else {
                     $chunks[] = $p;
                 }
@@ -108,15 +108,15 @@ class CitationExtractorService
         $merged = [];
         $buffer = '';
         foreach ($chunks as $chunk) {
-            $buffer .= ($buffer ? ' ' : '') . $chunk;
+            $buffer .= ($buffer ? ' ' : '').$chunk;
             if (mb_strlen($buffer) >= $minLen * 2) {
                 $merged[] = $buffer;
                 $buffer = '';
             }
         }
         if ($buffer !== '') {
-            if (!empty($merged)) {
-                $merged[count($merged) - 1] .= ' ' . $buffer;
+            if (! empty($merged)) {
+                $merged[count($merged) - 1] .= ' '.$buffer;
             } else {
                 $merged[] = $buffer;
             }
@@ -126,7 +126,7 @@ class CitationExtractorService
     }
 
     /**
-     * Extract meaningful keywords from a string.
+     * Extract meaningful keywords and phrases from a string.
      */
     private function extractKeywords(string $text): array
     {
@@ -146,9 +146,21 @@ class CitationExtractorService
         ];
 
         $keywords = [];
+        $cleanWords = [];
         foreach ($words as $word) {
-            if (mb_strlen($word) >= 3 && !in_array($word, $stopWords)) {
+            if (mb_strlen($word) >= 3 && ! in_array($word, $stopWords)) {
+                $cleanWords[] = $word;
                 $keywords[] = $word;
+            }
+        }
+
+        // Extract bigrams and trigrams for phrase matching
+        for ($i = 0; $i < count($cleanWords) - 1; $i++) {
+            $bigram = $cleanWords[$i].' '.$cleanWords[$i + 1];
+            $keywords[] = $bigram;
+            if ($i < count($cleanWords) - 2) {
+                $trigram = $cleanWords[$i].' '.$cleanWords[$i + 1].' '.$cleanWords[$i + 2];
+                $keywords[] = $trigram;
             }
         }
 
@@ -156,12 +168,22 @@ class CitationExtractorService
         $freq = array_count_values($keywords);
         arsort($freq);
 
-        // Return top unique keywords
-        return array_slice(array_keys($freq), 0, 20);
+        // Return top unique keywords/phrases, prioritizing longer phrases
+        $sorted = array_keys($freq);
+        usort($sorted, function ($a, $b) use ($freq) {
+            $lenDiff = mb_strlen($b) <=> mb_strlen($a);
+            if ($lenDiff !== 0) {
+                return $lenDiff;
+            }
+
+            return $freq[$b] <=> $freq[$a];
+        });
+
+        return array_slice($sorted, 0, 30);
     }
 
     /**
-     * Score a chunk based on keyword overlap with research title.
+     * Score a chunk based on keyword and phrase overlap with research title/context.
      */
     private function scoreChunk(string $chunk, array $keywords): float
     {
@@ -170,8 +192,9 @@ class CitationExtractorService
 
         foreach ($keywords as $keyword) {
             $count = mb_substr_count($chunkLower, $keyword);
-            // Longer keywords are more significant
-            $weight = 1.0 + (mb_strlen($keyword) * 0.05);
+            // Phrases (multi-word) are much more significant than single words
+            $wordCount = substr_count($keyword, ' ') + 1;
+            $weight = 1.0 + (mb_strlen($keyword) * 0.05) + ($wordCount * 1.5);
             $score += $count * $weight;
         }
 
@@ -189,6 +212,11 @@ class CitationExtractorService
         // Bonus for chunks with quotation marks (already quoted in text)
         if (preg_match('/["\'\"]/', $chunk)) {
             $score *= 1.05;
+        }
+
+        // Bonus for academic indicator words
+        if (preg_match('/\b(hasil|menunjukkan|penelitian|metode|analisis|data|kesimpulan|teori|hipotesis)\b/u', $chunkLower)) {
+            $score *= 1.15;
         }
 
         return $score;

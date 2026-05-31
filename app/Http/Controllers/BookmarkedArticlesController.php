@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Article;
 use App\Models\Bookmark;
 use App\Models\BookmarkCategory;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class BookmarkedArticlesController extends Controller
@@ -30,14 +30,14 @@ class BookmarkedArticlesController extends Controller
             'sort_order' => 'nullable|in:asc,desc',
             'per_page' => 'nullable|integer|min:1|max:100',
             'include_article_details' => 'nullable|boolean',
-            'include_category_details' => 'nullable|boolean'
+            'include_category_details' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -84,11 +84,11 @@ class BookmarkedArticlesController extends Controller
                     'per_page' => $bookmarks->perPage(),
                     'total' => $bookmarks->total(),
                     'from' => $bookmarks->firstItem(),
-                    'to' => $bookmarks->lastItem()
+                    'to' => $bookmarks->lastItem(),
                 ],
                 'filter_options' => $filterOptions,
-                'stats' => $this->getStats($userId, $request)
-            ]
+                'stats' => $this->getStats($userId, $request),
+            ],
         ]);
     }
 
@@ -110,14 +110,14 @@ class BookmarkedArticlesController extends Controller
             'sort_by' => 'nullable|in:created_at,updated_at,read_at,priority,title',
             'sort_order' => 'nullable|in:asc,desc',
             'per_page' => 'nullable|integer|min:1|max:100',
-            'include_article_details' => 'nullable|boolean'
+            'include_article_details' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -155,9 +155,9 @@ class BookmarkedArticlesController extends Controller
                     'per_page' => $bookmarks->perPage(),
                     'total' => $bookmarks->total(),
                     'from' => $bookmarks->firstItem(),
-                    'to' => $bookmarks->lastItem()
-                ]
-            ]
+                    'to' => $bookmarks->lastItem(),
+                ],
+            ],
         ]);
     }
 
@@ -172,14 +172,14 @@ class BookmarkedArticlesController extends Controller
             'search' => 'nullable|string|max:255',
             'sort_by' => 'nullable|in:created_at,updated_at,read_at,priority,title',
             'sort_order' => 'nullable|in:asc,desc',
-            'per_page' => 'nullable|integer|min:1|max:100'
+            'per_page' => 'nullable|integer|min:1|max:100',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -216,9 +216,9 @@ class BookmarkedArticlesController extends Controller
                     'per_page' => $bookmarks->perPage(),
                     'total' => $bookmarks->total(),
                     'from' => $bookmarks->firstItem(),
-                    'to' => $bookmarks->lastItem()
-                ]
-            ]
+                    'to' => $bookmarks->lastItem(),
+                ],
+            ],
         ]);
     }
 
@@ -232,14 +232,14 @@ class BookmarkedArticlesController extends Controller
             'search' => 'nullable|string|max:255',
             'sort_by' => 'nullable|in:created_at,updated_at,archived_at,title',
             'sort_order' => 'nullable|in:asc,desc',
-            'per_page' => 'nullable|integer|min:1|max:100'
+            'per_page' => 'nullable|integer|min:1|max:100',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -273,9 +273,9 @@ class BookmarkedArticlesController extends Controller
                     'per_page' => $bookmarks->perPage(),
                     'total' => $bookmarks->total(),
                     'from' => $bookmarks->firstItem(),
-                    'to' => $bookmarks->lastItem()
-                ]
-            ]
+                    'to' => $bookmarks->lastItem(),
+                ],
+            ],
         ]);
     }
 
@@ -289,14 +289,14 @@ class BookmarkedArticlesController extends Controller
             'search' => 'nullable|string|max:255',
             'sort_by' => 'nullable|in:created_at,updated_at,reminder_at,title',
             'sort_order' => 'nullable|in:asc,desc',
-            'per_page' => 'nullable|integer|min:1|max:100'
+            'per_page' => 'nullable|integer|min:1|max:100',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -330,9 +330,9 @@ class BookmarkedArticlesController extends Controller
                     'per_page' => $bookmarks->perPage(),
                     'total' => $bookmarks->total(),
                     'from' => $bookmarks->firstItem(),
-                    'to' => $bookmarks->lastItem()
-                ]
-            ]
+                    'to' => $bookmarks->lastItem(),
+                ],
+            ],
         ]);
     }
 
@@ -347,14 +347,14 @@ class BookmarkedArticlesController extends Controller
             'is_favorite' => 'nullable|boolean',
             'is_archived' => 'nullable|boolean',
             'is_read' => 'nullable|boolean',
-            'per_page' => 'nullable|integer|min:1|max:100'
+            'per_page' => 'nullable|integer|min:1|max:100',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -395,9 +395,9 @@ class BookmarkedArticlesController extends Controller
                     'per_page' => $bookmarks->perPage(),
                     'total' => $bookmarks->total(),
                     'from' => $bookmarks->firstItem(),
-                    'to' => $bookmarks->lastItem()
-                ]
-            ]
+                    'to' => $bookmarks->lastItem(),
+                ],
+            ],
         ]);
     }
 
@@ -460,13 +460,13 @@ class BookmarkedArticlesController extends Controller
         switch ($sortBy) {
             case 'title':
                 $query->join('articles', 'bookmarks.article_id', '=', 'articles.id')
-                      ->orderBy('articles.title', $sortOrder)
-                      ->select('bookmarks.*');
+                    ->orderBy('articles.title', $sortOrder)
+                    ->select('bookmarks.*');
                 break;
             case 'category':
                 $query->join('bookmark_categories', 'bookmarks.category_id', '=', 'bookmark_categories.id')
-                      ->orderBy('bookmark_categories.name', $sortOrder)
-                      ->select('bookmarks.*');
+                    ->orderBy('bookmark_categories.name', $sortOrder)
+                    ->select('bookmarks.*');
                 break;
             default:
                 $query->orderBy($sortBy, $sortOrder);
@@ -493,7 +493,7 @@ class BookmarkedArticlesController extends Controller
                 'bookmark_updated_at' => $bookmark->updated_at,
                 'is_favorite' => $bookmark->is_favorite,
                 'is_archived' => $bookmark->is_archived,
-                'is_read' => !is_null($bookmark->read_at),
+                'is_read' => ! is_null($bookmark->read_at),
                 'read_at' => $bookmark->read_at,
                 'read_count' => $bookmark->read_count,
                 'priority' => $bookmark->priority,
@@ -504,11 +504,11 @@ class BookmarkedArticlesController extends Controller
                     'id' => $bookmark->category->id,
                     'name' => $bookmark->category->name,
                     'color' => $bookmark->category->color,
-                    'description' => $bookmark->category->description
+                    'description' => $bookmark->category->description,
                 ] : null,
                 'time_since_bookmarked' => $bookmark->time_since_created,
                 'has_reminder' => $bookmark->has_reminder,
-                'is_reminder_due' => $bookmark->is_reminder_due
+                'is_reminder_due' => $bookmark->is_reminder_due,
             ];
         })->toArray();
     }
@@ -529,8 +529,8 @@ class BookmarkedArticlesController extends Controller
                 ['value' => 'read', 'label' => 'Read'],
                 ['value' => 'unread', 'label' => 'Unread'],
                 ['value' => 'favorite', 'label' => 'Favorite'],
-                ['value' => 'archived', 'label' => 'Archived']
-            ]
+                ['value' => 'archived', 'label' => 'Archived'],
+            ],
         ];
     }
 
@@ -541,13 +541,13 @@ class BookmarkedArticlesController extends Controller
     {
         $bookmarks = Bookmark::forUser($userId)->whereNotNull('tags')->get();
         $allTags = [];
-        
+
         foreach ($bookmarks as $bookmark) {
             if (is_array($bookmark->tags)) {
                 $allTags = array_merge($allTags, $bookmark->tags);
             }
         }
-        
+
         return array_unique(array_filter(array_map('trim', $allTags)));
     }
 
@@ -558,10 +558,10 @@ class BookmarkedArticlesController extends Controller
     {
         $query = Bookmark::forUser($userId);
         $this->applyFilters($query, $request);
-        
+
         $totalFiltered = $query->count();
         $totalBookmarks = Bookmark::forUser($userId)->count();
-        
+
         return [
             'total_filtered' => $totalFiltered,
             'total_bookmarks' => $totalBookmarks,
@@ -570,7 +570,7 @@ class BookmarkedArticlesController extends Controller
             'favorite_count' => (clone $query)->favorites()->count(),
             'archived_count' => (clone $query)->archived()->count(),
             'with_reminders_count' => (clone $query)->withReminders()->count(),
-            'due_reminders_count' => (clone $query)->dueReminders()->count()
+            'due_reminders_count' => (clone $query)->dueReminders()->count(),
         ];
     }
 }

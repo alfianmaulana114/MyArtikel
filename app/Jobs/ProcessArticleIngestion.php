@@ -3,19 +3,25 @@
 namespace App\Jobs;
 
 use App\Models\Article;
-use App\Models\User;
 use App\Models\Summary;
+use App\Models\Tag;
+use App\Models\User;
 use App\Services\ArticleExtractionService;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
+use App\Services\GeminiSummarizationService;
+use App\Services\SummarizationService;
 use Exception;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class ProcessArticleIngestion extends BaseJob
 {
     private int $userId;
+
     private string $url;
+
     private array $options;
+
     private ?int $articleId;
 
     /**
@@ -27,15 +33,15 @@ class ProcessArticleIngestion extends BaseJob
         $this->url = $url;
         $this->options = $options;
         $this->articleId = isset($options['article_id']) ? (int) $options['article_id'] : null;
-        
+
         // Set queue for article ingestion jobs (low priority)
         $this->onQueue('low-priority');
-        
+
         $this->setJobMetadata([
             'user_id' => $userId,
             'url' => $url,
             'options' => $options,
-            'type' => 'article_ingestion'
+            'type' => 'article_ingestion',
         ]);
     }
 
@@ -47,7 +53,7 @@ class ProcessArticleIngestion extends BaseJob
         Log::info('Starting article ingestion', [
             'user_id' => $this->userId,
             'url' => $this->url,
-            'options' => $this->options
+            'options' => $this->options,
         ]);
 
         try {
@@ -68,18 +74,19 @@ class ProcessArticleIngestion extends BaseJob
                     Log::info('Article already exists for URL', [
                         'user_id' => $this->userId,
                         'url' => $this->url,
-                        'article_id' => $existingArticle->id
+                        'article_id' => $existingArticle->id,
                     ]);
-                    
+
                     $this->articleId = $existingArticle->id;
                     $this->addMetadata('existing_article_id', $existingArticle->id);
+
                     return;
                 }
 
                 $article = Article::create([
                     'user_id' => $this->userId,
                     'title' => 'Memproses artikel…',
-                    'slug' => 'processing-' . uniqid(),
+                    'slug' => 'processing-'.uniqid(),
                     'source_url' => $this->url,
                     'canonical_url' => $canonicalUrl,
                     'source_domain' => $sourceDomain,
@@ -100,8 +107,8 @@ class ProcessArticleIngestion extends BaseJob
             $extractionService = app(ArticleExtractionService::class);
             $extractedData = $extractionService->extractFromUrl($this->url);
 
-            if (!$extractedData['success']) {
-                throw new Exception('Failed to extract article: ' . $extractedData['error']);
+            if (! $extractedData['success']) {
+                throw new Exception('Failed to extract article: '.$extractedData['error']);
             }
 
             $article->update([
@@ -114,16 +121,17 @@ class ProcessArticleIngestion extends BaseJob
 
             $title = $extractedData['title'] ?? 'Untitled Article';
             $slugBase = Str::slug($title);
-            $slug = $slugBase !== '' ? ($slugBase . '-' . $article->id) : ('article-' . $article->id);
+            $slug = $slugBase !== '' ? ($slugBase.'-'.$article->id) : ('article-'.$article->id);
 
             $contentForDb = Str::limit($textExtracted, 60000, '');
             $excerptForDb = $textExtracted !== '' ? Str::limit($textExtracted, 300, '...') : '';
+            $contentSanitized = $textExtracted !== '' ? strip_tags($textExtracted) : null;
 
             $article->update([
                 'title' => $title,
                 'slug' => $slug,
                 'content' => $contentForDb,
-                'content_sanitized' => null,
+                'content_sanitized' => $contentSanitized,
                 'text_extracted' => $textExtracted,
                 'content_hash' => $contentHash,
                 'excerpt' => $excerptForDb,
@@ -136,12 +144,12 @@ class ProcessArticleIngestion extends BaseJob
             ]);
 
             // Process tags if available
-            if (!empty($extractedData['tags'])) {
+            if (! empty($extractedData['tags'])) {
                 $this->processTags($article, $extractedData['tags']);
             }
 
             // Extract and save metadata
-            if (!empty($extractedData['metadata'])) {
+            if (! empty($extractedData['metadata'])) {
                 $this->saveMetadata($article, $extractedData['metadata']);
             }
 
@@ -149,7 +157,7 @@ class ProcessArticleIngestion extends BaseJob
                 'user_id' => $this->userId,
                 'article_id' => $article->id,
                 'title' => $article->title,
-                'word_count' => str_word_count($article->content)
+                'word_count' => str_word_count($article->content),
             ]);
 
             $this->addMetadata('article_id', $article->id);
@@ -162,7 +170,7 @@ class ProcessArticleIngestion extends BaseJob
                 'user_id' => $this->userId,
                 'url' => $this->url,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             if ($this->articleId) {
@@ -178,7 +186,7 @@ class ProcessArticleIngestion extends BaseJob
                         'processing_error' => $message,
                     ]);
             }
-            
+
             throw $e;
         }
     }
@@ -190,26 +198,26 @@ class ProcessArticleIngestion extends BaseJob
     {
         try {
             $tagModels = [];
-            
+
             foreach ($tags as $tagName) {
-                $tag = \App\Models\Tag::firstOrCreate(
+                $tag = Tag::firstOrCreate(
                     ['name' => trim($tagName)],
                     ['user_id' => $this->userId]
                 );
                 $tagModels[] = $tag->id;
             }
-            
+
             $article->tags()->sync($tagModels);
-            
+
             Log::info('Tags processed for article', [
                 'article_id' => $article->id,
-                'tags_count' => count($tagModels)
+                'tags_count' => count($tagModels),
             ]);
-            
+
         } catch (Exception $e) {
             Log::warning('Failed to process tags', [
                 'article_id' => $article->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -228,8 +236,9 @@ class ProcessArticleIngestion extends BaseJob
             if (empty($textExtracted) || str_word_count($textExtracted) < 50) {
                 Log::info('Article content too short for summarization', [
                     'article_id' => $article->id,
-                    'word_count' => str_word_count($textExtracted ?? '')
+                    'word_count' => str_word_count($textExtracted ?? ''),
                 ]);
+
                 return;
             }
 
@@ -241,8 +250,9 @@ class ProcessArticleIngestion extends BaseJob
             if ($existingSummary) {
                 Log::info('Summary already exists for article', [
                     'article_id' => $article->id,
-                    'summary_id' => $existingSummary->id
+                    'summary_id' => $existingSummary->id,
                 ]);
+
                 return;
             }
 
@@ -254,15 +264,15 @@ class ProcessArticleIngestion extends BaseJob
                 'type' => 'ai_generated',
                 'source' => 'gemini',
                 'status' => 'pending',
-                'processing_started_at' => now()
+                'processing_started_at' => now(),
             ]);
 
-            $summarizationService = app(\App\Services\SummarizationService::class);
+            $summarizationService = app(SummarizationService::class);
             $options = [
                 'max_words' => 150,
                 'language' => 'id',
                 'prefer_ai' => true,
-                'force_regenerate' => false
+                'force_regenerate' => false,
             ];
 
             $result = $summarizationService->generateSummary(
@@ -274,28 +284,28 @@ class ProcessArticleIngestion extends BaseJob
             if ($result['success']) {
                 Log::info('Auto summary generated successfully', [
                     'article_id' => $article->id,
-                    'summary_id' => $summary->id
+                    'summary_id' => $summary->id,
                 ]);
 
                 // Generate citation suggestions if research_title is set
-                if (!empty($article->research_title)) {
+                if (! empty($article->research_title)) {
                     $this->generateCitationSuggestions($article);
                 }
             } else {
                 Log::warning('Auto summary generation failed', [
                     'article_id' => $article->id,
-                    'error' => $result['error'] ?? 'Unknown error'
+                    'error' => $result['error'] ?? 'Unknown error',
                 ]);
                 $summary->update([
                     'status' => 'failed',
-                    'error_message' => $result['error'] ?? 'Generation failed'
+                    'error_message' => $result['error'] ?? 'Generation failed',
                 ]);
             }
 
         } catch (Exception $e) {
             Log::warning('Auto summary generation error', [
                 'article_id' => $article->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -314,10 +324,11 @@ class ProcessArticleIngestion extends BaseJob
                 return;
             }
 
-            $geminiService = app(\App\Services\GeminiSummarizationService::class);
+            $geminiService = app(GeminiSummarizationService::class);
 
-            if (!$geminiService->isAvailable()) {
+            if (! $geminiService->isAvailable()) {
                 Log::info('Gemini not available for citation suggestions');
+
                 return;
             }
 
@@ -330,14 +341,14 @@ class ProcessArticleIngestion extends BaseJob
 
                 Log::info('Citation suggestions generated', [
                     'article_id' => $article->id,
-                    'suggestions_count' => count($result['citations'])
+                    'suggestions_count' => count($result['citations']),
                 ]);
             }
 
         } catch (Exception $e) {
             Log::warning('Citation suggestion generation failed', [
                 'article_id' => $article->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -349,18 +360,18 @@ class ProcessArticleIngestion extends BaseJob
     {
         try {
             $article->update([
-                'metadata' => array_merge($article->metadata ?? [], $metadata)
+                'metadata' => array_merge($article->metadata ?? [], $metadata),
             ]);
-            
+
             Log::info('Metadata saved for article', [
                 'article_id' => $article->id,
-                'metadata_keys' => array_keys($metadata)
+                'metadata_keys' => array_keys($metadata),
             ]);
-            
+
         } catch (Exception $e) {
             Log::warning('Failed to save metadata', [
                 'article_id' => $article->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -381,4 +392,3 @@ class ProcessArticleIngestion extends BaseJob
         return str_contains($exception->getMessage(), 'already exists');
     }
 }
-

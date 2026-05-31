@@ -3,17 +3,21 @@
 namespace App\Jobs;
 
 use App\Models\Article;
+use App\Models\Export;
 use App\Models\User;
 use App\Services\AdvancedPdfExportService;
+use Exception;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Exception;
 
 class ProcessPdfExport extends BaseJob
 {
     private int $userId;
+
     private array $articleIds;
+
     private array $exportOptions;
+
     private ?string $filePath;
 
     /**
@@ -31,15 +35,15 @@ class ProcessPdfExport extends BaseJob
             'template' => 'default',
             'filename_prefix' => 'articles_export',
         ], $exportOptions);
-        
+
         // Set queue for PDF export jobs
         $this->onQueue('exports');
-        
+
         $this->setJobMetadata([
             'user_id' => $userId,
             'article_count' => count($articleIds),
             'export_options' => $this->exportOptions,
-            'type' => 'pdf_export'
+            'type' => 'pdf_export',
         ]);
     }
 
@@ -49,11 +53,11 @@ class ProcessPdfExport extends BaseJob
     public function handle(): void
     {
         $user = User::findOrFail($this->userId);
-        
+
         Log::info('Starting PDF export', [
             'user_id' => $this->userId,
             'article_count' => count($this->articleIds),
-            'export_options' => $this->exportOptions
+            'export_options' => $this->exportOptions,
         ]);
 
         try {
@@ -72,12 +76,12 @@ class ProcessPdfExport extends BaseJob
             $pdfService = app(AdvancedPdfExportService::class);
             $exportResult = $pdfService->exportMultipleArticles($articles, $this->exportOptions);
 
-            if (!$exportResult['success']) {
-                throw new Exception('PDF generation failed: ' . $exportResult['error']);
+            if (! $exportResult['success']) {
+                throw new Exception('PDF generation failed: '.$exportResult['error']);
             }
 
             $this->filePath = $exportResult['file_path'];
-            
+
             // Create export record
             $this->createExportRecord($exportResult);
 
@@ -85,7 +89,7 @@ class ProcessPdfExport extends BaseJob
                 'user_id' => $this->userId,
                 'file_path' => $this->filePath,
                 'file_size' => Storage::disk('local')->size($this->filePath),
-                'article_count' => $articles->count()
+                'article_count' => $articles->count(),
             ]);
 
             $this->addMetadata('file_path', $this->filePath);
@@ -96,9 +100,9 @@ class ProcessPdfExport extends BaseJob
             Log::error('PDF export failed', [
                 'user_id' => $this->userId,
                 'article_ids' => $this->articleIds,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
-            
+
             throw $e;
         }
     }
@@ -109,7 +113,7 @@ class ProcessPdfExport extends BaseJob
     private function createExportRecord(array $exportResult): void
     {
         try {
-            \App\Models\Export::create([
+            Export::create([
                 'user_id' => $this->userId,
                 'type' => 'pdf',
                 'file_path' => $exportResult['file_path'],
@@ -120,14 +124,14 @@ class ProcessPdfExport extends BaseJob
                     'processing_time' => $exportResult['processing_time'] ?? null,
                 ],
                 'status' => 'completed',
-                'expires_at' => now()->addDays(7) // Keep for 7 days
+                'expires_at' => now()->addDays(7), // Keep for 7 days
             ]);
-            
+
         } catch (Exception $e) {
             Log::warning('Failed to create export record', [
                 'user_id' => $this->userId,
                 'file_path' => $exportResult['file_path'],
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }

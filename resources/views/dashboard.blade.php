@@ -1,27 +1,17 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <h2 class="font-semibold text-xl theme-text-primary">Library</h2>
-            <div class="flex items-center gap-3 text-sm theme-text-muted">
-                <span>{{ $stats['total'] ?? 0 }} artikel</span>
-                @if(($stats['processing'] ?? 0) > 0)
-                    <span class="inline-flex items-center gap-1">
-                        <span class="w-2 h-2 rounded-full bg-[#D4A76A] animate-pulse"></span>
-                        {{ $stats['processing'] }} diproses
-                    </span>
-                @endif
-                @if(($stats['failed'] ?? 0) > 0)
-                    <span class="inline-flex items-center gap-1 text-[color:var(--error)]">
-                        <span class="w-2 h-2 rounded-full bg-[color:var(--error)]"></span>
-                        {{ $stats['failed'] }} gagal
-                    </span>
-                @endif
-            </div>
+        <div class="flex flex-col gap-1">
+            <h2 class="font-semibold text-xl theme-text-primary leading-tight">
+                Dashboard
+            </h2>
+            <p class="text-sm theme-text-muted">
+                Ringkasan aktivitas dan artikel terbaru Anda.
+            </p>
         </div>
     </x-slot>
 
     <div class="py-6">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
             {{-- Add Article — Collapsible --}}
             <div x-data="{
@@ -38,16 +28,16 @@
                         this.sourceType = 'pdf';
                     @endif
                 }
-            }" class="card overflow-hidden sm:rounded-lg">
+            }" class="card overflow-hidden rounded-xl">
                 {{-- Toggle Button --}}
                 <button @click="expanded = !expanded" class="w-full flex items-center justify-between px-6 py-4 hover:bg-[color:var(--hover-bg)] transition-colors text-left">
-                    <div class="flex items-center gap-3">
-                        <div class="w-9 h-9 rounded-xl bg-[#AA5F3C]/10 flex items-center justify-center">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-[#AA5F3C]/10 flex items-center justify-center">
                             <svg class="w-5 h-5 text-[#AA5F3C]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                         </div>
                         <div>
-                            <div class="font-medium theme-text-primary">Tambah Artikel</div>
-                            <div class="text-xs theme-text-muted">URL jurnal atau upload PDF</div>
+                            <div class="font-semibold theme-text-primary">Tambah Artikel</div>
+                            <div class="text-sm theme-text-muted">URL jurnal atau upload PDF</div>
                         </div>
                     </div>
                     <svg :class="expanded ? 'rotate-180' : ''" class="w-5 h-5 theme-text-muted transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
@@ -60,10 +50,10 @@
                         <input type="hidden" name="source_type" x-model="sourceType">
 
                         {{-- Source type tabs --}}
-                        <div class="flex rounded-xl border theme-border-primary bg-[color:var(--surface-secondary)] p-1 w-fit">
+                        <div class="flex rounded-lg border theme-border-primary bg-[color:var(--surface-secondary)] p-1 w-fit">
                             <button type="button" @click="sourceType = 'url'"
                                 :class="sourceType === 'url' ? 'bg-[color:var(--surface-primary)] shadow-sm theme-text-primary' : 'theme-text-muted hover:theme-text-secondary'"
-                                class="px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                                class="px-4 py-2 rounded-md text-sm font-medium transition-all">
                                 <span class="flex items-center gap-1.5">
                                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
                                     URL
@@ -71,7 +61,7 @@
                             </button>
                             <button type="button" @click="sourceType = 'pdf'"
                                 :class="sourceType === 'pdf' ? 'bg-[color:var(--surface-primary)] shadow-sm theme-text-primary' : 'theme-text-muted hover:theme-text-secondary'"
-                                class="px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                                class="px-4 py-2 rounded-md text-sm font-medium transition-all">
                                 <span class="flex items-center gap-1.5">
                                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                                     PDF
@@ -84,7 +74,7 @@
                             <label for="url" class="block text-sm font-medium theme-text-secondary mb-1.5">URL Artikel / Jurnal</label>
                             <input id="url" name="url" type="url" value="{{ old('url') }}"
                                 placeholder="https://example.com/artikel-jurnal"
-                                class="block w-full rounded-xl border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C] px-4 py-2.5 text-sm" />
+                                class="block w-full rounded-lg shadow-sm border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C] px-4 py-2.5 sm:text-sm" />
                             @error('url')<div class="mt-2 text-sm text-[color:var(--error)]">{{ $message }}</div>@enderror
                         </div>
 
@@ -94,7 +84,7 @@
                             <div @dragover.prevent="dragOver = true" @dragleave.prevent="dragOver = false"
                                 @drop.prevent="dragOver = false; const f = $event.dataTransfer.files[0]; if(f) { $refs.fileInput.files = $event.dataTransfer.files; fileName = f.name; }"
                                 :class="dragOver ? 'border-[#AA5F3C] bg-[color:var(--bg-tertiary)]' : 'theme-border-primary'"
-                                class="relative border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer"
+                                class="relative border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer"
                                 @click="$refs.fileInput.click()">
                                 <input x-ref="fileInput" id="pdf_file" name="pdf_file" type="file" accept=".pdf" class="hidden"
                                     @change="fileName = $refs.fileInput.files[0]?.name || ''" />
@@ -110,18 +100,18 @@
                             @error('pdf_file')<div class="mt-2 text-sm text-[color:var(--error)]">{{ $message }}</div>@enderror
                         </div>
 
-                        {{-- Research info — side by side on desktop --}}
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {{-- Research info --}}
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                             <div>
                                 <label for="research_title" class="block text-sm font-medium theme-text-secondary mb-1.5">Judul Penelitian <span class="text-xs theme-text-muted font-normal">(opsional)</span></label>
                                 <input id="research_title" name="research_title" type="text" value="{{ old('research_title') }}"
                                     placeholder="Analisis Pengaruh Media Sosial…"
-                                    class="block w-full rounded-xl border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C] px-4 py-2.5 text-sm" />
+                                    class="block w-full rounded-lg shadow-sm border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C] px-4 py-2.5 sm:text-sm" />
                             </div>
                             <div>
                                 <label class="block text-sm font-medium theme-text-secondary mb-1.5">Konteks Riset <span class="text-xs theme-text-muted font-normal">(opsional)</span></label>
                                 <select id="research_context_select"
-                                    class="block w-full rounded-xl border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C] px-4 py-2.5 text-sm">
+                                    class="block w-full rounded-lg shadow-sm border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C] px-4 py-2.5 sm:text-sm">
                                     <option value="">— Pilih —</option>
                                     <option value="Bab 1 — Pendahuluan">Bab 1 — Pendahuluan</option>
                                     <option value="Bab 2 — Tinjauan Pustaka">Bab 2 — Tinjauan Pustaka</option>
@@ -135,7 +125,7 @@
                                 </select>
                                 <input id="research_context" name="research_context" type="text" value="{{ old('research_context') }}"
                                     placeholder="misal: kutipan untuk variabel X"
-                                    class="hidden block w-full rounded-xl border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C] px-4 py-2.5 text-sm mt-2" />
+                                    class="hidden block w-full rounded-lg shadow-sm border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C] px-4 py-2.5 sm:text-sm mt-2" />
                             </div>
                         </div>
 
@@ -154,13 +144,13 @@
                         </script>
 
                         {{-- Submit --}}
-                        <div class="flex items-center gap-3">
+                        <div class="flex items-center justify-end gap-3 pt-2">
                             <button type="submit" class="btn btn-primary" :disabled="uploading">
-                                <span x-show="!uploading" class="flex items-center gap-1.5">
+                                <span x-show="!uploading" class="flex items-center gap-2">
                                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                                    Proses
+                                    Proses Artikel
                                 </span>
-                                <span x-show="uploading" class="flex items-center gap-1.5">
+                                <span x-show="uploading" class="flex items-center gap-2">
                                     <svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" class="opacity-25"/><path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="3" class="opacity-75"/></svg>
                                     Memproses…
                                 </span>
@@ -168,8 +158,8 @@
                         </div>
 
                         @if (session('status'))
-                            <div class="flex items-center gap-2 text-sm rounded-xl p-3 bg-[color:var(--bg-tertiary)] text-[#8B9A7A] font-medium" role="status">
-                                <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <div class="flex items-center gap-2 text-sm rounded-lg p-4 bg-[color:var(--bg-tertiary)] text-[#8B9A7A] font-medium" role="status">
+                                <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                                 {{ session('status') }}
                             </div>
                         @endif
@@ -177,18 +167,26 @@
                 </div>
             </div>
 
-            {{-- Search --}}
-            <div class="relative">
-                <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 theme-text-muted pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                <form method="GET" action="{{ route('dashboard') }}" class="w-full">
-                    <input id="q" name="q" type="text" value="{{ $filters['q'] ?? '' }}"
-                        placeholder="Cari judul, domain, atau URL…"
-                        class="block w-full rounded-xl border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C] pl-10 pr-4 py-2.5 text-sm" />
+            {{-- Search & Filters --}}
+            <div class="card rounded-xl p-5">
+                <form method="GET" action="{{ route('dashboard') }}" class="flex flex-col sm:flex-row gap-4 sm:items-end">
+                    <div class="flex-1">
+                        <label for="q" class="block text-sm font-medium theme-text-secondary mb-1.5">Cari Artikel</label>
+                        <div class="relative">
+                            <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 theme-text-muted pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                            <input id="q" name="q" type="text" value="{{ $filters['q'] ?? '' }}"
+                                placeholder="Judul, domain, atau URL…"
+                                class="block w-full rounded-lg shadow-sm border theme-border-primary bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)] focus:border-[#AA5F3C] focus:ring-[#AA5F3C] pl-10 pr-4 py-2.5 sm:text-sm" />
+                        </div>
+                    </div>
+                    <div>
+                        <button type="submit" class="btn btn-secondary w-full sm:w-auto">Cari</button>
+                    </div>
                 </form>
             </div>
 
             {{-- Article List --}}
-            <div class="space-y-3">
+            <div class="space-y-4">
                 @forelse ($articles as $article)
                     @php
                         $statusColors = [
@@ -211,11 +209,11 @@
                     @endphp
 
                     <a href="{{ $article->processing_status === 'ready' ? route('articles.show', $article) : '#' }}"
-                        class="block card sm:rounded-lg hover:shadow-md transition-shadow {{ $article->processing_status === 'ready' ? 'cursor-pointer' : 'cursor-default' }}">
+                        class="block card rounded-xl hover:shadow-md transition-shadow {{ $article->processing_status === 'ready' ? 'cursor-pointer' : 'cursor-default' }}">
 
                         {{-- Status bar --}}
                         @if ($status !== 'ready')
-                            <div class="px-5 py-2.5 text-xs font-medium {{ $statusColor }} border-b theme-border-primary bg-[color:var(--bg-tertiary)] flex items-center justify-between">
+                            <div class="px-5 py-2.5 text-xs font-medium {{ $statusColor }} border-b theme-border-primary bg-[color:var(--bg-tertiary)] flex items-center justify-between rounded-t-xl">
                                 @if ($status === 'failed')
                                     <span class="flex items-center gap-1.5">{!! $statusIcon !!} Gagal diproses</span>
                                     <form method="POST" action="{{ route('dashboard.retry', $article) }}" class="inline">
@@ -223,7 +221,7 @@
                                         <button type="submit" class="underline hover:no-underline">Coba lagi</button>
                                     </form>
                                 @else
-                                    <span class="flex items-center gap-1.5">{!! $statusIcon !!} {{ ucfirst($status) }}…</span>
+                                    <span class="flex items-center gap-1.5">{!! $statusIcon !!} {{ ucfirst($status) }}&hellip;</span>
                                 @endif
                             </div>
                         @endif
@@ -237,50 +235,64 @@
                         <div class="p-5">
                             <div class="flex items-start gap-4">
                                 {{-- Source icon --}}
-                                <div class="shrink-0 w-10 h-10 rounded-xl bg-[color:var(--bg-tertiary)] flex items-center justify-center">
+                                <div class="shrink-0 w-12 h-12 rounded-xl bg-[#AA5F3C]/10 flex items-center justify-center">
                                     @if ($article->source_type === 'pdf')
-                                        <svg class="w-5 h-5 text-[#AA5F3C]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                        <svg class="w-6 h-6 text-[#AA5F3C]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                                     @else
-                                        <svg class="w-5 h-5 text-[#AA5F3C]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                                        <svg class="w-6 h-6 text-[#AA5F3C]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
                                     @endif
                                 </div>
 
                                 {{-- Content --}}
                                 <div class="min-w-0 flex-1">
-                                    <div class="font-semibold theme-text-primary leading-snug line-clamp-2">
+                                    <div class="font-semibold text-lg theme-text-primary leading-snug line-clamp-2">
                                         {{ $article->title }}
                                     </div>
 
                                     {{-- Meta line --}}
-                                    <div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs theme-text-muted">
+                                    <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm theme-text-muted">
                                         @if ($article->source_domain && $article->source_domain !== 'pdf-upload')
-                                            <span>{{ $article->source_domain }}</span>
-                                            <span>·</span>
+                                            <span class="flex items-center gap-1">
+                                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+                                                {{ $article->source_domain }}
+                                            </span>
+                                            <span class="text-gray-300 dark:text-gray-600">&bull;</span>
                                         @endif
-                                        <span>{{ $article->created_at?->format('d M Y') }}</span>
+                                        <span class="flex items-center gap-1">
+                                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                            {{ $article->created_at?->format('d M Y') }}
+                                        </span>
                                         @if (auth()->user()?->is_admin && !empty($article->ai_quotation_suggestions))
-                                            <span>·</span>
-                                            <span class="text-[#D4A76A] font-medium">{{ count($article->ai_quotation_suggestions) }} kutipan</span>
-                                        @endif
-                                        @if ($article->research_title)
-                                            <span>·</span>
-                                            <span class="truncate max-w-[12rem]" title="{{ $article->research_title }}">{{ \Illuminate\Support\Str::limit($article->research_title, 35) }}</span>
+                                            <span class="text-gray-300 dark:text-gray-600">&bull;</span>
+                                            <span class="text-[#D4A76A] font-medium flex items-center gap-1">
+                                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                                                {{ count($article->ai_quotation_suggestions) }} kutipan
+                                            </span>
                                         @endif
                                     </div>
 
-                                    {{-- Context badge --}}
-                                    @if ($article->research_context)
-                                        <div class="mt-2">
-                                            <span class="text-xs px-2 py-0.5 rounded-md bg-[color:var(--bg-tertiary)] text-[#AA5F3C] font-medium">
-                                                {{ $article->research_context }}
-                                            </span>
+                                    {{-- Context & Title --}}
+                                    @if ($article->research_title || $article->research_context)
+                                        <div class="mt-3 flex flex-wrap gap-2">
+                                            @if ($article->research_title)
+                                                <span class="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md bg-[color:var(--bg-tertiary)] theme-text-secondary border theme-border-primary" title="{{ $article->research_title }}">
+                                                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                                                    {{ \Illuminate\Support\Str::limit($article->research_title, 35) }}
+                                                </span>
+                                            @endif
+                                            @if ($article->research_context)
+                                                <span class="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md bg-[#AA5F3C]/10 text-[#AA5F3C] font-medium border border-[#AA5F3C]/20">
+                                                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                                    {{ $article->research_context }}
+                                                </span>
+                                            @endif
                                         </div>
                                     @endif
 
                                     {{-- Excerpt --}}
                                     @if ($article->excerpt && $status === 'ready')
-                                        <div class="mt-2 text-sm theme-text-secondary line-clamp-2 leading-relaxed">
-                                            {{ \Illuminate\Support\Str::limit($article->excerpt, 140) }}
+                                        <div class="mt-3 text-sm theme-text-secondary line-clamp-2 leading-relaxed">
+                                            {{ $article->excerpt }}
                                         </div>
                                     @endif
                                 </div>
@@ -288,10 +300,11 @@
                         </div>
                     </a>
                 @empty
-                    <div class="card sm:rounded-lg p-12 text-center">
-                        <svg class="mx-auto w-16 h-16 theme-text-muted opacity-30 mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                    <div class="card rounded-xl p-12 text-center">
+                        <svg class="mx-auto w-16 h-16 theme-text-muted opacity-30 mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                        <div class="text-base font-medium theme-text-primary mb-1">Belum ada artikel</div>
                         <div class="text-sm theme-text-muted">
-                            Belum ada artikel.<br>Klik <strong class="text-[#AA5F3C]">Tambah Artikel</strong> di atas untuk mulai.
+                            Tambahkan artikel pertama Anda melalui form di atas.
                         </div>
                     </div>
                 @endforelse
@@ -299,7 +312,7 @@
 
             {{-- Pagination --}}
             @if ($articles->hasMorePages())
-                <div class="text-center">
+                <div class="pt-4">
                     {{ $articles->links() }}
                 </div>
             @endif

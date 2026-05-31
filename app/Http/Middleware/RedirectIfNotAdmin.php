@@ -10,7 +10,7 @@ class RedirectIfNotAdmin
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (!auth()->check() || !auth()->user()->is_admin) {
+        if (! auth()->check() || ! auth()->user()->is_admin) {
             return redirect()->route('dashboard');
         }
 

@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\SummarizationService;
-use App\Services\QuotaManagementService;
-use App\Models\Summary;
-use App\Models\Article;
 use App\Jobs\ProcessSummaryGeneration;
+use App\Models\Article;
+use App\Models\Summary;
+use App\Services\QuotaManagementService;
+use App\Services\SummarizationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 class SummaryController extends Controller
 {
     private SummarizationService $summarizationService;
+
     private QuotaManagementService $quotaService;
 
     public function __construct(
@@ -43,7 +44,7 @@ class SummaryController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $summaries
+            'data' => $summaries,
         ]);
     }
 
@@ -57,28 +58,28 @@ class SummaryController extends Controller
             'max_words' => 'integer|min:50|max:500',
             'language' => 'string|in:id,en',
             'prefer_ai' => 'boolean',
-            'async' => 'boolean'
+            'async' => 'boolean',
         ]);
 
         $user = Auth::user();
         $articleId = $request->article_id;
-        
+
         // Check quota status
         $quotaStatus = $this->quotaService->getQuotaStatus($user->id);
-        
-        if ($request->prefer_ai && !$quotaStatus['gemini']['can_use'] && !$quotaStatus['local']['can_use']) {
+
+        if ($request->prefer_ai && ! $quotaStatus['gemini']['can_use'] && ! $quotaStatus['local']['can_use']) {
             return response()->json([
                 'success' => false,
                 'error' => 'Quota exceeded',
-                ...($user->is_admin ? ['quota_status' => $quotaStatus] : [])
+                ...($user->is_admin ? ['quota_status' => $quotaStatus] : []),
             ], 429);
         }
 
-        if (!$quotaStatus['local']['can_use']) {
+        if (! $quotaStatus['local']['can_use']) {
             return response()->json([
                 'success' => false,
                 'error' => 'Daily quota exceeded',
-                ...($user->is_admin ? ['quota_status' => $quotaStatus] : [])
+                ...($user->is_admin ? ['quota_status' => $quotaStatus] : []),
             ], 429);
         }
 
@@ -87,7 +88,7 @@ class SummaryController extends Controller
                 'max_words' => $request->max_words ?? 150,
                 'language' => $request->language ?? 'id',
                 'prefer_ai' => $request->prefer_ai ?? true,
-                'force_regenerate' => false
+                'force_regenerate' => false,
             ];
 
             // Check if async processing is requested
@@ -101,7 +102,7 @@ class SummaryController extends Controller
                     'type' => 'ai_generated',
                     'source' => 'pending',
                     'status' => 'pending',
-                    'processing_started_at' => now()
+                    'processing_started_at' => now(),
                 ]);
 
                 // Dispatch job
@@ -112,20 +113,20 @@ class SummaryController extends Controller
                     'data' => [
                         'summary_id' => $summary->id,
                         'status' => 'pending',
-                        'message' => 'Summary generation queued for processing'
+                        'message' => 'Summary generation queued for processing',
                     ],
-                    ...($user->is_admin ? ['quota_status' => $quotaStatus] : [])
+                    ...($user->is_admin ? ['quota_status' => $quotaStatus] : []),
                 ], 202);
             }
 
             // Synchronous processing
             $result = $this->summarizationService->generateSummary($articleId, $user->id, $options);
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return response()->json([
                     'success' => false,
                     'error' => $result['error'],
-                    ...($user->is_admin ? ['quota_status' => $quotaStatus] : [])
+                    ...($user->is_admin ? ['quota_status' => $quotaStatus] : []),
                 ], 500);
             }
 
@@ -134,16 +135,15 @@ class SummaryController extends Controller
                 'data' => $result['summary'],
                 ...($user->is_admin ? ['source' => $result['source']] : []),
                 'message' => $result['message'],
-                ...($user->is_admin ? ['quota_status' => $this->quotaService->getQuotaStatus($user->id)] : [])
+                ...($user->is_admin ? ['quota_status' => $this->quotaService->getQuotaStatus($user->id)] : []),
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Summary generation failed: ' . $e->getMessage());
-            
+            Log::error('Summary generation failed: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'error' => 'Failed to generate summary',
-                'message' => $e->getMessage()
             ], 500);
         }
     }
@@ -165,7 +165,7 @@ class SummaryController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $summary
+            'data' => $summary,
         ]);
     }
 
@@ -175,7 +175,7 @@ class SummaryController extends Controller
     public function status(string $id)
     {
         $user = Auth::user();
-        
+
         $summary = Summary::with(['article'])
             ->where('user_id', $user->id)
             ->findOrFail($id);
@@ -189,8 +189,8 @@ class SummaryController extends Controller
                 'processing_time_ms' => $summary->processing_time_ms,
                 'error_message' => $summary->error_message,
                 'created_at' => $summary->created_at,
-                'updated_at' => $summary->updated_at
-            ]
+                'updated_at' => $summary->updated_at,
+            ],
         ]);
     }
 
@@ -202,26 +202,26 @@ class SummaryController extends Controller
         $request->validate([
             'content' => 'required|string',
             'key_points' => 'array',
-            'key_points.*' => 'string'
+            'key_points.*' => 'string',
         ]);
 
         $user = Auth::user();
-        
+
         $summary = Summary::where('user_id', $user->id)->findOrFail($id);
-        
+
         $summary->update([
             'content' => $request->content,
             'word_count' => str_word_count($request->content),
             'key_points' => $request->key_points ?? [],
             'type' => 'manual',
             'source' => 'manual',
-            'status' => 'completed'
+            'status' => 'completed',
         ]);
 
         return response()->json([
             'success' => true,
             'data' => $summary,
-            'message' => 'Summary updated successfully'
+            'message' => 'Summary updated successfully',
         ]);
     }
 
@@ -231,13 +231,13 @@ class SummaryController extends Controller
     public function destroy(string $id)
     {
         $user = Auth::user();
-        
+
         $summary = Summary::where('user_id', $user->id)->findOrFail($id);
         $summary->delete();
 
         return response()->json([
             'success' => true,
-            'message' => 'Summary deleted successfully'
+            'message' => 'Summary deleted successfully',
         ]);
     }
 
@@ -248,13 +248,6 @@ class SummaryController extends Controller
     {
         $user = Auth::user();
 
-        if (! $user->is_admin) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Unauthorized'
-            ], 403);
-        }
-
         $quotaStatus = $this->quotaService->getQuotaStatus($user->id);
         $usageStats = $this->summarizationService->getUsageStats($user->id, 7);
 
@@ -262,8 +255,8 @@ class SummaryController extends Controller
             'success' => true,
             'data' => [
                 'quota_status' => $quotaStatus,
-                'usage_stats' => $usageStats
-            ]
+                'usage_stats' => $usageStats,
+            ],
         ]);
     }
 
@@ -275,11 +268,11 @@ class SummaryController extends Controller
         $request->validate([
             'max_words' => 'integer|min:50|max:500',
             'language' => 'string|in:id,en',
-            'prefer_ai' => 'boolean'
+            'prefer_ai' => 'boolean',
         ]);
 
         $user = Auth::user();
-        
+
         // Check if article exists and belongs to user
         $article = Article::where('user_id', $user->id)->findOrFail($articleId);
 
@@ -287,16 +280,16 @@ class SummaryController extends Controller
             'max_words' => $request->max_words ?? 150,
             'language' => $request->language ?? 'id',
             'prefer_ai' => $request->prefer_ai ?? true,
-            'force_regenerate' => true
+            'force_regenerate' => true,
         ];
 
         try {
             $result = $this->summarizationService->generateSummary($articleId, $user->id, $options);
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return response()->json([
                     'success' => false,
-                    'error' => $result['error']
+                    'error' => $result['error'],
                 ], 500);
             }
 
@@ -304,16 +297,15 @@ class SummaryController extends Controller
                 'success' => true,
                 'data' => $result['summary'],
                 ...($user->is_admin ? ['source' => $result['source']] : []),
-                'message' => $result['message']
+                'message' => $result['message'],
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Summary regeneration failed: ' . $e->getMessage());
-            
+            Log::error('Summary regeneration failed: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'error' => 'Failed to regenerate summary',
-                'message' => $e->getMessage()
             ], 500);
         }
     }

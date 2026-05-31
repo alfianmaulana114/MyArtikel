@@ -27,7 +27,7 @@ class RateLimitMiddleware
 
     public function handle(Request $request, Closure $next, string $type = 'api'): Response
     {
-        if (!isset($this->limits[$type])) {
+        if (! isset($this->limits[$type])) {
             $type = 'api';
         }
 
@@ -36,10 +36,10 @@ class RateLimitMiddleware
         $decayMinutes = $this->limits[$type]['decay_minutes'];
 
         $attempts = Cache::get($key, 0);
-        
+
         if ($attempts >= $limit) {
             $retryAfter = $this->getRetryAfter($key, $decayMinutes);
-            
+
             Log::warning('Rate limit exceeded', [
                 'type' => $type,
                 'key' => $key,
@@ -71,29 +71,30 @@ class RateLimitMiddleware
     private function resolveRequestSignature(Request $request, string $type): string
     {
         $signature = '';
-        
+
         switch ($type) {
             case 'login':
-                $signature = 'login|' . ($request->input('email') ?? $request->ip());
+                $signature = 'login|'.($request->input('email') ?? $request->ip());
                 break;
             case 'url_submission':
-                $signature = 'url|' . $request->ip();
+                $signature = 'url|'.$request->ip();
                 break;
             case 'api':
             default:
-                $signature = 'api|' . $request->ip();
+                $signature = 'api|'.$request->ip();
                 if ($user = $request->user()) {
-                    $signature = 'api|' . $user->id;
+                    $signature = 'api|'.$user->id;
                 }
                 break;
         }
 
-        return 'rate_limit:' . md5($signature);
+        return 'rate_limit:'.md5($signature);
     }
 
     private function getRetryAfter(string $key, int $decayMinutes): int
     {
-        $expiresAt = Cache::get($key . ':timer', now());
+        $expiresAt = Cache::get($key.':timer', now());
+
         return max(0, $expiresAt->diffInSeconds(now()));
     }
 

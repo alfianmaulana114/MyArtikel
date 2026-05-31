@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\BookmarkSync;
 use App\Models\Bookmark;
 use App\Models\BookmarkCategory;
-use Illuminate\Http\Request;
+use App\Models\BookmarkSync;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -27,8 +28,8 @@ class BookmarkSyncController extends Controller
             'success' => true,
             'data' => [
                 'devices' => $devices,
-                'current_device' => $this->getCurrentDevice($request)
-            ]
+                'current_device' => $this->getCurrentDevice($request),
+            ],
         ]);
     }
 
@@ -40,35 +41,35 @@ class BookmarkSyncController extends Controller
         $validator = Validator::make($request->all(), [
             'device_name' => 'required|string|max:100',
             'device_type' => 'nullable|string|in:mobile,desktop,tablet,other',
-            'device_id' => 'required|string|max:100'
+            'device_id' => 'required|string|max:100',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $device = BookmarkSync::updateOrCreate(
             [
                 'user_id' => auth()->id(),
-                'device_id' => $request->device_id
+                'device_id' => $request->device_id,
             ],
             [
                 'device_name' => $request->device_name,
                 'device_type' => $request->device_type ?? 'other',
                 'sync_token' => Str::random(64),
                 'is_active' => true,
-                'last_sync_at' => now()
+                'last_sync_at' => now(),
             ]
         );
 
         return response()->json([
             'success' => true,
             'message' => 'Device registered successfully',
-            'data' => $device
+            'data' => $device,
         ], 201);
     }
 
@@ -78,14 +79,14 @@ class BookmarkSyncController extends Controller
     public function unregisterDevice(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'device_id' => 'required|string|max:100'
+            'device_id' => 'required|string|max:100',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -93,10 +94,10 @@ class BookmarkSyncController extends Controller
             ->where('device_id', $request->device_id)
             ->first();
 
-        if (!$device) {
+        if (! $device) {
             return response()->json([
                 'success' => false,
-                'message' => 'Device not found'
+                'message' => 'Device not found',
             ], 404);
         }
 
@@ -104,7 +105,7 @@ class BookmarkSyncController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Device unregistered successfully'
+            'message' => 'Device unregistered successfully',
         ]);
     }
 
@@ -116,28 +117,28 @@ class BookmarkSyncController extends Controller
         $validator = Validator::make($request->all(), [
             'device_id' => 'required|string|max:100',
             'last_sync_at' => 'nullable|date',
-            'sync_token' => 'required|string|size:64'
+            'sync_token' => 'required|string|size:64',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         // Verify device and sync token
         $device = $this->verifyDevice($request->device_id, $request->sync_token);
-        if (!$device) {
+        if (! $device) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid device or sync token'
+                'message' => 'Invalid device or sync token',
             ], 401);
         }
 
-        $lastSyncAt = $request->last_sync_at ? 
-            \Carbon\Carbon::parse($request->last_sync_at) : null;
+        $lastSyncAt = $request->last_sync_at ?
+            Carbon::parse($request->last_sync_at) : null;
 
         // Get changes since last sync
         $changes = $this->getChangesSinceLastSync(auth()->id(), $lastSyncAt);
@@ -150,8 +151,8 @@ class BookmarkSyncController extends Controller
             'data' => [
                 'changes' => $changes,
                 'sync_timestamp' => now()->toISOString(),
-                'server_timestamp' => now()->toISOString()
-            ]
+                'server_timestamp' => now()->toISOString(),
+            ],
         ]);
     }
 
@@ -166,23 +167,23 @@ class BookmarkSyncController extends Controller
             'changes' => 'required|array',
             'changes.bookmarks' => 'nullable|array',
             'changes.categories' => 'nullable|array',
-            'changes.deletions' => 'nullable|array'
+            'changes.deletions' => 'nullable|array',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         // Verify device and sync token
         $device = $this->verifyDevice($request->device_id, $request->sync_token);
-        if (!$device) {
+        if (! $device) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid device or sync token'
+                'message' => 'Invalid device or sync token',
             ], 401);
         }
 
@@ -192,7 +193,7 @@ class BookmarkSyncController extends Controller
 
         DB::transaction(function () use ($changes, &$conflicts, &$processed) {
             // Process categories
-            if (!empty($changes['categories'])) {
+            if (! empty($changes['categories'])) {
                 foreach ($changes['categories'] as $categoryData) {
                     $result = $this->processCategoryChange($categoryData);
                     if ($result['conflict']) {
@@ -204,7 +205,7 @@ class BookmarkSyncController extends Controller
             }
 
             // Process bookmarks
-            if (!empty($changes['bookmarks'])) {
+            if (! empty($changes['bookmarks'])) {
                 foreach ($changes['bookmarks'] as $bookmarkData) {
                     $result = $this->processBookmarkChange($bookmarkData);
                     if ($result['conflict']) {
@@ -216,7 +217,7 @@ class BookmarkSyncController extends Controller
             }
 
             // Process deletions
-            if (!empty($changes['deletions'])) {
+            if (! empty($changes['deletions'])) {
                 foreach ($changes['deletions'] as $deletionData) {
                     $result = $this->processDeletion($deletionData);
                     if ($result['conflict']) {
@@ -236,8 +237,8 @@ class BookmarkSyncController extends Controller
             'data' => [
                 'processed' => $processed,
                 'conflicts' => $conflicts,
-                'sync_timestamp' => now()->toISOString()
-            ]
+                'sync_timestamp' => now()->toISOString(),
+            ],
         ]);
     }
 
@@ -248,23 +249,23 @@ class BookmarkSyncController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'device_id' => 'required|string|max:100',
-            'sync_token' => 'required|string|size:64'
+            'sync_token' => 'required|string|size:64',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         // Verify device and sync token
         $device = $this->verifyDevice($request->device_id, $request->sync_token);
-        if (!$device) {
+        if (! $device) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid device or sync token'
+                'message' => 'Invalid device or sync token',
             ], 401);
         }
 
@@ -274,8 +275,8 @@ class BookmarkSyncController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'conflicts' => $conflicts
-            ]
+                'conflicts' => $conflicts,
+            ],
         ]);
     }
 
@@ -289,36 +290,36 @@ class BookmarkSyncController extends Controller
             'sync_token' => 'required|string|size:64',
             'conflict_id' => 'required|string',
             'resolution' => 'required|in:local,remote,merge',
-            'merged_data' => 'required_if:resolution,merge|array'
+            'merged_data' => 'required_if:resolution,merge|array',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         // Verify device and sync token
         $device = $this->verifyDevice($request->device_id, $request->sync_token);
-        if (!$device) {
+        if (! $device) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid device or sync token'
+                'message' => 'Invalid device or sync token',
             ], 401);
         }
 
         $resolution = $this->resolveConflictById(
-            $request->conflict_id, 
-            $request->resolution, 
+            $request->conflict_id,
+            $request->resolution,
             $request->merged_data ?? []
         );
 
         return response()->json([
             'success' => true,
             'message' => 'Conflict resolved successfully',
-            'data' => $resolution
+            'data' => $resolution,
         ]);
     }
 
@@ -340,11 +341,11 @@ class BookmarkSyncController extends Controller
     private function getCurrentDevice(Request $request): array
     {
         $deviceId = $request->header('X-Device-ID') ?? $request->ip();
-        
+
         return [
             'device_id' => $deviceId,
             'device_name' => $this->getDeviceName($request),
-            'device_type' => $this->getDeviceType($request)
+            'device_type' => $this->getDeviceType($request),
         ];
     }
 
@@ -354,7 +355,7 @@ class BookmarkSyncController extends Controller
     private function getDeviceName(Request $request): string
     {
         $userAgent = $request->header('User-Agent', 'Unknown');
-        
+
         // Parse user agent to get device name
         if (strpos($userAgent, 'Windows') !== false) {
             return 'Windows Device';
@@ -367,7 +368,7 @@ class BookmarkSyncController extends Controller
         } elseif (strpos($userAgent, 'iPhone') !== false || strpos($userAgent, 'iPad') !== false) {
             return 'iOS Device';
         }
-        
+
         return 'Unknown Device';
     }
 
@@ -377,7 +378,7 @@ class BookmarkSyncController extends Controller
     private function getDeviceType(Request $request): string
     {
         $userAgent = $request->header('User-Agent', '');
-        
+
         if (strpos($userAgent, 'Mobile') !== false) {
             return 'mobile';
         } elseif (strpos($userAgent, 'Tablet') !== false || strpos($userAgent, 'iPad') !== false) {
@@ -390,7 +391,7 @@ class BookmarkSyncController extends Controller
     /**
      * Get changes since last sync.
      */
-    private function getChangesSinceLastSync(int $userId, ?\Carbon\Carbon $lastSyncAt): array
+    private function getChangesSinceLastSync(int $userId, ?Carbon $lastSyncAt): array
     {
         $bookmarks = Bookmark::forUser($userId)
             ->when($lastSyncAt, function ($query) use ($lastSyncAt) {
@@ -408,7 +409,7 @@ class BookmarkSyncController extends Controller
         return [
             'bookmarks' => $bookmarks,
             'categories' => $categories,
-            'timestamp' => now()->toISOString()
+            'timestamp' => now()->toISOString(),
         ];
     }
 

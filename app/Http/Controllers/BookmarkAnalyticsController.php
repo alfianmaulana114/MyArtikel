@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\BookmarkAnalytics;
 use App\Models\Bookmark;
+use App\Models\BookmarkAnalytics;
 use App\Models\BookmarkCategory;
-use Illuminate\Http\Request;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-use Carbon\Carbon;
 
 class BookmarkAnalyticsController extends Controller
 {
@@ -21,20 +21,20 @@ class BookmarkAnalyticsController extends Controller
         $validator = Validator::make($request->all(), [
             'period' => 'nullable|in:7d,30d,90d,1y,all',
             'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after:start_date'
+            'end_date' => 'nullable|date|after:start_date',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $userId = auth()->id();
         $dateRange = $this->getDateRange($request);
-        
+
         $stats = [
             'total_bookmarks' => Bookmark::forUser($userId)->count(),
             'total_read' => Bookmark::forUser($userId)->read()->count(),
@@ -44,7 +44,7 @@ class BookmarkAnalyticsController extends Controller
             'average_bookmarks_per_week' => $this->calculateAverageBookmarksPerWeek($userId),
             'most_active_day' => $this->getMostActiveDay($userId, $dateRange),
             'category_distribution' => $this->getCategoryDistribution($userId),
-            'recent_activity' => $this->getRecentActivity($userId, 10)
+            'recent_activity' => $this->getRecentActivity($userId, 10),
         ];
 
         return response()->json([
@@ -52,8 +52,8 @@ class BookmarkAnalyticsController extends Controller
             'data' => [
                 'overview' => $stats,
                 'period' => $dateRange,
-                'generated_at' => now()->toISOString()
-            ]
+                'generated_at' => now()->toISOString(),
+            ],
         ]);
     }
 
@@ -65,20 +65,20 @@ class BookmarkAnalyticsController extends Controller
         $validator = Validator::make($request->all(), [
             'period' => 'nullable|in:7d,30d,90d,1y,all',
             'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after:start_date'
+            'end_date' => 'nullable|date|after:start_date',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $userId = auth()->id();
         $dateRange = $this->getDateRange($request);
-        
+
         $stats = [
             'total_reading_time' => $this->calculateTotalReadingTime($userId, $dateRange),
             'average_reading_time' => $this->calculateAverageReadingTime($userId),
@@ -88,15 +88,15 @@ class BookmarkAnalyticsController extends Controller
             'daily_reading_goal' => $this->getDailyReadingGoal($userId),
             'goal_completion_rate' => $this->calculateGoalCompletionRate($userId, $dateRange),
             'reading_velocity' => $this->calculateReadingVelocity($userId, $dateRange),
-            'preferred_reading_times' => $this->getPreferredReadingTimes($userId, $dateRange)
+            'preferred_reading_times' => $this->getPreferredReadingTimes($userId, $dateRange),
         ];
 
         return response()->json([
             'success' => true,
             'data' => [
                 'reading_stats' => $stats,
-                'period' => $dateRange
-            ]
+                'period' => $dateRange,
+            ],
         ]);
     }
 
@@ -108,20 +108,20 @@ class BookmarkAnalyticsController extends Controller
         $validator = Validator::make($request->all(), [
             'period' => 'nullable|in:7d,30d,90d,1y,all',
             'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after:start_date'
+            'end_date' => 'nullable|date|after:start_date',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $userId = auth()->id();
         $dateRange = $this->getDateRange($request);
-        
+
         $categories = BookmarkCategory::forUser($userId)
             ->withCount(['bookmarks', 'bookmarks as read_bookmarks_count' => function ($query) use ($dateRange) {
                 $query->read()->whereBetween('read_at', $dateRange);
@@ -135,11 +135,11 @@ class BookmarkAnalyticsController extends Controller
                     'total_bookmarks' => $category->bookmarks_count,
                     'read_bookmarks' => $category->read_bookmarks_count,
                     'unread_bookmarks' => $category->bookmarks_count - $category->read_bookmarks_count,
-                    'completion_rate' => $category->bookmarks_count > 0 
+                    'completion_rate' => $category->bookmarks_count > 0
                         ? round(($category->read_bookmarks_count / $category->bookmarks_count) * 100, 2)
                         : 0,
                     'average_reading_time' => $this->calculateAverageReadingTimeForCategory($category->id, $dateRange),
-                    'most_bookmarked_topic' => $this->getMostBookmarkedTopicInCategory($category->id, $dateRange)
+                    'most_bookmarked_topic' => $this->getMostBookmarkedTopicInCategory($category->id, $dateRange),
                 ];
             });
 
@@ -147,8 +147,8 @@ class BookmarkAnalyticsController extends Controller
             'success' => true,
             'data' => [
                 'category_stats' => $categories,
-                'period' => $dateRange
-            ]
+                'period' => $dateRange,
+            ],
         ]);
     }
 
@@ -160,20 +160,20 @@ class BookmarkAnalyticsController extends Controller
         $validator = Validator::make($request->all(), [
             'period' => 'nullable|in:7d,30d,90d,1y,all',
             'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after:start_date'
+            'end_date' => 'nullable|date|after:start_date',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $userId = auth()->id();
         $dateRange = $this->getDateRange($request);
-        
+
         $deviceStats = BookmarkAnalytics::forUser($userId)
             ->whereBetween('occurred_at', $dateRange)
             ->select('device_id', DB::raw('COUNT(*) as action_count'))
@@ -185,7 +185,7 @@ class BookmarkAnalyticsController extends Controller
                     'action_count' => $stat->action_count,
                     'bookmarks_created' => $this->getBookmarksCreatedOnDevice($userId, $stat->device_id, $dateRange),
                     'bookmarks_read' => $this->getBookmarksReadOnDevice($userId, $stat->device_id, $dateRange),
-                    'most_used_browser' => $this->getMostUsedBrowser($stat->device_id, $dateRange)
+                    'most_used_browser' => $this->getMostUsedBrowser($stat->device_id, $dateRange),
                 ];
             });
 
@@ -193,8 +193,8 @@ class BookmarkAnalyticsController extends Controller
             'success' => true,
             'data' => [
                 'device_stats' => $deviceStats,
-                'period' => $dateRange
-            ]
+                'period' => $dateRange,
+            ],
         ]);
     }
 
@@ -205,21 +205,21 @@ class BookmarkAnalyticsController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'period' => 'nullable|in:7d,30d,90d,1y',
-            'granularity' => 'nullable|in:daily,weekly,monthly'
+            'granularity' => 'nullable|in:daily,weekly,monthly',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $userId = auth()->id();
         $period = $request->get('period', '30d');
         $granularity = $request->get('granularity', 'daily');
-        
+
         $dateRange = $this->getDateRangeFromPeriod($period);
         $trends = $this->calculateTrends($userId, $dateRange, $granularity);
 
@@ -228,8 +228,8 @@ class BookmarkAnalyticsController extends Controller
             'data' => [
                 'trends' => $trends,
                 'period' => $dateRange,
-                'granularity' => $granularity
-            ]
+                'granularity' => $granularity,
+            ],
         ]);
     }
 
@@ -244,24 +244,24 @@ class BookmarkAnalyticsController extends Controller
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after:start_date',
             'include_categories' => 'nullable|boolean',
-            'include_devices' => 'nullable|boolean'
+            'include_devices' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $userId = auth()->id();
         $dateRange = $this->getDateRange($request);
         $format = $request->get('format', 'json');
-        
+
         $exportData = $this->prepareExportData(
-            $userId, 
-            $dateRange, 
+            $userId,
+            $dateRange,
             $request->get('include_categories', true),
             $request->get('include_devices', true)
         );
@@ -273,8 +273,8 @@ class BookmarkAnalyticsController extends Controller
             'data' => [
                 'export_data' => $exportData,
                 'format' => $format,
-                'generated_at' => now()->toISOString()
-            ]
+                'generated_at' => now()->toISOString(),
+            ],
         ]);
     }
 
@@ -286,11 +286,12 @@ class BookmarkAnalyticsController extends Controller
         if ($request->start_date && $request->end_date) {
             return [
                 Carbon::parse($request->start_date)->startOfDay(),
-                Carbon::parse($request->end_date)->endOfDay()
+                Carbon::parse($request->end_date)->endOfDay(),
             ];
         }
 
         $period = $request->get('period', '30d');
+
         return $this->getDateRangeFromPeriod($period);
     }
 
@@ -300,7 +301,7 @@ class BookmarkAnalyticsController extends Controller
     private function getDateRangeFromPeriod(string $period): array
     {
         $endDate = now();
-        
+
         switch ($period) {
             case '7d':
                 $startDate = now()->subDays(7);
@@ -331,7 +332,7 @@ class BookmarkAnalyticsController extends Controller
     {
         $totalBookmarks = Bookmark::forUser($userId)->count();
         $readBookmarks = Bookmark::forUser($userId)->read()->whereBetween('read_at', $dateRange)->count();
-        
+
         return $totalBookmarks > 0 ? round(($readBookmarks / $totalBookmarks) * 100, 2) : 0;
     }
 
@@ -342,7 +343,7 @@ class BookmarkAnalyticsController extends Controller
     {
         $totalBookmarks = Bookmark::forUser($userId)->count();
         $weeksSinceFirstBookmark = Bookmark::forUser($userId)->oldest()->first()?->created_at->diffInWeeks(now()) ?? 1;
-        
+
         return round($totalBookmarks / max(1, $weeksSinceFirstBookmark), 2);
     }
 
@@ -359,10 +360,10 @@ class BookmarkAnalyticsController extends Controller
             ->first();
 
         $days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        
+
         return [
             'day' => $activity ? $days[$activity->day_of_week - 1] : 'Unknown',
-            'activity_count' => $activity?->count ?? 0
+            'activity_count' => $activity?->count ?? 0,
         ];
     }
 
@@ -378,7 +379,7 @@ class BookmarkAnalyticsController extends Controller
                 return [
                     'name' => $category->name,
                     'count' => $category->bookmarks_count,
-                    'color' => $category->color
+                    'color' => $category->color,
                 ];
             })
             ->toArray();
@@ -398,7 +399,7 @@ class BookmarkAnalyticsController extends Controller
                 return [
                     'action' => $activity->action,
                     'article_title' => $activity->bookmark->article->title ?? 'Unknown',
-                    'occurred_at' => $activity->occurred_at->diffForHumans()
+                    'occurred_at' => $activity->occurred_at->diffForHumans(),
                 ];
             })
             ->toArray();
@@ -449,13 +450,13 @@ class BookmarkAnalyticsController extends Controller
     {
         $streak = 0;
         $currentDate = now()->startOfDay();
-        
+
         while (true) {
             $hasReadingActivity = Bookmark::forUser($userId)
                 ->read()
                 ->whereDate('read_at', $currentDate)
                 ->exists();
-            
+
             if ($hasReadingActivity) {
                 $streak++;
                 $currentDate->subDay();
@@ -463,7 +464,7 @@ class BookmarkAnalyticsController extends Controller
                 break;
             }
         }
-        
+
         return $streak;
     }
 
@@ -494,12 +495,12 @@ class BookmarkAnalyticsController extends Controller
         $dailyGoal = $this->getDailyReadingGoal($userId);
         $daysInRange = Carbon::parse($dateRange[0])->diffInDays($dateRange[1]) + 1;
         $totalGoal = $dailyGoal * $daysInRange;
-        
+
         $actualReading = Bookmark::forUser($userId)
             ->read()
             ->whereBetween('read_at', $dateRange)
             ->count();
-        
+
         return $totalGoal > 0 ? round(($actualReading / $totalGoal) * 100, 2) : 0;
     }
 
@@ -512,9 +513,9 @@ class BookmarkAnalyticsController extends Controller
             ->read()
             ->whereBetween('read_at', $dateRange)
             ->count();
-        
+
         $daysInRange = Carbon::parse($dateRange[0])->diffInDays($dateRange[1]) + 1;
-        
+
         return round($articlesRead / $daysInRange, 2);
     }
 
@@ -536,7 +537,7 @@ class BookmarkAnalyticsController extends Controller
             return [
                 'hour' => $activity->hour,
                 'time_range' => sprintf('%02d:00-%02d:00', $activity->hour, $activity->hour + 1),
-                'count' => $activity->count
+                'count' => $activity->count,
             ];
         })->toArray();
     }
@@ -622,7 +623,7 @@ class BookmarkAnalyticsController extends Controller
 
         while ($currentDate <= $endDate) {
             $periodStart = $currentDate->copy();
-            
+
             switch ($granularity) {
                 case 'daily':
                     $periodEnd = $currentDate->copy()->endOfDay();
@@ -658,7 +659,7 @@ class BookmarkAnalyticsController extends Controller
                 'period' => $label,
                 'bookmarks_created' => $bookmarksCreated,
                 'bookmarks_read' => $bookmarksRead,
-                'timestamp' => $periodStart->toISOString()
+                'timestamp' => $periodStart->toISOString(),
             ];
         }
 
@@ -676,8 +677,8 @@ class BookmarkAnalyticsController extends Controller
             'generated_at' => now()->toISOString(),
             'period' => [
                 'start' => $dateRange[0]->toISOString(),
-                'end' => $dateRange[1]->toISOString()
-            ]
+                'end' => $dateRange[1]->toISOString(),
+            ],
         ];
 
         if ($includeCategories) {
@@ -700,7 +701,7 @@ class BookmarkAnalyticsController extends Controller
             'total_bookmarks' => Bookmark::forUser($userId)->count(),
             'total_read' => Bookmark::forUser($userId)->read()->count(),
             'total_favorites' => Bookmark::forUser($userId)->favorites()->count(),
-            'reading_rate' => $this->calculateReadingRate($userId, $dateRange)
+            'reading_rate' => $this->calculateReadingRate($userId, $dateRange),
         ];
     }
 
@@ -713,7 +714,7 @@ class BookmarkAnalyticsController extends Controller
             'total_reading_time' => $this->calculateTotalReadingTime($userId, $dateRange),
             'average_reading_time' => $this->calculateAverageReadingTime($userId),
             'articles_read' => Bookmark::forUser($userId)->read()->whereBetween('read_at', $dateRange)->count(),
-            'reading_streak' => $this->calculateReadingStreak($userId)
+            'reading_streak' => $this->calculateReadingStreak($userId),
         ];
     }
 
@@ -732,9 +733,9 @@ class BookmarkAnalyticsController extends Controller
                     'name' => $category->name,
                     'total_bookmarks' => $category->bookmarks_count,
                     'read_bookmarks' => $category->read_bookmarks_count,
-                    'completion_rate' => $category->bookmarks_count > 0 
+                    'completion_rate' => $category->bookmarks_count > 0
                         ? round(($category->read_bookmarks_count / $category->bookmarks_count) * 100, 2)
-                        : 0
+                        : 0,
                 ];
             })
             ->toArray();
@@ -753,7 +754,7 @@ class BookmarkAnalyticsController extends Controller
             ->map(function ($stat) {
                 return [
                     'device_id' => $stat->device_id,
-                    'action_count' => $stat->action_count
+                    'action_count' => $stat->action_count,
                 ];
             })
             ->toArray();

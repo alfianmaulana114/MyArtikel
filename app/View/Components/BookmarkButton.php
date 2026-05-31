@@ -2,47 +2,54 @@
 
 namespace App\View\Components;
 
-use App\Models\Bookmark;
 use App\Models\Article;
+use App\Models\Bookmark;
+use App\Models\BookmarkCategory;
 use Illuminate\View\Component;
+use Illuminate\View\View;
 
 class BookmarkButton extends Component
 {
     public $article;
+
     public $bookmark;
+
     public $isBookmarked;
+
     public $categories;
+
     public $showCategories;
+
     public $size;
+
     public $variant;
 
     /**
      * Create a new component instance.
      *
-     * @param Article $article
-     * @param bool $showCategories
-     * @param string $size
-     * @param string $variant
+     * @param  bool  $showCategories
+     * @param  string  $size
+     * @param  string  $variant
      */
     public function __construct(
-        Article $article, 
-        $showCategories = true, 
-        $size = 'md', 
+        Article $article,
+        $showCategories = true,
+        $size = 'md',
         $variant = 'default'
     ) {
         $this->article = $article;
         $this->showCategories = $showCategories;
         $this->size = $size;
         $this->variant = $variant;
-        
+
         // Check if article is bookmarked by current user
         if (auth()->check()) {
             $this->bookmark = Bookmark::with(['category'])
                 ->where('user_id', auth()->id())
                 ->where('article_id', $article->id)
                 ->first();
-            
-            $this->isBookmarked = !is_null($this->bookmark);
+
+            $this->isBookmarked = ! is_null($this->bookmark);
             $this->categories = $showCategories ? $this->getUserCategories() : collect();
         } else {
             $this->isBookmarked = false;
@@ -54,7 +61,7 @@ class BookmarkButton extends Component
     /**
      * Get the view / contents that represent the component.
      *
-     * @return \Illuminate\View\View|string
+     * @return View|string
      */
     public function render()
     {
@@ -66,7 +73,7 @@ class BookmarkButton extends Component
      */
     private function getUserCategories()
     {
-        return \App\Models\BookmarkCategory::forUser(auth()->id())
+        return BookmarkCategory::forUser(auth()->id())
             ->orderBy('position')
             ->orderBy('name')
             ->get();
@@ -78,18 +85,18 @@ class BookmarkButton extends Component
     public function getButtonClasses()
     {
         $baseClasses = 'inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2';
-        
+
         $sizeClasses = [
             'sm' => 'px-3 py-1.5 text-sm',
             'md' => 'px-4 py-2 text-sm',
-            'lg' => 'px-6 py-3 text-base'
+            'lg' => 'px-6 py-3 text-base',
         ];
 
-        $variantClasses = $this->isBookmarked 
-            ? $this->getBookmarkedVariantClasses() 
+        $variantClasses = $this->isBookmarked
+            ? $this->getBookmarkedVariantClasses()
             : $this->getUnbookmarkedVariantClasses();
 
-        return $baseClasses . ' ' . ($sizeClasses[$this->size] ?? $sizeClasses['md']) . ' ' . $variantClasses;
+        return $baseClasses.' '.($sizeClasses[$this->size] ?? $sizeClasses['md']).' '.$variantClasses;
     }
 
     /**
@@ -101,7 +108,7 @@ class BookmarkButton extends Component
             'default' => 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 focus:ring-yellow-500',
             'outline' => 'border-2 border-yellow-500 text-yellow-700 hover:bg-yellow-50 focus:ring-yellow-500',
             'ghost' => 'text-yellow-600 hover:bg-yellow-50 focus:ring-yellow-500',
-            'solid' => 'bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-500'
+            'solid' => 'bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-500',
         ];
 
         return $variants[$this->variant] ?? $variants['default'];
@@ -116,7 +123,7 @@ class BookmarkButton extends Component
             'default' => 'bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-gray-500',
             'outline' => 'border-2 border-gray-300 text-gray-600 hover:bg-gray-50 focus:ring-gray-500',
             'ghost' => 'text-gray-500 hover:bg-gray-50 focus:ring-gray-500',
-            'solid' => 'bg-gray-500 text-white hover:bg-gray-600 focus:ring-gray-500'
+            'solid' => 'bg-gray-500 text-white hover:bg-gray-600 focus:ring-gray-500',
         ];
 
         return $variants[$this->variant] ?? $variants['default'];
@@ -130,7 +137,7 @@ class BookmarkButton extends Component
         $sizeClasses = [
             'sm' => 'w-4 h-4',
             'md' => 'w-5 h-5',
-            'lg' => 'w-6 h-6'
+            'lg' => 'w-6 h-6',
         ];
 
         return $sizeClasses[$this->size] ?? $sizeClasses['md'];
@@ -141,7 +148,7 @@ class BookmarkButton extends Component
      */
     public function getButtonText()
     {
-        if (!$this->showCategories) {
+        if (! $this->showCategories) {
             return '';
         }
 
@@ -154,8 +161,8 @@ class BookmarkButton extends Component
     public function getTooltipText()
     {
         if ($this->isBookmarked) {
-            return $this->bookmark && $this->bookmark->category 
-                ? "Saved in {$this->bookmark->category->name}" 
+            return $this->bookmark && $this->bookmark->category
+                ? "Saved in {$this->bookmark->category->name}"
                 : 'Saved to bookmarks';
         }
 

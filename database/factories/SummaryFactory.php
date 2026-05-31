@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\Summary;
 use App\Models\Article;
+use App\Models\Summary;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -22,7 +22,7 @@ class SummaryFactory extends Factory
         $sources = ['gemini', 'local', 'manual'];
         $statuses = ['pending', 'processing', 'completed', 'failed'];
         $types = ['ai_generated', 'manual'];
-        
+
         return [
             'article_id' => Article::factory(),
             'user_id' => User::factory(),
@@ -34,7 +34,7 @@ class SummaryFactory extends Factory
             'key_points' => [
                 $this->faker->sentence(),
                 $this->faker->sentence(),
-                $this->faker->sentence()
+                $this->faker->sentence(),
             ],
             'cache_key' => $this->faker->optional()->uuid(),
             'processing_started_at' => $this->faker->optional()->dateTimeBetween('-1 hour', 'now'),
@@ -43,7 +43,7 @@ class SummaryFactory extends Factory
             'error_message' => $this->faker->optional()->sentence(),
         ];
     }
-    
+
     /**
      * Indicate that the summary is completed.
      */
@@ -57,7 +57,7 @@ class SummaryFactory extends Factory
             ];
         });
     }
-    
+
     /**
      * Indicate that the summary is processing.
      */
@@ -70,7 +70,7 @@ class SummaryFactory extends Factory
             ];
         });
     }
-    
+
     /**
      * Indicate that the summary failed.
      */
@@ -84,7 +84,7 @@ class SummaryFactory extends Factory
             ];
         });
     }
-    
+
     /**
      * Indicate that the summary is AI generated.
      */
@@ -97,7 +97,7 @@ class SummaryFactory extends Factory
             ];
         });
     }
-    
+
     /**
      * Indicate that the summary is manual.
      */

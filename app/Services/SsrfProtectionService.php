@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
 
 class SsrfProtectionService
 {
@@ -21,27 +20,31 @@ class SsrfProtectionService
     ];
 
     private array $allowedPorts = [80, 443, 8080, 8443];
+
     private array $allowedSchemes = ['http', 'https'];
 
     public function validateUrl(string $url): bool
     {
         try {
             $parsed = parse_url($url);
-            
-            if (!$parsed || !isset($parsed['host'])) {
+
+            if (! $parsed || ! isset($parsed['host'])) {
                 Log::warning('SSRF Protection: Invalid URL format', ['url' => $url]);
+
                 return false;
             }
 
             // Validate scheme
-            if (!isset($parsed['scheme']) || !in_array(strtolower($parsed['scheme']), $this->allowedSchemes)) {
+            if (! isset($parsed['scheme']) || ! in_array(strtolower($parsed['scheme']), $this->allowedSchemes)) {
                 Log::warning('SSRF Protection: Invalid scheme', ['url' => $url, 'scheme' => $parsed['scheme'] ?? 'none']);
+
                 return false;
             }
 
             // Validate port
-            if (isset($parsed['port']) && !in_array($parsed['port'], $this->allowedPorts)) {
+            if (isset($parsed['port']) && ! in_array($parsed['port'], $this->allowedPorts)) {
                 Log::warning('SSRF Protection: Invalid port', ['url' => $url, 'port' => $parsed['port']]);
+
                 return false;
             }
 
@@ -49,18 +52,21 @@ class SsrfProtectionService
             $ip = gethostbyname($parsed['host']);
             if ($ip === $parsed['host']) {
                 Log::warning('SSRF Protection: Could not resolve hostname', ['url' => $url, 'host' => $parsed['host']]);
+
                 return false;
             }
 
             // Check if IP is blocked
             if ($this->isIpBlocked($ip)) {
                 Log::warning('SSRF Protection: Blocked IP address', ['url' => $url, 'ip' => $ip]);
+
                 return false;
             }
 
             // Additional validation: DNS rebinding protection
             if ($this->isPotentialDnsRebinding($parsed['host'], $ip)) {
                 Log::warning('SSRF Protection: Potential DNS rebinding attack', ['url' => $url, 'host' => $parsed['host'], 'ip' => $ip]);
+
                 return false;
             }
 
@@ -68,6 +74,7 @@ class SsrfProtectionService
 
         } catch (\Exception $e) {
             Log::error('SSRF Protection: Validation error', ['url' => $url, 'error' => $e->getMessage()]);
+
             return false;
         }
     }
@@ -93,16 +100,16 @@ class SsrfProtectionService
 
     private function ipInCidrRange(string $ip, string $cidr): bool
     {
-        list($subnet, $mask) = explode('/', $cidr);
-        
+        [$subnet, $mask] = explode('/', $cidr);
+
         if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
             return $this->ipv4InRange($ip, $subnet, $mask);
         }
-        
+
         if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
             return $this->ipv6InRange($ip, $subnet, $mask);
         }
-        
+
         return false;
     }
 
@@ -115,21 +122,26 @@ class SsrfProtectionService
     {
         $ipBin = inet_pton($ip);
         $subnetBin = inet_pton($subnet);
-        
-        if (!$ipBin || !$subnetBin) return false;
-        
+
+        if (! $ipBin || ! $subnetBin) {
+            return false;
+        }
+
         $maskBytes = intval($mask / 8);
         $maskBits = $mask % 8;
-        
+
         for ($i = 0; $i < $maskBytes; $i++) {
-            if ($ipBin[$i] !== $subnetBin[$i]) return false;
+            if ($ipBin[$i] !== $subnetBin[$i]) {
+                return false;
+            }
         }
-        
+
         if ($maskBits > 0 && $maskBytes < 16) {
             $mask = 0xFF << (8 - $maskBits);
+
             return (ord($ipBin[$maskBytes]) & $mask) === (ord($subnetBin[$maskBytes]) & $mask);
         }
-        
+
         return true;
     }
 
@@ -138,12 +150,12 @@ class SsrfProtectionService
         // Simple check: if the resolved IP is different from what we'd expect
         // This is a basic protection - in production, implement proper DNS rebinding detection
         $expectedIps = gethostbynamel($host);
-        
-        if (!$expectedIps) {
+
+        if (! $expectedIps) {
             return true; // Suspicious if we can't resolve
         }
-        
-        return !in_array($resolvedIp, $expectedIps);
+
+        return ! in_array($resolvedIp, $expectedIps);
     }
 
     public function getSafeHttpOptions(): array

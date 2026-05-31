@@ -2,17 +2,19 @@
 
 namespace App\Services;
 
-use App\Models\Summary;
 use App\Models\Article;
-use Illuminate\Support\Facades\Log;
+use App\Models\Summary;
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 class SummarizationService
 {
     private GeminiSummarizationService $geminiService;
+
     private LocalSummarizationService $localService;
+
     private QuotaManagementService $quotaService;
-    
+
     public function __construct(
         GeminiSummarizationService $geminiService,
         LocalSummarizationService $localService,
@@ -32,76 +34,75 @@ class SummarizationService
             'max_words' => 150,
             'language' => 'id',
             'prefer_ai' => true,
-            'force_regenerate' => false
+            'force_regenerate' => false,
         ], $options);
-        
+
         try {
             // Get article
             $article = Article::findOrFail($articleId);
             $content = $this->prepareContent($article);
-            
+
             if (empty($content)) {
                 throw new Exception('Article content is empty');
             }
-            
+
             // Check existing summary
-            if (!$options['force_regenerate']) {
+            if (! $options['force_regenerate']) {
                 $existingSummary = $this->getExistingSummary($articleId, $userId, $content);
                 if ($existingSummary) {
                     return [
                         'success' => true,
                         'summary' => $existingSummary,
                         'source' => 'cache',
-                        'message' => 'Summary retrieved from cache'
+                        'message' => 'Summary retrieved from cache',
                     ];
                 }
             }
-            
+
             // Try AI summarization first if preferred and available
             if ($options['prefer_ai'] && $this->geminiService->isAvailable()) {
                 $quotaCheck = $this->quotaService->canUseGemini($userId, strlen($content));
-                
+
                 if ($quotaCheck) {
                     try {
                         $article = Article::findOrFail($articleId);
                         $aiSummary = $this->generateAiSummary(
                             $articleId, $userId, $content, $options, $article->research_title
                         );
-                        
+
                         return [
                             'success' => true,
                             'summary' => $aiSummary,
                             'source' => 'gemini',
-                            'message' => 'Summary generated using Gemini AI'
+                            'message' => 'Summary generated using Gemini AI',
                         ];
                     } catch (Exception $e) {
-                        Log::warning('AI summarization failed, falling back to local: ' . $e->getMessage());
+                        Log::warning('AI summarization failed, falling back to local: '.$e->getMessage());
                     }
                 }
             }
-            
+
             // Fallback to local summarization
             if ($this->quotaService->canUseLocal($userId)) {
                 $localSummary = $this->generateLocalSummary($articleId, $userId, $content, $options);
-                
+
                 return [
                     'success' => true,
                     'summary' => $localSummary,
                     'source' => 'local',
-                    'message' => 'Summary generated using local algorithm'
+                    'message' => 'Summary generated using local algorithm',
                 ];
             }
-            
+
             throw new Exception('Quota exceeded for all summarization services');
-            
         } catch (Exception $e) {
-            Log::error('Summarization failed for article ' . $articleId . ': ' . $e->getMessage());
-            
+            Log::error('Summarization failed for article '.$articleId.': '.$e->getMessage());
+
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
                 'source' => 'error',
-                'message' => 'Failed to generate summary'
+                'message' => 'Failed to generate summary',
             ];
         }
     }
@@ -121,9 +122,9 @@ class SummarizationService
             'source' => 'gemini',
             'status' => 'processing',
             'processing_started_at' => now(),
-            'cache_key' => $this->generateCacheKey($articleId, $userId, $content, 'gemini')
+            'cache_key' => $this->generateCacheKey($articleId, $userId, $content, 'gemini'),
         ]);
-        
+
         try {
             // Generate summary with research title context
             $aiResult = $this->geminiService->generateSummary(
@@ -132,7 +133,7 @@ class SummarizationService
                 $options['language'],
                 $researchTitle
             );
-            
+
             // Update summary
             $summary->update([
                 'content' => $aiResult['summary'],
@@ -140,9 +141,9 @@ class SummarizationService
                 'key_points' => $aiResult['key_points'],
                 'status' => 'completed',
                 'processing_completed_at' => now(),
-                'processing_time_ms' => $this->calculateProcessingTime($summary->processing_started_at)
+                'processing_time_ms' => $this->calculateProcessingTime($summary->processing_started_at),
             ]);
-            
+
             // Record quota usage
             $this->quotaService->recordGeminiUsage(
                 $userId,
@@ -150,20 +151,20 @@ class SummarizationService
                 [
                     'article_id' => $articleId,
                     'summary_id' => $summary->id,
-                    'confidence' => 0.9
+                    'confidence' => 0.9,
                 ]
             );
-            
+
             return $summary;
-            
+
         } catch (Exception $e) {
             $summary->update([
                 'status' => 'failed',
                 'error_message' => $e->getMessage(),
                 'processing_completed_at' => now(),
-                'processing_time_ms' => $this->calculateProcessingTime($summary->processing_started_at)
+                'processing_time_ms' => $this->calculateProcessingTime($summary->processing_started_at),
             ]);
-            
+
             throw $e;
         }
     }
@@ -183,9 +184,9 @@ class SummarizationService
             'source' => 'local',
             'status' => 'processing',
             'processing_started_at' => now(),
-            'cache_key' => $this->generateCacheKey($articleId, $userId, $content, 'local')
+            'cache_key' => $this->generateCacheKey($articleId, $userId, $content, 'local'),
         ]);
-        
+
         try {
             // Generate summary
             $localResult = $this->localService->generateSummary(
@@ -193,7 +194,7 @@ class SummarizationService
                 $options['max_words'],
                 $options['language']
             );
-            
+
             // Update summary
             $summary->update([
                 'content' => $localResult['summary'],
@@ -201,9 +202,9 @@ class SummarizationService
                 'key_points' => $localResult['key_points'],
                 'status' => 'completed',
                 'processing_completed_at' => now(),
-                'processing_time_ms' => $this->calculateProcessingTime($summary->processing_started_at)
+                'processing_time_ms' => $this->calculateProcessingTime($summary->processing_started_at),
             ]);
-            
+
             // Record quota usage
             $this->quotaService->recordLocalUsage(
                 $userId,
@@ -212,20 +213,20 @@ class SummarizationService
                     'article_id' => $articleId,
                     'summary_id' => $summary->id,
                     'method' => $localResult['method'] ?? 'extractive',
-                    'confidence' => $localResult['confidence'] ?? 0.7
+                    'confidence' => $localResult['confidence'] ?? 0.7,
                 ]
             );
-            
+
             return $summary;
-            
+
         } catch (Exception $e) {
             $summary->update([
                 'status' => 'failed',
                 'error_message' => $e->getMessage(),
                 'processing_completed_at' => now(),
-                'processing_time_ms' => $this->calculateProcessingTime($summary->processing_started_at)
+                'processing_time_ms' => $this->calculateProcessingTime($summary->processing_started_at),
             ]);
-            
+
             throw $e;
         }
     }
@@ -240,13 +241,13 @@ class SummarizationService
             $this->generateCacheKey($articleId, $userId, $content, 'gemini'),
             $this->generateCacheKey($articleId, $userId, $content, 'any'),
         ];
-        
+
         return Summary::where('article_id', $articleId)
             ->where('user_id', $userId)
             ->where('status', 'completed')
-            ->where(function($query) use ($cacheKeys) {
+            ->where(function ($query) use ($cacheKeys) {
                 $query->whereIn('cache_key', $cacheKeys)
-                      ->orWhere('source', 'manual');
+                    ->orWhere('source', 'manual');
             })
             ->where('updated_at', '>', now()->subHours(24))
             ->first();
@@ -258,15 +259,15 @@ class SummarizationService
     private function prepareContent(Article $article): string
     {
         $content = '';
-        
+
         if ($article->title) {
-            $content .= $article->title . '. ';
+            $content .= $article->title.'. ';
         }
-        
+
         if ($article->content) {
             $content .= strip_tags($article->content);
         }
-        
+
         return trim($content);
     }
 
@@ -276,6 +277,7 @@ class SummarizationService
     private function generateCacheKey(int $articleId, int $userId, string $content, string $source): string
     {
         $contentHash = md5($content);
+
         return "summary:{$articleId}:{$userId}:{$contentHash}:{$source}";
     }
 

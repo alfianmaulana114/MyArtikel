@@ -2,13 +2,14 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use App\Services\SsrfProtectionService;
+use App\Http\Middleware\HtmlSanitizationMiddleware;
+use App\Models\User;
 use App\Services\FileUploadSecurityService;
+use App\Services\SsrfProtectionService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use App\Models\User;
+use Tests\TestCase;
 
 class SecurityTest extends TestCase
 {
@@ -17,12 +18,12 @@ class SecurityTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->withoutMiddleware(\App\Http\Middleware\HtmlSanitizationMiddleware::class);
+        $this->withoutMiddleware(HtmlSanitizationMiddleware::class);
     }
 
     public function test_ssrf_protection_blocks_private_ips()
     {
-        $ssrfService = new SsrfProtectionService();
+        $ssrfService = new SsrfProtectionService;
 
         $privateUrls = [
             'http://127.0.0.1',
@@ -39,7 +40,7 @@ class SecurityTest extends TestCase
 
     public function test_ssrf_protection_allows_legitimate_urls()
     {
-        $ssrfService = new SsrfProtectionService();
+        $ssrfService = new SsrfProtectionService;
 
         $legitimateUrls = [
             'https://example.com',
@@ -80,7 +81,7 @@ class SecurityTest extends TestCase
         Storage::fake('public');
         $dangerousFile = UploadedFile::fake()->create('dangerous.php', 100, 'text/x-php');
 
-        $fileSecurityService = new FileUploadSecurityService();
+        $fileSecurityService = new FileUploadSecurityService;
         $result = $fileSecurityService->validateUpload($dangerousFile);
 
         $this->assertFalse($result['valid'], 'Should block PHP files');
@@ -91,7 +92,7 @@ class SecurityTest extends TestCase
         Storage::fake('public');
         $safeFile = UploadedFile::fake()->image('avatar.jpg', 100, 100);
 
-        $fileSecurityService = new FileUploadSecurityService();
+        $fileSecurityService = new FileUploadSecurityService;
         $result = $fileSecurityService->validateUpload($safeFile);
 
         $this->assertTrue($result['valid'], 'Should allow safe image files');
@@ -102,7 +103,7 @@ class SecurityTest extends TestCase
         Storage::fake('public');
         $largeFile = UploadedFile::fake()->create('large.jpg', 3000, 'image/jpeg');
 
-        $fileSecurityService = new FileUploadSecurityService();
+        $fileSecurityService = new FileUploadSecurityService;
         $result = $fileSecurityService->validateUpload($largeFile);
 
         $this->assertFalse($result['valid'], 'Should block files larger than size limit');
@@ -112,7 +113,7 @@ class SecurityTest extends TestCase
     {
         Storage::fake('public');
 
-        $fileSecurityService = new FileUploadSecurityService();
+        $fileSecurityService = new FileUploadSecurityService;
 
         $dangerousFiles = [
             UploadedFile::fake()->create('malicious.exe', 100, 'application/x-msdownload'),

@@ -20,7 +20,7 @@ return new class extends Migration
             $table->date('quota_date'); // Track per day
             $table->json('metadata')->nullable(); // Store additional info
             $table->timestamps();
-            
+
             $table->unique(['user_id', 'service', 'quota_date']);
             $table->index('user_id');
             $table->index('service');

@@ -2,13 +2,17 @@
 
 namespace App\Jobs;
 
+use Exception;
+use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\RequestException;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Exception;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 abstract class BaseJob implements ShouldQueue
 {
@@ -37,30 +41,21 @@ abstract class BaseJob implements ShouldQueue
 
     /**
      * Job metadata for tracking and monitoring
-     *
-     * @var array
      */
     protected array $jobMetadata = [];
 
     /**
      * Job execution start time
-     *
-     * @var float
      */
     protected float $startTime;
 
     /**
      * Execute the job.
-     *
-     * @return void
      */
     abstract public function handle(): void;
 
     /**
      * Handle a job failure.
-     *
-     * @param  \Throwable  $exception
-     * @return void
      */
     public function failed(\Throwable $exception): void
     {
@@ -79,13 +74,11 @@ abstract class BaseJob implements ShouldQueue
 
     /**
      * Handle job processing.
-     *
-     * @return void
      */
     public function handleWithTracking(): void
     {
         $this->startTime = microtime(true);
-        
+
         try {
             Log::info('Job started', [
                 'job' => get_class($this),
@@ -98,11 +91,11 @@ abstract class BaseJob implements ShouldQueue
             $this->handle();
 
             $processingTime = microtime(true) - $this->startTime;
-            
+
             Log::info('Job completed successfully', [
                 'job' => get_class($this),
                 'queue' => $this->queue,
-                'processing_time' => round($processingTime, 2) . 's',
+                'processing_time' => round($processingTime, 2).'s',
                 'metadata' => $this->jobMetadata,
             ]);
 
@@ -111,12 +104,12 @@ abstract class BaseJob implements ShouldQueue
 
         } catch (Exception $e) {
             $processingTime = microtime(true) - $this->startTime;
-            
+
             Log::error('Job execution failed', [
                 'job' => get_class($this),
                 'queue' => $this->queue,
                 'attempts' => $this->attempts(),
-                'processing_time' => round($processingTime, 2) . 's',
+                'processing_time' => round($processingTime, 2).'s',
                 'metadata' => $this->jobMetadata,
                 'error' => $e->getMessage(),
             ]);
@@ -127,9 +120,6 @@ abstract class BaseJob implements ShouldQueue
 
     /**
      * Record job success in tracking system
-     *
-     * @param float $processingTime
-     * @return void
      */
     protected function recordJobSuccess(float $processingTime): void
     {
@@ -139,8 +129,7 @@ abstract class BaseJob implements ShouldQueue
     /**
      * Record job failure in tracking system
      *
-     * @param Exception $exception
-     * @return void
+     * @param  Exception  $exception
      */
     protected function recordJobFailure(\Throwable $exception): void
     {
@@ -149,8 +138,6 @@ abstract class BaseJob implements ShouldQueue
 
     /**
      * Get job metadata
-     *
-     * @return array
      */
     public function getJobMetadata(): array
     {
@@ -160,32 +147,30 @@ abstract class BaseJob implements ShouldQueue
     /**
      * Set job metadata
      *
-     * @param array $metadata
      * @return $this
      */
     public function setJobMetadata(array $metadata): self
     {
         $this->jobMetadata = $metadata;
+
         return $this;
     }
 
     /**
      * Add metadata to job
      *
-     * @param string $key
-     * @param mixed $value
+     * @param  mixed  $value
      * @return $this
      */
     public function addMetadata(string $key, $value): self
     {
         $this->jobMetadata[$key] = $value;
+
         return $this;
     }
 
     /**
      * Get current attempt number
-     *
-     * @return int
      */
     public function attempts(): int
     {
@@ -194,9 +179,6 @@ abstract class BaseJob implements ShouldQueue
 
     /**
      * Determine if the job should be retried.
-     *
-     * @param  \Exception  $exception
-     * @return bool
      */
     public function shouldRetry(Exception $exception): bool
     {
@@ -216,9 +198,6 @@ abstract class BaseJob implements ShouldQueue
 
     /**
      * Check if exception is business logic related
-     *
-     * @param Exception $exception
-     * @return bool
      */
     protected function isBusinessLogicException(Exception $exception): bool
     {
@@ -228,18 +207,15 @@ abstract class BaseJob implements ShouldQueue
 
     /**
      * Check if exception is retryable (network, timeout, etc.)
-     *
-     * @param Exception $exception
-     * @return bool
      */
     protected function isRetryableException(Exception $exception): bool
     {
         $retryableExceptions = [
-            \Illuminate\Http\Client\ConnectionException::class,
+            ConnectionException::class,
             \Illuminate\Http\Client\RequestException::class,
-            \Symfony\Component\HttpKernel\Exception\HttpException::class,
-            \GuzzleHttp\Exception\ConnectException::class,
-            \GuzzleHttp\Exception\RequestException::class,
+            HttpException::class,
+            ConnectException::class,
+            RequestException::class,
         ];
 
         foreach ($retryableExceptions as $retryable) {

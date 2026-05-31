@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('color', 7)->default('#000000');
             $table->integer('articles_count')->default(0);
             $table->timestamps();
-            
+
             $table->index('slug');
             $table->index('name');
         });

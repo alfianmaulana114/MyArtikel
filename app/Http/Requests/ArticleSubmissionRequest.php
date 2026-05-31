@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Services\SsrfProtectionService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -53,9 +54,9 @@ class ArticleSubmissionRequest extends FormRequest
                 'active_url',
                 // Custom rule to prevent SSRF
                 function ($attribute, $value, $fail) {
-                    $ssrfService = app(\App\Services\SsrfProtectionService::class);
-                    if (!$ssrfService->validateUrl($value)) {
-                        $fail('The ' . $attribute . ' is not accessible or contains invalid content.');
+                    $ssrfService = app(SsrfProtectionService::class);
+                    if (! $ssrfService->validateUrl($value)) {
+                        $fail('The '.$attribute.' is not accessible or contains invalid content.');
                     }
                 },
             ],
@@ -92,7 +93,7 @@ class ArticleSubmissionRequest extends FormRequest
         $validator->after(function ($validator) {
             // Additional security checks
             $url = $this->input('url');
-            
+
             if ($url) {
                 // Check for suspicious patterns
                 $suspiciousPatterns = [
@@ -109,7 +110,7 @@ class ArticleSubmissionRequest extends FormRequest
                     '/10\./i',
                     '/172\.(1[6-9]|2[0-9]|3[01])\./i',
                 ];
-                
+
                 foreach ($suspiciousPatterns as $pattern) {
                     if (preg_match($pattern, $url)) {
                         $validator->errors()->add('url', 'The URL contains potentially dangerous content.');

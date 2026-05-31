@@ -3,19 +3,23 @@
 namespace App\Jobs;
 
 use App\Models\Article;
-use App\Models\User;
 use App\Models\Summary;
+use App\Services\GeminiSummarizationService;
 use App\Services\PdfExtractionService;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
+use App\Services\SummarizationService;
 use Exception;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class ProcessPdfIngestion extends BaseJob
 {
     private int $userId;
+
     private string $filePath;
+
     private array $options;
+
     private ?int $articleId;
 
     /**
@@ -34,7 +38,7 @@ class ProcessPdfIngestion extends BaseJob
             'user_id' => $userId,
             'file_path' => $filePath,
             'options' => $options,
-            'type' => 'pdf_ingestion'
+            'type' => 'pdf_ingestion',
         ]);
     }
 
@@ -46,7 +50,7 @@ class ProcessPdfIngestion extends BaseJob
         Log::info('Starting PDF ingestion', [
             'user_id' => $this->userId,
             'file_path' => $this->filePath,
-            'options' => $this->options
+            'options' => $this->options,
         ]);
 
         try {
@@ -61,8 +65,8 @@ class ProcessPdfIngestion extends BaseJob
             $pdfService = app(PdfExtractionService::class);
             $extractedData = $pdfService->extractFromPath($this->filePath);
 
-            if (!$extractedData['success']) {
-                throw new Exception('Failed to extract PDF: ' . $extractedData['error']);
+            if (! $extractedData['success']) {
+                throw new Exception('Failed to extract PDF: '.$extractedData['error']);
             }
 
             $article->update([
@@ -79,13 +83,13 @@ class ProcessPdfIngestion extends BaseJob
             }
 
             $slugBase = Str::slug($title);
-            $slug = $slugBase !== '' ? ($slugBase . '-' . $article->id) : ('pdf-' . $article->id);
+            $slug = $slugBase !== '' ? ($slugBase.'-'.$article->id) : ('pdf-'.$article->id);
 
             $contentForDb = Str::limit($textExtracted, 60000, '');
             $excerptForDb = $textExtracted !== '' ? Str::limit($textExtracted, 300, '...') : '';
 
             $meta = $article->metadata ?? [];
-            if (!empty($extractedData['metadata'])) {
+            if (! empty($extractedData['metadata'])) {
                 $meta = array_merge($meta, $extractedData['metadata']);
             }
 
@@ -106,7 +110,7 @@ class ProcessPdfIngestion extends BaseJob
                 'user_id' => $this->userId,
                 'article_id' => $article->id,
                 'title' => $article->title,
-                'word_count' => str_word_count($article->content)
+                'word_count' => str_word_count($article->content),
             ]);
 
             $this->addMetadata('article_id', $article->id);
@@ -119,7 +123,7 @@ class ProcessPdfIngestion extends BaseJob
                 'user_id' => $this->userId,
                 'file_path' => $this->filePath,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             if ($this->articleId) {
@@ -154,8 +158,9 @@ class ProcessPdfIngestion extends BaseJob
             if (empty($textExtracted) || str_word_count($textExtracted) < 50) {
                 Log::info('Article content too short for summarization', [
                     'article_id' => $article->id,
-                    'word_count' => str_word_count($textExtracted ?? '')
+                    'word_count' => str_word_count($textExtracted ?? ''),
                 ]);
+
                 return;
             }
 
@@ -176,10 +181,10 @@ class ProcessPdfIngestion extends BaseJob
                 'type' => 'ai_generated',
                 'source' => 'gemini',
                 'status' => 'pending',
-                'processing_started_at' => now()
+                'processing_started_at' => now(),
             ]);
 
-            $summarizationService = app(\App\Services\SummarizationService::class);
+            $summarizationService = app(SummarizationService::class);
             $options = [
                 'max_words' => 150,
                 'language' => 'id',
@@ -196,24 +201,24 @@ class ProcessPdfIngestion extends BaseJob
             if ($result['success']) {
                 Log::info('Auto summary generated successfully for PDF', [
                     'article_id' => $article->id,
-                    'summary_id' => $summary->id
+                    'summary_id' => $summary->id,
                 ]);
 
                 // If there's a research_title, also generate citation suggestions
-                if (!empty($article->research_title)) {
+                if (! empty($article->research_title)) {
                     $this->generateCitationSuggestions($article);
                 }
             } else {
                 $summary->update([
                     'status' => 'failed',
-                    'error_message' => $result['error'] ?? 'Generation failed'
+                    'error_message' => $result['error'] ?? 'Generation failed',
                 ]);
             }
 
         } catch (Exception $e) {
             Log::warning('Auto summary generation error for PDF', [
                 'article_id' => $article->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -232,9 +237,9 @@ class ProcessPdfIngestion extends BaseJob
                 return;
             }
 
-            $geminiService = app(\App\Services\GeminiSummarizationService::class);
+            $geminiService = app(GeminiSummarizationService::class);
 
-            if (!$geminiService->isAvailable()) {
+            if (! $geminiService->isAvailable()) {
                 return;
             }
 
@@ -247,14 +252,14 @@ class ProcessPdfIngestion extends BaseJob
 
                 Log::info('Citation suggestions generated', [
                     'article_id' => $article->id,
-                    'suggestions_count' => count($result['citations'])
+                    'suggestions_count' => count($result['citations']),
                 ]);
             }
 
         } catch (Exception $e) {
             Log::warning('Citation suggestion generation failed', [
                 'article_id' => $article->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }

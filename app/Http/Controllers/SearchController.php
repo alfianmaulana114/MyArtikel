@@ -11,12 +11,12 @@ use Illuminate\Support\Facades\Log;
 class SearchController extends Controller
 {
     protected SearchService $searchService;
-    
+
     public function __construct(SearchService $searchService)
     {
         $this->searchService = $searchService;
     }
-    
+
     /**
      * Perform search across articles and notes
      */
@@ -36,22 +36,22 @@ class SearchController extends Controller
             'page' => 'nullable|integer|min:1',
             'type' => 'nullable|in:all,articles,notes',
         ]);
-        
+
         try {
             $query = $validated['query'];
             $filters = $validated['filters'] ?? [];
             $perPage = $validated['per_page'] ?? 20;
             $page = $validated['page'] ?? 1;
             $type = $validated['type'] ?? 'all';
-            
+
             // Add type filter if specified
             if ($type !== 'all') {
                 $filters['type'] = $type;
             }
-            
+
             // Perform search
             $results = $this->searchService->search($query, $filters, $perPage, $page);
-            
+
             // Add search metadata
             $results['search_metadata'] = [
                 'execution_time' => microtime(true) - LARAVEL_START,
@@ -59,24 +59,23 @@ class SearchController extends Controller
                 'query_type' => $this->determineQueryType($query),
                 'suggestions_available' => $this->hasSuggestions($query),
             ];
-            
+
             return response()->json($results);
-            
+
         } catch (\Exception $e) {
             Log::error('Search error', [
                 'query' => $request->input('query'),
                 'user_id' => Auth::id(),
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
-            
+
             return response()->json([
                 'error' => 'Search failed. Please try again.',
-                'message' => $e->getMessage()
             ], 500);
         }
     }
-    
+
     /**
      * Get search suggestions
      */
@@ -86,32 +85,32 @@ class SearchController extends Controller
             'query' => 'required|string|min:2|max:100',
             'limit' => 'nullable|integer|min:1|max:20',
         ]);
-        
+
         try {
             $query = $validated['query'];
             $limit = $validated['limit'] ?? 10;
-            
+
             $suggestions = $this->searchService->getSuggestions($query, $limit);
-            
+
             return response()->json([
                 'query' => $query,
                 'suggestions' => $suggestions,
-                'count' => $suggestions->count()
+                'count' => $suggestions->count(),
             ]);
-            
+
         } catch (\Exception $e) {
             Log::error('Suggestions error', [
                 'query' => $query,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
-            
+
             return response()->json([
                 'error' => 'Failed to get suggestions',
-                'suggestions' => []
+                'suggestions' => [],
             ], 500);
         }
     }
-    
+
     /**
      * Get search history
      */
@@ -120,25 +119,25 @@ class SearchController extends Controller
         try {
             $limit = $request->input('limit', 20);
             $history = $this->searchService->getSearchHistory($limit);
-            
+
             return response()->json([
                 'history' => $history,
-                'count' => $history->count()
+                'count' => $history->count(),
             ]);
-            
+
         } catch (\Exception $e) {
             Log::error('Search history error', [
                 'user_id' => Auth::id(),
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
-            
+
             return response()->json([
                 'error' => 'Failed to get search history',
-                'history' => []
+                'history' => [],
             ], 500);
         }
     }
-    
+
     /**
      * Get search analytics
      */
@@ -147,25 +146,25 @@ class SearchController extends Controller
         try {
             $days = $request->input('days', 30);
             $analytics = $this->searchService->getSearchAnalytics($days);
-            
+
             return response()->json([
                 'analytics' => $analytics,
-                'period' => "last {$days} days"
+                'period' => "last {$days} days",
             ]);
-            
+
         } catch (\Exception $e) {
             Log::error('Search analytics error', [
                 'user_id' => Auth::id(),
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
-            
+
             return response()->json([
                 'error' => 'Failed to get search analytics',
-                'analytics' => []
+                'analytics' => [],
             ], 500);
         }
     }
-    
+
     /**
      * Record search result click
      */
@@ -177,7 +176,7 @@ class SearchController extends Controller
             'result_type' => 'required|in:article,note',
             'position' => 'required|integer|min:1',
         ]);
-        
+
         try {
             $this->searchService->recordClick(
                 $validated['query'],
@@ -185,24 +184,24 @@ class SearchController extends Controller
                 $validated['result_type'],
                 $validated['position']
             );
-            
+
             return response()->json([
-                'message' => 'Click recorded successfully'
+                'message' => 'Click recorded successfully',
             ]);
-            
+
         } catch (\Exception $e) {
             Log::error('Record click error', [
                 'query' => $validated['query'],
                 'result_id' => $validated['result_id'],
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
-            
+
             return response()->json([
-                'error' => 'Failed to record click'
+                'error' => 'Failed to record click',
             ], 500);
         }
     }
-    
+
     /**
      * Quick search for instant results
      */
@@ -212,37 +211,37 @@ class SearchController extends Controller
             'query' => 'required|string|min:1|max:100',
             'limit' => 'nullable|integer|min:1|max:10',
         ]);
-        
+
         try {
             $query = $validated['query'];
             $limit = $validated['limit'] ?? 5;
-            
+
             // Use cache for quick search
-            $cacheKey = "quick_search_{$query}_" . Auth::id();
+            $cacheKey = "quick_search_{$query}_".Auth::id();
             $results = Cache::remember($cacheKey, 60, function () use ($query, $limit) {
                 return $this->searchService->search($query, [], $limit, 1);
             });
-            
+
             return response()->json([
                 'query' => $query,
                 'results' => $results['results'],
                 'total_count' => $results['total_count'],
-                'quick_search' => true
+                'quick_search' => true,
             ]);
-            
+
         } catch (\Exception $e) {
             Log::error('Quick search error', [
                 'query' => $validated['query'],
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
-            
+
             return response()->json([
                 'error' => 'Quick search failed',
-                'results' => []
+                'results' => [],
             ], 500);
         }
     }
-    
+
     /**
      * Advanced search with multiple criteria
      */
@@ -265,7 +264,7 @@ class SearchController extends Controller
             'per_page' => 'nullable|integer|min:1|max:100',
             'page' => 'nullable|integer|min:1',
         ]);
-        
+
         try {
             $filters = array_filter([
                 'title' => $validated['title'] ?? null,
@@ -280,62 +279,61 @@ class SearchController extends Controller
                 'sort_by' => $validated['sort_by'] ?? 'relevance',
                 'sort_order' => $validated['sort_order'] ?? 'desc',
             ]);
-            
+
             $query = $validated['query'] ?? '';
             $perPage = $validated['per_page'] ?? 20;
             $page = $validated['page'] ?? 1;
-            
+
             $results = $this->searchService->search($query, $filters, $perPage, $page);
-            
+
             return response()->json([
                 'advanced_search' => true,
                 'filters_applied' => $filters,
-                'results' => $results
+                'results' => $results,
             ]);
-            
+
         } catch (\Exception $e) {
             Log::error('Advanced search error', [
                 'filters' => $validated,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
-            
+
             return response()->json([
                 'error' => 'Advanced search failed',
-                'message' => $e->getMessage()
             ], 500);
         }
     }
-    
+
     /**
      * Determine query type
      */
     private function determineQueryType(string $query): string
     {
         $query = strtolower(trim($query));
-        
+
         if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $query)) {
             return 'date';
         }
-        
+
         if (preg_match('/^tag:/', $query)) {
             return 'tag';
         }
-        
+
         if (preg_match('/^status:/', $query)) {
             return 'status';
         }
-        
+
         if (strlen($query) <= 3) {
             return 'short';
         }
-        
+
         if (preg_match('/\s+/', $query)) {
             return 'phrase';
         }
-        
+
         return 'keyword';
     }
-    
+
     /**
      * Check if suggestions are available
      */

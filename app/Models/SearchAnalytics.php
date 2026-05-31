@@ -15,7 +15,7 @@ class SearchAnalytics extends Model
         'avg_click_position',
         'related_queries',
     ];
-    
+
     protected $casts = [
         'keywords' => 'array',
         'related_queries' => 'array',
@@ -23,7 +23,7 @@ class SearchAnalytics extends Model
         'search_count' => 'integer',
         'click_count' => 'integer',
     ];
-    
+
     /**
      * Get click-through rate
      */
@@ -31,7 +31,7 @@ class SearchAnalytics extends Model
     {
         return $this->search_count > 0 ? ($this->click_count / $this->search_count) * 100 : 0;
     }
-    
+
     /**
      * Scope for popular queries
      */
@@ -39,7 +39,7 @@ class SearchAnalytics extends Model
     {
         return $query->orderByDesc('search_count')->limit($limit);
     }
-    
+
     /**
      * Scope for high-performing queries
      */
@@ -47,7 +47,7 @@ class SearchAnalytics extends Model
     {
         return $query->whereRaw('(click_count / search_count) * 100 >= ?', [$minCtr]);
     }
-    
+
     /**
      * Scope for underperforming queries
      */

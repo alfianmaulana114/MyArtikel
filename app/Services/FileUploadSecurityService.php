@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Http\UploadedFile;
 
 class FileUploadSecurityService
 {
@@ -18,12 +18,15 @@ class FileUploadSecurityService
     ];
 
     private array $allowedExtensions = [
-        'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'pdf'
+        'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'pdf',
     ];
 
     private int $maxFileSize = 2 * 1024 * 1024; // 2MB (images)
+
     private int $maxPdfFileSize = 10 * 1024 * 1024; // 10MB (PDF)
+
     private int $maxImageWidth = 2048;
+
     private int $maxImageHeight = 2048;
 
     /**
@@ -34,32 +37,32 @@ class FileUploadSecurityService
         try {
             // Basic validation
             $validationResult = $this->basicValidation($file, $type);
-            if (!$validationResult['valid']) {
+            if (! $validationResult['valid']) {
                 return $validationResult;
             }
 
             // MIME type validation
             $mimeValidation = $this->validateMimeType($file);
-            if (!$mimeValidation['valid']) {
+            if (! $mimeValidation['valid']) {
                 return $mimeValidation;
             }
 
             // Extension validation
             $extensionValidation = $this->validateExtension($file);
-            if (!$extensionValidation['valid']) {
+            if (! $extensionValidation['valid']) {
                 return $extensionValidation;
             }
 
             // File size validation (different limits for PDF vs images)
             $sizeValidation = $this->validateFileSize($file, $type);
-            if (!$sizeValidation['valid']) {
+            if (! $sizeValidation['valid']) {
                 return $sizeValidation;
             }
 
             // Image-specific validation
             if ($type === 'image') {
                 $imageValidation = $this->validateImage($file);
-                if (!$imageValidation['valid']) {
+                if (! $imageValidation['valid']) {
                     return $imageValidation;
                 }
             }
@@ -67,14 +70,14 @@ class FileUploadSecurityService
             // PDF-specific validation
             if ($type === 'pdf') {
                 $pdfValidation = $this->validatePdf($file);
-                if (!$pdfValidation['valid']) {
+                if (! $pdfValidation['valid']) {
                     return $pdfValidation;
                 }
             }
 
             // Virus scanning (if available)
             $virusScan = $this->scanForViruses($file);
-            if (!$virusScan['valid']) {
+            if (! $virusScan['valid']) {
                 return $virusScan;
             }
 
@@ -92,7 +95,7 @@ class FileUploadSecurityService
 
             return [
                 'valid' => false,
-                'message' => 'File validation failed: ' . $e->getMessage(),
+                'message' => 'File validation failed: '.$e->getMessage(),
             ];
         }
     }
@@ -102,7 +105,7 @@ class FileUploadSecurityService
      */
     private function basicValidation(UploadedFile $file, string $type): array
     {
-        if (!$file->isValid()) {
+        if (! $file->isValid()) {
             return [
                 'valid' => false,
                 'message' => 'File upload failed',
@@ -112,7 +115,7 @@ class FileUploadSecurityService
         if ($file->getError() !== UPLOAD_ERR_OK) {
             return [
                 'valid' => false,
-                'message' => 'File upload error: ' . $this->getUploadErrorMessage($file->getError()),
+                'message' => 'File upload error: '.$this->getUploadErrorMessage($file->getError()),
             ];
         }
 
@@ -128,10 +131,10 @@ class FileUploadSecurityService
         $clientMimeType = $file->getClientMimeType();
 
         // Check if MIME type is allowed
-        if (!in_array($mimeType, $this->allowedMimeTypes)) {
+        if (! in_array($mimeType, $this->allowedMimeTypes)) {
             return [
                 'valid' => false,
-                'message' => 'File type not allowed. Allowed types: ' . implode(', ', $this->allowedMimeTypes),
+                'message' => 'File type not allowed. Allowed types: '.implode(', ', $this->allowedMimeTypes),
             ];
         }
 
@@ -156,10 +159,10 @@ class FileUploadSecurityService
         $guessedExtension = strtolower($file->guessExtension());
 
         // Check if extension is allowed
-        if (!in_array($extension, $this->allowedExtensions)) {
+        if (! in_array($extension, $this->allowedExtensions)) {
             return [
                 'valid' => false,
-                'message' => 'File extension not allowed. Allowed extensions: ' . implode(', ', $this->allowedExtensions),
+                'message' => 'File extension not allowed. Allowed extensions: '.implode(', ', $this->allowedExtensions),
             ];
         }
 
@@ -186,7 +189,7 @@ class FileUploadSecurityService
         if ($file->getSize() > $maxSize) {
             return [
                 'valid' => false,
-                'message' => 'File size exceeds maximum allowed size of ' . $maxMB . 'MB',
+                'message' => 'File size exceeds maximum allowed size of '.$maxMB.'MB',
             ];
         }
 
@@ -201,7 +204,7 @@ class FileUploadSecurityService
         try {
             // Check PDF magic bytes (%PDF-)
             $handle = fopen($file->getPathname(), 'rb');
-            if (!$handle) {
+            if (! $handle) {
                 return ['valid' => false, 'message' => 'Cannot read file'];
             }
             $header = fread($handle, 5);
@@ -224,7 +227,7 @@ class FileUploadSecurityService
     {
         try {
             $imageInfo = getimagesize($file->getPathname());
-            
+
             if ($imageInfo === false) {
                 return [
                     'valid' => false,
@@ -239,7 +242,7 @@ class FileUploadSecurityService
             if ($width > $this->maxImageWidth || $height > $this->maxImageHeight) {
                 return [
                     'valid' => false,
-                    'message' => 'Image dimensions exceed maximum allowed size (' . $this->maxImageWidth . 'x' . $this->maxImageHeight . ')',
+                    'message' => 'Image dimensions exceed maximum allowed size ('.$this->maxImageWidth.'x'.$this->maxImageHeight.')',
                 ];
             }
 
@@ -260,7 +263,7 @@ class FileUploadSecurityService
                 IMAGETYPE_GIF => 'image/gif',
             ];
 
-            if (!isset($expectedTypes[$imageType])) {
+            if (! isset($expectedTypes[$imageType])) {
                 return [
                     'valid' => false,
                     'message' => 'Image type not supported',
@@ -289,11 +292,11 @@ class FileUploadSecurityService
     {
         // This is a placeholder. In a real implementation, you would integrate
         // with an antivirus service like ClamAV or a cloud-based scanning service.
-        
+
         // Check for obvious malicious patterns in file content
         try {
             $content = file_get_contents($file->getPathname());
-            
+
             // Check for PHP code
             if (preg_match('/<\?php/i', $content)) {
                 return [
@@ -342,11 +345,11 @@ class FileUploadSecurityService
             // Generate secure filename
             $extension = $file->getClientOriginalExtension();
             $filename = $this->generateSecureFilename($extension);
-            
+
             // Store file
             $storedPath = $file->storeAs($path, $filename, 'public');
-            
-            if (!$storedPath) {
+
+            if (! $storedPath) {
                 return null;
             }
 
@@ -375,8 +378,8 @@ class FileUploadSecurityService
         $timestamp = time();
         $random = bin2hex(random_bytes(16));
         $safeExtension = preg_replace('/[^a-zA-Z0-9]/', '', $extension);
-        
-        return $timestamp . '_' . $random . '.' . $safeExtension;
+
+        return $timestamp.'_'.$random.'.'.$safeExtension;
     }
 
     /**

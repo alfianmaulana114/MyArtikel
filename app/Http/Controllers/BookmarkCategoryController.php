@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\BookmarkCategory;
 use App\Models\Bookmark;
-use Illuminate\Http\Request;
+use App\Models\BookmarkCategory;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
@@ -20,14 +20,14 @@ class BookmarkCategoryController extends Controller
             'include_bookmarks_count' => 'nullable|boolean',
             'include_unread_count' => 'nullable|boolean',
             'sort_by' => 'nullable|in:position,name,created_at,bookmarks_count',
-            'sort_order' => 'nullable|in:asc,desc'
+            'sort_order' => 'nullable|in:asc,desc',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -38,7 +38,7 @@ class BookmarkCategoryController extends Controller
 
         if ($sortBy === 'bookmarks_count') {
             $query->withCount('bookmarks')
-                  ->orderBy('bookmarks_count', $sortOrder);
+                ->orderBy('bookmarks_count', $sortOrder);
         } else {
             $query->orderBy($sortBy, $sortOrder);
         }
@@ -61,8 +61,8 @@ class BookmarkCategoryController extends Controller
             'success' => true,
             'data' => [
                 'categories' => $categories,
-                'total' => $categories->count()
-            ]
+                'total' => $categories->count(),
+            ],
         ]);
     }
 
@@ -76,14 +76,14 @@ class BookmarkCategoryController extends Controller
             'color' => 'nullable|string|max:7|regex:/^#?[0-9A-Fa-f]{6}$/',
             'description' => 'nullable|string|max:500',
             'position' => 'nullable|integer|min:0',
-            'is_public' => 'nullable|boolean'
+            'is_public' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -95,7 +95,7 @@ class BookmarkCategoryController extends Controller
         if ($existingCategory) {
             return response()->json([
                 'success' => false,
-                'message' => 'Category with this name already exists'
+                'message' => 'Category with this name already exists',
             ], 409);
         }
 
@@ -107,7 +107,7 @@ class BookmarkCategoryController extends Controller
                 'description' => $request->description,
                 'position' => $request->position ?? $this->getNextPosition(),
                 'is_public' => $request->is_public ?? false,
-                'is_default' => false
+                'is_default' => false,
             ]);
 
             // Update user category count
@@ -119,7 +119,7 @@ class BookmarkCategoryController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Category created successfully',
-            'data' => $category
+            'data' => $category,
         ], 201);
     }
 
@@ -136,7 +136,7 @@ class BookmarkCategoryController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $category
+            'data' => $category,
         ]);
     }
 
@@ -151,7 +151,7 @@ class BookmarkCategoryController extends Controller
         if ($category->is_default && $request->has('name') && $request->name !== $category->name) {
             return response()->json([
                 'success' => false,
-                'message' => 'Cannot rename default categories'
+                'message' => 'Cannot rename default categories',
             ], 403);
         }
 
@@ -160,14 +160,14 @@ class BookmarkCategoryController extends Controller
             'color' => 'nullable|string|max:7|regex:/^#?[0-9A-Fa-f]{6}$/',
             'description' => 'nullable|string|max:500',
             'position' => 'nullable|integer|min:0',
-            'is_public' => 'nullable|boolean'
+            'is_public' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -181,7 +181,7 @@ class BookmarkCategoryController extends Controller
             if ($existingCategory) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Category with this name already exists'
+                    'message' => 'Category with this name already exists',
                 ], 409);
             }
         }
@@ -191,7 +191,7 @@ class BookmarkCategoryController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Category updated successfully',
-            'data' => $category
+            'data' => $category,
         ]);
     }
 
@@ -205,7 +205,7 @@ class BookmarkCategoryController extends Controller
         if ($category->is_default) {
             return response()->json([
                 'success' => false,
-                'message' => 'Cannot delete default categories'
+                'message' => 'Cannot delete default categories',
             ], 403);
         }
 
@@ -229,7 +229,7 @@ class BookmarkCategoryController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Category deleted successfully'
+            'message' => 'Category deleted successfully',
         ]);
     }
 
@@ -241,14 +241,14 @@ class BookmarkCategoryController extends Controller
         $validator = Validator::make($request->all(), [
             'categories' => 'required|array',
             'categories.*.id' => 'required|exists:bookmark_categories,id',
-            'categories.*.position' => 'required|integer|min:0'
+            'categories.*.position' => 'required|integer|min:0',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -261,7 +261,7 @@ class BookmarkCategoryController extends Controller
         if ($ownedCategories->count() !== count($categoryIds)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Some categories not found or not owned by user'
+                'message' => 'Some categories not found or not owned by user',
             ], 404);
         }
 
@@ -274,7 +274,7 @@ class BookmarkCategoryController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Categories reordered successfully'
+            'message' => 'Categories reordered successfully',
         ]);
     }
 
@@ -291,14 +291,14 @@ class BookmarkCategoryController extends Controller
             'is_archived' => 'nullable|boolean',
             'sort_by' => 'nullable|in:created_at,updated_at,priority,read_at,title',
             'sort_order' => 'nullable|in:asc,desc',
-            'per_page' => 'nullable|integer|min:1|max:100'
+            'per_page' => 'nullable|integer|min:1|max:100',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -320,8 +320,8 @@ class BookmarkCategoryController extends Controller
 
         if ($sortBy === 'title') {
             $query->join('articles', 'bookmarks.article_id', '=', 'articles.id')
-                  ->orderBy('articles.title', $sortOrder)
-                  ->select('bookmarks.*');
+                ->orderBy('articles.title', $sortOrder)
+                ->select('bookmarks.*');
         } else {
             $query->orderBy($sortBy, $sortOrder);
         }
@@ -340,9 +340,9 @@ class BookmarkCategoryController extends Controller
                     'per_page' => $bookmarks->perPage(),
                     'total' => $bookmarks->total(),
                     'from' => $bookmarks->firstItem(),
-                    'to' => $bookmarks->lastItem()
-                ]
-            ]
+                    'to' => $bookmarks->lastItem(),
+                ],
+            ],
         ]);
     }
 

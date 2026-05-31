@@ -31,42 +31,42 @@ class User extends Authenticatable
             'is_active' => 'boolean',
         ];
     }
-    
+
     public function articles()
     {
         return $this->hasMany(Article::class);
     }
-    
+
     public function notes()
     {
         return $this->hasMany(Note::class);
     }
-    
+
     public function bookmarks()
     {
         return $this->hasMany(Bookmark::class);
     }
-    
+
     public function bookmarkCategories()
     {
         return $this->hasMany(BookmarkCategory::class);
     }
-    
+
     public function bookmarkAnalytics()
     {
         return $this->hasMany(BookmarkAnalytics::class);
     }
-    
+
     public function bookmarkSyncDevices()
     {
         return $this->hasMany(BookmarkSync::class);
     }
-    
+
     public function summaries()
     {
         return $this->hasMany(Summary::class);
     }
-    
+
     public function tags()
     {
         return $this->hasMany(Tag::class);

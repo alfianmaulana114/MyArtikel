@@ -23,14 +23,14 @@ class TagRequest extends FormRequest
     public function rules(): array
     {
         $tagId = $this->route('tag');
-        
+
         return [
             'name' => [
                 'required',
                 'string',
                 'max:50',
                 'regex:/^[a-zA-Z0-9\s-]+$/',
-                'unique:tags,name' . ($tagId ? ',' . $tagId : '') . ',id,user_id,' . auth()->id(),
+                'unique:tags,name'.($tagId ? ','.$tagId : '').',id,user_id,'.auth()->id(),
             ],
             'color' => ['nullable', 'string', 'max:7', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'description' => ['nullable', 'string', 'max:200'],
@@ -62,19 +62,19 @@ class TagRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             $name = $this->input('name');
-            
+
             if ($name) {
                 // Check for reserved/suspicious tag names
                 $reservedNames = [
                     'admin', 'administrator', 'root', 'superuser', 'system',
                     'javascript', 'script', 'eval', 'alert', 'prompt',
-                    'xss', 'sql', 'injection', 'hack', 'exploit'
+                    'xss', 'sql', 'injection', 'hack', 'exploit',
                 ];
-                
+
                 if (in_array(strtolower($name), $reservedNames)) {
                     $validator->errors()->add('name', 'This tag name is reserved and cannot be used.');
                 }
-                
+
                 // Check for excessive length variations
                 if (strlen($name) < 2) {
                     $validator->errors()->add('name', 'Tag name must be at least 2 characters long.');

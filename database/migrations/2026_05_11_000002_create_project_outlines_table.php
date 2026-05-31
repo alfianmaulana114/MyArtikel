@@ -15,14 +15,14 @@ return new class extends Migration
             $table->enum('section_type', [
                 'title_page', 'abstract', 'introduction', 'literature_review',
                 'methodology', 'results', 'discussion', 'conclusion',
-                'references', 'appendix', 'custom'
+                'references', 'appendix', 'custom',
             ])->default('custom');
             $table->longText('content')->nullable();
             $table->integer('position')->default(0);
             $table->foreignId('parent_id')->nullable()->constrained('project_outlines')->nullOnDelete();
             $table->json('metadata')->nullable();
             $table->timestamps();
-            
+
             $table->index(['project_id', 'position']);
             $table->index(['project_id', 'section_type']);
         });

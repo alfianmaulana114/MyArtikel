@@ -20,7 +20,7 @@ return new class extends Migration
             $table->enum('type', ['ai_generated', 'manual', 'auto'])->default('manual');
             $table->json('key_points')->nullable();
             $table->timestamps();
-            
+
             $table->index('article_id');
             $table->index('user_id');
             $table->index('type');

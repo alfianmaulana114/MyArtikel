@@ -36,7 +36,7 @@ class BookmarkCategoryPolicy
      */
     public function delete(User $user, BookmarkCategory $category): bool
     {
-        return $user->id === $category->user_id && !$category->is_default;
+        return $user->id === $category->user_id && ! $category->is_default;
     }
 
     /**
@@ -52,6 +52,6 @@ class BookmarkCategoryPolicy
      */
     public function forceDelete(User $user, BookmarkCategory $category): bool
     {
-        return $user->id === $category->user_id && !$category->is_default;
+        return $user->id === $category->user_id && ! $category->is_default;
     }
 }

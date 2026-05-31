@@ -2,17 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Project;
 use App\Models\Article;
-use App\Services\ProjectService;
+use App\Models\Project;
 use App\Services\CitationFormatterService;
-use Illuminate\Http\Request;
+use App\Services\ProjectService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ProjectController extends Controller
 {
     protected ProjectService $projectService;
+
     protected CitationFormatterService $citationFormatter;
 
     public function __construct(ProjectService $projectService, CitationFormatterService $citationFormatter)
@@ -23,7 +24,15 @@ class ProjectController extends Controller
 
     public function index(Request $request)
     {
-        return view('projects.index');
+        $projects = Project::query()
+            ->where('user_id', Auth::id())
+            ->latest()
+            ->withCount(['articles', 'notes', 'outlines'])
+            ->paginate(20);
+
+        return view('projects.index', [
+            'projects' => $projects,
+        ]);
     }
 
     public function data(Request $request): JsonResponse
@@ -147,7 +156,7 @@ class ProjectController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        $article = Article::findOrFail($validated['article_id']);
+        $article = Article::where('user_id', Auth::id())->findOrFail($validated['article_id']);
         $project->addArticle($article, $validated['role'] ?? 'reference', $validated['notes'] ?? null);
 
         return response()->json([
@@ -159,7 +168,7 @@ class ProjectController extends Controller
     public function removeArticle(string $projectId, string $articleId): JsonResponse
     {
         $project = Project::where('user_id', Auth::id())->findOrFail($projectId);
-        $article = Article::findOrFail($articleId);
+        $article = Article::where('user_id', Auth::id())->findOrFail($articleId);
 
         $project->removeArticle($article);
 
@@ -225,17 +234,17 @@ class ProjectController extends Controller
 
         if ($format === 'bib') {
             $content = $this->citationFormatter->exportToBibTeX($articles);
-            $filename = 'bibliography_' . $project->id . '.bib';
+            $filename = 'bibliography_'.$project->id.'.bib';
             $mimeType = 'application/x-bibtex';
         } else {
             $content = $this->citationFormatter->exportToText($articles, $style);
-            $filename = 'bibliography_' . $project->id . '.txt';
+            $filename = 'bibliography_'.$project->id.'.txt';
             $mimeType = 'text/plain';
         }
 
         return response($content, 200, [
-            'Content-Type' => $mimeType . '; charset=utf-8',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Type' => $mimeType.'; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ]);
     }
 }

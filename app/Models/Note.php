@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Builder;
 
 class Note extends Model
 {
@@ -31,7 +31,7 @@ class Note extends Model
         'sync_status',
         'search_vector',
     ];
-    
+
     protected $casts = [
         'is_private' => 'boolean',
         'is_rich_text' => 'boolean',
@@ -42,39 +42,44 @@ class Note extends Model
         'start_offset' => 'integer',
         'end_offset' => 'integer',
     ];
-    
+
     protected $dates = [
         'last_synced_at',
     ];
-    
+
     // Constants for note types
     const TYPE_PERSONAL = 'personal';
+
     const TYPE_RESEARCH = 'research';
+
     const TYPE_DRAFT = 'draft';
-    
+
     // Constants for sync status
     const SYNC_SYNCED = 'synced';
+
     const SYNC_PENDING = 'pending';
+
     const SYNC_CONFLICT = 'conflict';
+
     const SYNC_ERROR = 'error';
-    
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
-    
+
     public function article(): BelongsTo
     {
         return $this->belongsTo(Article::class);
     }
-    
+
     public function projects(): BelongsToMany
     {
         return $this->belongsToMany(Project::class, 'project_notes')
             ->withPivot('outline_id')
             ->withTimestamps();
     }
-    
+
     /**
      * Scope for searching notes
      */
@@ -82,11 +87,11 @@ class Note extends Model
     {
         return $query->where(function ($q) use ($search) {
             $q->where('title', 'like', "%{$search}%")
-              ->orWhere('content', 'like', "%{$search}%")
-              ->orWhere('search_vector', 'like', "%{$search}%");
+                ->orWhere('content', 'like', "%{$search}%")
+                ->orWhere('search_vector', 'like', "%{$search}%");
         });
     }
-    
+
     /**
      * Scope for filtering by category
      */
@@ -94,7 +99,7 @@ class Note extends Model
     {
         return $query->where('category', $category);
     }
-    
+
     /**
      * Scope for filtering by tags
      */
@@ -102,7 +107,7 @@ class Note extends Model
     {
         return $query->whereJsonContains('tags', $tags);
     }
-    
+
     /**
      * Scope for filtering by type
      */
@@ -110,7 +115,7 @@ class Note extends Model
     {
         return $query->where('type', $type);
     }
-    
+
     /**
      * Scope for filtering by sync status
      */
@@ -118,7 +123,7 @@ class Note extends Model
     {
         return $query->where('sync_status', $status);
     }
-    
+
     /**
      * Scope for notes that need sync
      */
@@ -126,24 +131,24 @@ class Note extends Model
     {
         return $query->whereIn('sync_status', [self::SYNC_PENDING, self::SYNC_CONFLICT]);
     }
-    
+
     /**
      * Check if note is anchored to a paragraph
      */
     public function isAnchored(): bool
     {
-        return !is_null($this->paragraph_index) || !is_null($this->paragraph_id);
+        return ! is_null($this->paragraph_index) || ! is_null($this->paragraph_id);
     }
-    
+
     /**
      * Get the anchor position as array
      */
     public function getAnchorPosition(): ?array
     {
-        if (!$this->isAnchored()) {
+        if (! $this->isAnchored()) {
             return null;
         }
-        
+
         return [
             'paragraph_index' => $this->paragraph_index,
             'paragraph_id' => $this->paragraph_id,
@@ -151,7 +156,7 @@ class Note extends Model
             'end_offset' => $this->end_offset,
         ];
     }
-    
+
     /**
      * Set search vector for better search performance
      */
@@ -165,14 +170,14 @@ class Note extends Model
         ]));
         $this->saveQuietly();
     }
-    
+
     /**
      * Boot method to set search vector automatically
      */
     protected static function boot()
     {
         parent::boot();
-        
+
         static::saving(function ($note) {
             if ($note->isDirty(['title', 'content', 'category', 'tags'])) {
                 $note->search_vector = implode(' ', array_filter([

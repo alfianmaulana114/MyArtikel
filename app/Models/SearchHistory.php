@@ -17,18 +17,18 @@ class SearchHistory extends Model
         'ip_address',
         'user_agent',
     ];
-    
+
     protected $casts = [
         'filters' => 'array',
         'clicked_result' => 'boolean',
         'results_count' => 'integer',
     ];
-    
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
-    
+
     /**
      * Scope for recent searches
      */
@@ -36,7 +36,7 @@ class SearchHistory extends Model
     {
         return $query->where('created_at', '>=', now()->subDays($days));
     }
-    
+
     /**
      * Scope for successful searches (with results)
      */
@@ -44,7 +44,7 @@ class SearchHistory extends Model
     {
         return $query->where('results_count', '>', 0);
     }
-    
+
     /**
      * Scope for clicked searches
      */

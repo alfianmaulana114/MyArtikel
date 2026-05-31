@@ -25,7 +25,7 @@ return new class extends Migration
             $table->integer('processing_time_ms')->nullable();
             $table->text('error_message')->nullable();
             $table->timestamps();
-            
+
             $table->index('user_id');
             $table->index('type');
             $table->index('status');

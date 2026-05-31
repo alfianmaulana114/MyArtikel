@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 
 abstract class SecureModel extends Model
@@ -14,25 +14,26 @@ abstract class SecureModel extends Model
      */
     public function newEloquentBuilder($query): Builder
     {
-        return new class($query) extends Builder {
+        return new class($query) extends Builder
+        {
             /**
              * Add SQL injection protection to where clauses
              */
             public function where($column, $operator = null, $value = null, $boolean = 'and')
             {
                 // Validate column names to prevent SQL injection
-                if (is_string($column) && !$this->isValidColumn($column)) {
+                if (is_string($column) && ! $this->isValidColumn($column)) {
                     Log::warning('SQL Injection attempt detected', [
                         'column' => $column,
                         'operator' => $operator,
                         'value' => $value,
                         'model' => get_class($this->model),
                     ]);
-                    throw new \InvalidArgumentException('Invalid column name: ' . $column);
+                    throw new \InvalidArgumentException('Invalid column name: '.$column);
                 }
 
                 // Validate values to prevent SQL injection
-                if ($value !== null && !$this->isValidValue($value)) {
+                if ($value !== null && ! $this->isValidValue($value)) {
                     Log::warning('SQL Injection attempt detected', [
                         'column' => $column,
                         'value' => $value,
@@ -50,24 +51,24 @@ abstract class SecureModel extends Model
             public function orderBy($column, $direction = 'asc')
             {
                 // Validate column names
-                if (!$this->isValidColumn($column)) {
+                if (! $this->isValidColumn($column)) {
                     Log::warning('SQL Injection attempt in orderBy', [
                         'column' => $column,
                         'direction' => $direction,
                         'model' => get_class($this->model),
                     ]);
-                    throw new \InvalidArgumentException('Invalid column name for ordering: ' . $column);
+                    throw new \InvalidArgumentException('Invalid column name for ordering: '.$column);
                 }
 
                 // Validate direction
                 $direction = strtolower($direction);
-                if (!in_array($direction, ['asc', 'desc'])) {
+                if (! in_array($direction, ['asc', 'desc'])) {
                     Log::warning('SQL Injection attempt in orderBy direction', [
                         'column' => $column,
                         'direction' => $direction,
                         'model' => get_class($this->model),
                     ]);
-                    throw new \InvalidArgumentException('Invalid direction: ' . $direction);
+                    throw new \InvalidArgumentException('Invalid direction: '.$direction);
                 }
 
                 return parent::orderBy($column, $direction);
@@ -79,12 +80,12 @@ abstract class SecureModel extends Model
             public function groupBy(...$groups)
             {
                 foreach ($groups as $group) {
-                    if (is_string($group) && !$this->isValidColumn($group)) {
+                    if (is_string($group) && ! $this->isValidColumn($group)) {
                         Log::warning('SQL Injection attempt in groupBy', [
                             'group' => $group,
                             'model' => get_class($this->model),
                         ]);
-                        throw new \InvalidArgumentException('Invalid group by column: ' . $group);
+                        throw new \InvalidArgumentException('Invalid group by column: '.$group);
                     }
                 }
 
@@ -96,14 +97,14 @@ abstract class SecureModel extends Model
              */
             public function having($column, $operator = null, $value = null, $boolean = 'and')
             {
-                if (is_string($column) && !$this->isValidColumn($column)) {
+                if (is_string($column) && ! $this->isValidColumn($column)) {
                     Log::warning('SQL Injection attempt in having', [
                         'column' => $column,
                         'operator' => $operator,
                         'value' => $value,
                         'model' => get_class($this->model),
                     ]);
-                    throw new \InvalidArgumentException('Invalid column name in having: ' . $column);
+                    throw new \InvalidArgumentException('Invalid column name in having: '.$column);
                 }
 
                 return parent::having($column, $operator, $value, $boolean);
@@ -114,7 +115,7 @@ abstract class SecureModel extends Model
              */
             private function isValidColumn($column): bool
             {
-                if (!is_string($column)) {
+                if (! is_string($column)) {
                     return true;
                 }
 
@@ -126,7 +127,7 @@ abstract class SecureModel extends Model
                 // If column has table prefix (common in joins/pivots), allow it
                 // but still check for dangerous characters
                 if (count($parts) > 1) {
-                    return !preg_match('/[;\'"`\\x00\\n\\r]/', $columnName);
+                    return ! preg_match('/[;\'"`\\x00\\n\\r]/', $columnName);
                 }
 
                 // Check if column contains dangerous characters
@@ -146,6 +147,7 @@ abstract class SecureModel extends Model
                     // Basic validation for SQL functions
                     $allowedFunctions = ['COUNT', 'SUM', 'AVG', 'MAX', 'MIN', 'DATE', 'TIME', 'YEAR', 'MONTH'];
                     $functionName = strtoupper(explode('(', $column)[0]);
+
                     return in_array($functionName, $allowedFunctions);
                 }
 
@@ -157,7 +159,7 @@ abstract class SecureModel extends Model
              */
             private function isValidValue($value): bool
             {
-                if (!is_string($value)) {
+                if (! is_string($value)) {
                     return true;
                 }
 
@@ -186,7 +188,7 @@ abstract class SecureModel extends Model
      */
     public function scopeForUser(Builder $query, $userId): Builder
     {
-        if (!is_numeric($userId) || $userId <= 0) {
+        if (! is_numeric($userId) || $userId <= 0) {
             throw new \InvalidArgumentException('Invalid user ID');
         }
 
@@ -196,7 +198,7 @@ abstract class SecureModel extends Model
     /**
      * Secure scope for pagination
      */
-    public function scopeSecurePaginate(Builder $query, int $perPage = 15): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    public function scopeSecurePaginate(Builder $query, int $perPage = 15): LengthAwarePaginator
     {
         if ($perPage < 1 || $perPage > 100) {
             $perPage = 15;

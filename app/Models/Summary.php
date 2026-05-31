@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Carbon\Carbon;
 
 class Summary extends Model
 {
@@ -26,7 +25,7 @@ class Summary extends Model
         'processing_time_ms',
         'error_message',
     ];
-    
+
     protected $casts = [
         'word_count' => 'integer',
         'key_points' => 'array',
@@ -34,17 +33,17 @@ class Summary extends Model
         'processing_completed_at' => 'datetime',
         'processing_time_ms' => 'integer',
     ];
-    
+
     public function article(): BelongsTo
     {
         return $this->belongsTo(Article::class);
     }
-    
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
-    
+
     /**
      * Check if summary is completed
      */
@@ -52,7 +51,7 @@ class Summary extends Model
     {
         return $this->status === 'completed';
     }
-    
+
     /**
      * Check if summary is processing
      */
@@ -60,7 +59,7 @@ class Summary extends Model
     {
         return $this->status === 'processing' || $this->status === 'pending';
     }
-    
+
     /**
      * Check if summary failed
      */
@@ -68,27 +67,27 @@ class Summary extends Model
     {
         return $this->status === 'failed';
     }
-    
+
     /**
      * Get processing time in human readable format
      */
     public function getProcessingTimeHumanAttribute(): string
     {
-        if (!$this->processing_time_ms) {
+        if (! $this->processing_time_ms) {
             return 'N/A';
         }
-        
+
         $seconds = $this->processing_time_ms / 1000;
-        
+
         if ($seconds < 1) {
-            return $this->processing_time_ms . 'ms';
+            return $this->processing_time_ms.'ms';
         } elseif ($seconds < 60) {
-            return round($seconds, 2) . 's';
+            return round($seconds, 2).'s';
         } else {
-            return round($seconds / 60, 2) . 'min';
+            return round($seconds / 60, 2).'min';
         }
     }
-    
+
     /**
      * Get formatted summary with key points
      */
@@ -100,10 +99,10 @@ class Summary extends Model
             'word_count' => $this->word_count,
             'source' => $this->source,
             'type' => $this->type,
-            'processing_time' => $this->processing_time_human
+            'processing_time' => $this->processing_time_human,
         ];
     }
-    
+
     /**
      * Scope for completed summaries
      */
@@ -111,7 +110,7 @@ class Summary extends Model
     {
         return $query->where('status', 'completed');
     }
-    
+
     /**
      * Scope for processing summaries
      */
@@ -119,7 +118,7 @@ class Summary extends Model
     {
         return $query->whereIn('status', ['processing', 'pending']);
     }
-    
+
     /**
      * Scope for failed summaries
      */
@@ -127,7 +126,7 @@ class Summary extends Model
     {
         return $query->where('status', 'failed');
     }
-    
+
     /**
      * Scope for AI generated summaries
      */
@@ -135,7 +134,7 @@ class Summary extends Model
     {
         return $query->where('type', 'ai_generated');
     }
-    
+
     /**
      * Scope for manual summaries
      */

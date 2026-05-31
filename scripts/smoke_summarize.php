@@ -1,20 +1,25 @@
 <?php
 
-require __DIR__ . '/../vendor/autoload.php';
+use App\Models\Article;
+use App\Models\User;
+use App\Services\SummarizationService;
+use Illuminate\Contracts\Console\Kernel;
 
-$app = require __DIR__ . '/../bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+require __DIR__.'/../vendor/autoload.php';
+
+$app = require __DIR__.'/../bootstrap/app.php';
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
-$user = App\Models\User::query()->first();
-$article = App\Models\Article::query()->first();
+$user = User::query()->first();
+$article = Article::query()->first();
 
-if (!$user || !$article) {
+if (! $user || ! $article) {
     fwrite(STDERR, "Need at least 1 user and 1 article in DB\n");
     exit(2);
 }
 
-$svc = $app->make(App\Services\SummarizationService::class);
+$svc = $app->make(SummarizationService::class);
 
 $options = [
     'prefer_ai' => false,
@@ -27,17 +32,16 @@ $second = $svc->generateSummary($article->id, $user->id, $options);
 
 echo "article_id={$article->id}\n";
 echo "user_id={$user->id}\n";
-echo "first_success=" . (($first['success'] ?? false) ? 'true' : 'false') . "\n";
-echo "first_source=" . ($first['source'] ?? '') . "\n";
+echo 'first_success='.(($first['success'] ?? false) ? 'true' : 'false')."\n";
+echo 'first_source='.($first['source'] ?? '')."\n";
 if (($first['success'] ?? false) && isset($first['summary'])) {
     echo "first_summary_id={$first['summary']->id}\n";
     echo "first_word_count={$first['summary']->word_count}\n";
 }
 
-echo "second_success=" . (($second['success'] ?? false) ? 'true' : 'false') . "\n";
-echo "second_source=" . ($second['source'] ?? '') . "\n";
+echo 'second_success='.(($second['success'] ?? false) ? 'true' : 'false')."\n";
+echo 'second_source='.($second['source'] ?? '')."\n";
 if (($second['success'] ?? false) && isset($second['summary'])) {
     echo "second_summary_id={$second['summary']->id}\n";
     echo "second_word_count={$second['summary']->word_count}\n";
 }
-

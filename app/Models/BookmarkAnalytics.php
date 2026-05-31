@@ -23,12 +23,12 @@ class BookmarkAnalytics extends Model
         'session_id',
         'ip_address',
         'user_agent',
-        'occurred_at'
+        'occurred_at',
     ];
 
     protected $casts = [
         'metadata' => 'array',
-        'occurred_at' => 'datetime'
+        'occurred_at' => 'datetime',
     ];
 
     /**

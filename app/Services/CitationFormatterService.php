@@ -21,7 +21,7 @@ class CitationFormatterService
     public function formatBibliography(Collection $articles, string $style = 'apa'): array
     {
         $citations = [];
-        
+
         foreach ($articles as $article) {
             $citations[] = $this->formatCitation($article, $style);
         }
@@ -34,7 +34,7 @@ class CitationFormatterService
         // Add numbering for IEEE
         if ($style === 'ieee') {
             foreach ($citations as $index => $citation) {
-                $citations[$index]['formatted'] = '[' . ($index + 1) . '] ' . $citation['formatted'];
+                $citations[$index]['formatted'] = '['.($index + 1).'] '.$citation['formatted'];
             }
         }
 
@@ -47,7 +47,7 @@ class CitationFormatterService
     public function formatCitation(Article $article, string $style = 'apa'): array
     {
         $metadata = $article->metadata ?? [];
-        
+
         $data = [
             'author' => $this->extractAuthor($metadata, $article),
             'year' => $this->extractYear($metadata, $article),
@@ -84,12 +84,12 @@ class CitationFormatterService
     protected function extractAuthor(array $metadata, Article $article): string
     {
         // Try metadata first
-        if (!empty($metadata['author'])) {
+        if (! empty($metadata['author'])) {
             return $metadata['author'];
         }
 
         // Try OpenGraph author
-        if (!empty($metadata['og_author'])) {
+        if (! empty($metadata['og_author'])) {
             return $metadata['og_author'];
         }
 
@@ -114,11 +114,11 @@ class CitationFormatterService
      */
     protected function extractYear(array $metadata, Article $article): string
     {
-        if (!empty($metadata['year'])) {
+        if (! empty($metadata['year'])) {
             return $metadata['year'];
         }
 
-        if (!empty($metadata['published_date'])) {
+        if (! empty($metadata['published_date'])) {
             return date('Y', strtotime($metadata['published_date']));
         }
 
@@ -138,15 +138,15 @@ class CitationFormatterService
      */
     protected function extractJournal(array $metadata, Article $article): string
     {
-        if (!empty($metadata['journal'])) {
+        if (! empty($metadata['journal'])) {
             return $metadata['journal'];
         }
 
-        if (!empty($metadata['publication'])) {
+        if (! empty($metadata['publication'])) {
             return $metadata['publication'];
         }
 
-        if (!empty($metadata['og_site_name'])) {
+        if (! empty($metadata['og_site_name'])) {
             return $metadata['og_site_name'];
         }
 
@@ -158,27 +158,27 @@ class CitationFormatterService
      */
     protected function formatAPA(array $data): string
     {
-        $citation = $data['author'] . ' (' . $data['year'] . '). ';
-        $citation .= $data['title'] . '. ';
+        $citation = $data['author'].' ('.$data['year'].'). ';
+        $citation .= $data['title'].'. ';
         $citation .= $data['journal'];
 
         if ($data['volume']) {
-            $citation .= ', ' . $data['volume'];
+            $citation .= ', '.$data['volume'];
             if ($data['issue']) {
-                $citation .= '(' . $data['issue'] . ')';
+                $citation .= '('.$data['issue'].')';
             }
         }
 
         if ($data['pages']) {
-            $citation .= ', ' . $data['pages'];
+            $citation .= ', '.$data['pages'];
         }
 
         $citation .= '.';
 
         if ($data['doi']) {
-            $citation .= ' https://doi.org/' . $data['doi'];
+            $citation .= ' https://doi.org/'.$data['doi'];
         } elseif ($data['url']) {
-            $citation .= ' ' . $data['url'];
+            $citation .= ' '.$data['url'];
         }
 
         return $citation;
@@ -189,28 +189,28 @@ class CitationFormatterService
      */
     protected function formatMLA(array $data): string
     {
-        $citation = $data['author'] . '. ';
-        $citation .= '"' . $data['title'] . '." ';
+        $citation = $data['author'].'. ';
+        $citation .= '"'.$data['title'].'." ';
         $citation .= $data['journal'];
 
         if ($data['volume']) {
-            $citation .= ', vol. ' . $data['volume'];
+            $citation .= ', vol. '.$data['volume'];
         }
 
         if ($data['issue']) {
-            $citation .= ', no. ' . $data['issue'];
+            $citation .= ', no. '.$data['issue'];
         }
 
-        $citation .= ', ' . $data['year'];
+        $citation .= ', '.$data['year'];
 
         if ($data['pages']) {
-            $citation .= ', pp. ' . $data['pages'];
+            $citation .= ', pp. '.$data['pages'];
         }
 
         $citation .= '.';
 
         if ($data['url']) {
-            $citation .= ' ' . $data['url'] . '.';
+            $citation .= ' '.$data['url'].'.';
         }
 
         return $citation;
@@ -228,33 +228,33 @@ class CitationFormatterService
         $initials = '';
         if ($firstName) {
             foreach (explode(' ', $firstName) as $name) {
-                $initials .= strtoupper($name[0]) . '. ';
+                $initials .= strtoupper($name[0]).'. ';
             }
         }
-        $author = trim($initials . ' ' . $lastName);
+        $author = trim($initials.' '.$lastName);
 
-        $citation = $author . ', ';
-        $citation .= '"' . $data['title'] . '," ';
+        $citation = $author.', ';
+        $citation .= '"'.$data['title'].'," ';
         $citation .= $data['journal'];
 
         if ($data['volume']) {
-            $citation .= ', vol. ' . $data['volume'];
+            $citation .= ', vol. '.$data['volume'];
         }
 
         if ($data['issue']) {
-            $citation .= ', no. ' . $data['issue'];
+            $citation .= ', no. '.$data['issue'];
         }
 
         if ($data['pages']) {
-            $citation .= ', pp. ' . $data['pages'];
+            $citation .= ', pp. '.$data['pages'];
         }
 
-        $citation .= ', ' . $data['year'] . '.';
+        $citation .= ', '.$data['year'].'.';
 
         if ($data['doi']) {
-            $citation .= ' doi: ' . $data['doi'] . '.';
+            $citation .= ' doi: '.$data['doi'].'.';
         } elseif ($data['url']) {
-            $citation .= ' [Online]. Available: ' . $data['url'] . '.';
+            $citation .= ' [Online]. Available: '.$data['url'].'.';
         }
 
         return $citation;
@@ -265,29 +265,29 @@ class CitationFormatterService
      */
     protected function formatChicago(array $data): string
     {
-        $citation = $data['author'] . '. ';
-        $citation .= '"' . $data['title'] . '." ';
+        $citation = $data['author'].'. ';
+        $citation .= '"'.$data['title'].'." ';
         $citation .= $data['journal'];
 
         if ($data['volume']) {
-            $citation .= ' ' . $data['volume'];
+            $citation .= ' '.$data['volume'];
             if ($data['issue']) {
-                $citation .= ', no. ' . $data['issue'];
+                $citation .= ', no. '.$data['issue'];
             }
         }
 
-        $citation .= ' (' . $data['year'] . ')';
+        $citation .= ' ('.$data['year'].')';
 
         if ($data['pages']) {
-            $citation .= ': ' . $data['pages'];
+            $citation .= ': '.$data['pages'];
         }
 
         $citation .= '.';
 
         if ($data['doi']) {
-            $citation .= ' https://doi.org/' . $data['doi'];
+            $citation .= ' https://doi.org/'.$data['doi'];
         } elseif ($data['url']) {
-            $citation .= ' ' . $data['url'];
+            $citation .= ' '.$data['url'];
         }
 
         return $citation;
@@ -298,27 +298,27 @@ class CitationFormatterService
      */
     protected function formatHarvard(array $data): string
     {
-        $citation = $data['author'] . ', ' . $data['year'] . '. ';
-        $citation .= $data['title'] . '. ';
+        $citation = $data['author'].', '.$data['year'].'. ';
+        $citation .= $data['title'].'. ';
         $citation .= $data['journal'];
 
         if ($data['volume']) {
-            $citation .= ', ' . $data['volume'];
+            $citation .= ', '.$data['volume'];
             if ($data['issue']) {
-                $citation .= '(' . $data['issue'] . ')';
+                $citation .= '('.$data['issue'].')';
             }
         }
 
         if ($data['pages']) {
-            $citation .= ', pp.' . $data['pages'];
+            $citation .= ', pp.'.$data['pages'];
         }
 
         $citation .= '.';
 
         if ($data['doi']) {
-            $citation .= ' Available at: https://doi.org/' . $data['doi'];
+            $citation .= ' Available at: https://doi.org/'.$data['doi'];
         } elseif ($data['url']) {
-            $citation .= ' Available at: ' . $data['url'];
+            $citation .= ' Available at: '.$data['url'];
         }
 
         return $citation;
@@ -330,40 +330,40 @@ class CitationFormatterService
     public function exportToBibTeX(Collection $articles): string
     {
         $output = '';
-        
+
         foreach ($articles as $index => $article) {
             $metadata = $article->metadata ?? [];
             $author = $this->extractAuthor($metadata, $article);
             $year = $this->extractYear($metadata, $article);
             $title = $article->title ?? 'Untitled';
             $journal = $this->extractJournal($metadata, $article);
-            
+
             // Create citation key from author last name + year
             $authorParts = explode(', ', $author);
             $lastName = strtolower($authorParts[0]);
             $lastName = preg_replace('/[^a-z]/', '', $lastName);
-            $citeKey = $lastName . $year . $index;
+            $citeKey = $lastName.$year.$index;
 
-            $output .= "@article{" . $citeKey . ",\n";
-            $output .= "  author = {" . $author . "},\n";
-            $output .= "  title = {" . $title . "},\n";
-            $output .= "  journal = {" . $journal . "},\n";
-            $output .= "  year = {" . $year . "},\n";
+            $output .= '@article{'.$citeKey.",\n";
+            $output .= '  author = {'.$author."},\n";
+            $output .= '  title = {'.$title."},\n";
+            $output .= '  journal = {'.$journal."},\n";
+            $output .= '  year = {'.$year."},\n";
 
-            if (!empty($metadata['volume'])) {
-                $output .= "  volume = {" . $metadata['volume'] . "},\n";
+            if (! empty($metadata['volume'])) {
+                $output .= '  volume = {'.$metadata['volume']."},\n";
             }
-            if (!empty($metadata['issue'])) {
-                $output .= "  number = {" . $metadata['issue'] . "},\n";
+            if (! empty($metadata['issue'])) {
+                $output .= '  number = {'.$metadata['issue']."},\n";
             }
-            if (!empty($metadata['pages'])) {
-                $output .= "  pages = {" . $metadata['pages'] . "},\n";
+            if (! empty($metadata['pages'])) {
+                $output .= '  pages = {'.$metadata['pages']."},\n";
             }
-            if (!empty($metadata['doi'])) {
-                $output .= "  doi = {" . $metadata['doi'] . "},\n";
+            if (! empty($metadata['doi'])) {
+                $output .= '  doi = {'.$metadata['doi']."},\n";
             }
             if ($article->source_url) {
-                $output .= "  url = {" . $article->source_url . "},\n";
+                $output .= '  url = {'.$article->source_url."},\n";
             }
 
             $output .= "}\n\n";
@@ -378,12 +378,12 @@ class CitationFormatterService
     public function exportToText(Collection $articles, string $style = 'apa'): string
     {
         $citations = $this->formatBibliography($articles, $style);
-        
-        $output = "Daftar Pustaka (Style: " . self::STYLES[$style] . ")\n";
-        $output .= str_repeat('=', 60) . "\n\n";
+
+        $output = 'Daftar Pustaka (Style: '.self::STYLES[$style].")\n";
+        $output .= str_repeat('=', 60)."\n\n";
 
         foreach ($citations as $index => $citation) {
-            $output .= ($index + 1) . '. ' . $citation['formatted'] . "\n\n";
+            $output .= ($index + 1).'. '.$citation['formatted']."\n\n";
         }
 
         return $output;

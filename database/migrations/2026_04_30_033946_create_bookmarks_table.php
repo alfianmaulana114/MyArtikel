@@ -19,7 +19,7 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->enum('category', ['read_later', 'favorite', 'reference'])->default('read_later');
             $table->timestamps();
-            
+
             $table->unique(['user_id', 'article_id']);
             $table->index('user_id');
             $table->index('category');

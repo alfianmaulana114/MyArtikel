@@ -2,12 +2,13 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
-use App\Services\SsrfProtectionService;
 use App\Services\FileUploadSecurityService;
-use Illuminate\Support\Facades\Validator;
+use App\Services\SsrfProtectionService;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\ServiceProvider;
 
 class SecurityServiceProvider extends ServiceProvider
 {
@@ -17,11 +18,11 @@ class SecurityServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(SsrfProtectionService::class, function ($app) {
-            return new SsrfProtectionService();
+            return new SsrfProtectionService;
         });
 
         $this->app->singleton(FileUploadSecurityService::class, function ($app) {
-            return new FileUploadSecurityService();
+            return new FileUploadSecurityService;
         });
     }
 
@@ -43,32 +44,33 @@ class SecurityServiceProvider extends ServiceProvider
         // SSRF Protection Validator
         Validator::extend('ssrf_safe', function ($attribute, $value, $parameters, $validator) {
             $ssrfService = app(SsrfProtectionService::class);
+
             return $ssrfService->validateUrl($value);
         });
 
         Validator::replacer('ssrf_safe', function ($message, $attribute, $rule, $parameters) {
-            return 'The ' . $attribute . ' field contains an unsafe URL.';
+            return 'The '.$attribute.' field contains an unsafe URL.';
         });
 
         // Secure File Upload Validator
         Validator::extend('secure_file', function ($attribute, $value, $parameters, $validator) {
-            if (!$value instanceof \Illuminate\Http\UploadedFile) {
+            if (! $value instanceof UploadedFile) {
                 return false;
             }
 
             $fileSecurityService = app(FileUploadSecurityService::class);
             $result = $fileSecurityService->validateUpload($value);
-            
+
             return $result['valid'];
         });
 
         Validator::replacer('secure_file', function ($message, $attribute, $rule, $parameters) {
-            return 'The ' . $attribute . ' field contains an insecure file.';
+            return 'The '.$attribute.' field contains an insecure file.';
         });
 
         // No Script Validator
         Validator::extend('no_script', function ($attribute, $value, $parameters, $validator) {
-            if (!is_string($value)) {
+            if (! is_string($value)) {
                 return true;
             }
 
@@ -90,7 +92,7 @@ class SecurityServiceProvider extends ServiceProvider
         });
 
         Validator::replacer('no_script', function ($message, $attribute, $rule, $parameters) {
-            return 'The ' . $attribute . ' field contains potentially dangerous content.';
+            return 'The '.$attribute.' field contains potentially dangerous content.';
         });
     }
 
@@ -99,7 +101,7 @@ class SecurityServiceProvider extends ServiceProvider
      */
     private function setupSqlInjectionProtection(): void
     {
-        if (!config('security.sql_injection_protection.enabled')) {
+        if (! config('security.sql_injection_protection.enabled')) {
             return;
         }
 
@@ -149,7 +151,7 @@ class SecurityServiceProvider extends ServiceProvider
      */
     private function setupSecurityLogging(): void
     {
-        if (!config('security.logging.log_security_events')) {
+        if (! config('security.logging.log_security_events')) {
             return;
         }
 

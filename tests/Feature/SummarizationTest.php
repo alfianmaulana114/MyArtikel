@@ -2,17 +2,18 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\User;
 use App\Models\Article;
 use App\Models\Summary;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class SummarizationTest extends TestCase
 {
     use RefreshDatabase;
 
     private User $user;
+
     private Article $article;
 
     protected function setUp(): void
@@ -46,17 +47,10 @@ class SummarizationTest extends TestCase
                     'content',
                     'word_count',
                     'key_points',
-                    'source',
                     'status',
                 ],
-                'source',
                 'message',
             ]);
-
-        $this->assertTrue(
-            in_array($response->json('source'), ['local', 'cache']),
-            'Source should be local or cache'
-        );
         $this->assertDatabaseHas('summaries', [
             'article_id' => $this->article->id,
             'user_id' => $this->user->id,
@@ -129,7 +123,6 @@ class SummarizationTest extends TestCase
                 'data' => [
                     'id',
                     'status',
-                    'source',
                 ],
             ]);
     }
@@ -291,6 +284,5 @@ class SummarizationTest extends TestCase
         $summary2 = $response2->json('data');
 
         $this->assertEquals($summary1['content'], $summary2['content']);
-        $this->assertEquals('cache', $response2->json('source'));
     }
 }

@@ -23,7 +23,7 @@ class SecurityHeaders
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -35,20 +35,29 @@ class SecurityHeaders
         $response->headers->set('X-XSS-Protection', '1; mode=block');
         $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
-        
+
         // Content Security Policy
         $response->headers->set('Content-Security-Policy', implode('; ', $this->cspDirectives));
-        
+
         // Additional security headers
         $response->headers->set('X-Permitted-Cross-Domain-Policies', 'none');
         $response->headers->set('X-Download-Options', 'noopen');
-        $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
-        $response->headers->set('Pragma', 'no-cache');
-        $response->headers->set('Expires', '0');
-        
+
+        // Only set no-cache for HTML/text responses, not static assets
+        $contentType = $response->headers->get('Content-Type', '');
+        $isStaticAsset = str_contains($contentType, 'javascript')
+            || str_contains($contentType, 'css')
+            || str_contains($contentType, 'image/')
+            || str_contains($contentType, 'font/');
+        if (! $isStaticAsset) {
+            $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+            $response->headers->set('Pragma', 'no-cache');
+            $response->headers->set('Expires', '0');
+        }
+
         // Remove server header to hide Laravel version
         $response->headers->remove('X-Powered-By');
-        
+
         return $response;
     }
 }

@@ -19,7 +19,7 @@ return new class extends Migration
             $table->timestamp('processing_completed_at')->nullable()->after('processing_started_at');
             $table->integer('processing_time_ms')->nullable()->after('processing_completed_at');
             $table->text('error_message')->nullable()->after('processing_time_ms');
-            
+
             $table->index('source');
             $table->index('status');
             $table->index('cache_key');
@@ -34,12 +34,12 @@ return new class extends Migration
         Schema::table('summaries', function (Blueprint $table) {
             $table->dropColumn([
                 'source',
-                'status', 
+                'status',
                 'cache_key',
                 'processing_started_at',
                 'processing_completed_at',
                 'processing_time_ms',
-                'error_message'
+                'error_message',
             ]);
         });
     }

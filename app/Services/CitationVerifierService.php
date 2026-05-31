@@ -23,8 +23,8 @@ class CitationVerifierService
     /**
      * Verify citations against original text.
      *
-     * @param array $citations Array of ['quote'=>string, 'relevance'=>string, 'position'=>string]
-     * @param string $originalText Full original text from article/PDF
+     * @param  array  $citations  Array of ['quote'=>string, 'relevance'=>string, 'position'=>string]
+     * @param  string  $originalText  Full original text from article/PDF
      * @return array Verified citations with exact quotes from original text
      */
     public function verify(array $citations, string $originalText): array
@@ -47,6 +47,7 @@ class CitationVerifierService
             if ($result['found']) {
                 $verified[] = [
                     'quote' => $result['exact_quote'],
+                    'paraphrase' => $citation['paraphrase'] ?? null,
                     'relevance' => $citation['relevance'] ?? '',
                     'position' => $citation['position'] ?? '',
                     'context' => $result['context'],
@@ -58,6 +59,7 @@ class CitationVerifierService
                 if ($fuzzy['found']) {
                     $verified[] = [
                         'quote' => $fuzzy['exact_quote'],
+                        'paraphrase' => $citation['paraphrase'] ?? null,
                         'relevance' => $citation['relevance'] ?? '',
                         'position' => $citation['position'] ?? '',
                         'context' => $fuzzy['context'],
@@ -154,6 +156,7 @@ class CitationVerifierService
 
         if ($bestSimilarity >= $this->minSimilarity && $bestIndex >= 0) {
             $pos = mb_strpos($originalText, $bestSentence);
+
             return [
                 'found' => true,
                 'exact_quote' => $bestSentence,
@@ -172,6 +175,7 @@ class CitationVerifierService
     {
         $start = max(0, $pos - $this->contextRadius);
         $end = min(mb_strlen($text), $pos + $len + $this->contextRadius);
+
         return mb_substr($text, $start, $end - $start);
     }
 
@@ -182,6 +186,7 @@ class CitationVerifierService
     {
         // Trim and reduce whitespace
         $text = preg_replace('/\s+/', ' ', trim($text));
+
         return $text;
     }
 
@@ -207,6 +212,7 @@ class CitationVerifierService
                 $result[] = $s;
             }
         }
+
         return $result;
     }
 
@@ -224,8 +230,10 @@ class CitationVerifierService
             while ($origEnd < mb_strlen($original) && preg_match('/\s/', mb_substr($original, $origEnd, 1))) {
                 $origEnd++;
             }
+
             return mb_substr($original, $origPos, min($origEnd - $origPos + 20, mb_strlen($original) - $origPos));
         }
+
         return mb_substr($original, 0, min($relaxedLen + 50, mb_strlen($original)));
     }
 
@@ -245,6 +253,7 @@ class CitationVerifierService
         if ($pos !== false) {
             return $pos;
         }
+
         return null;
     }
 
@@ -287,6 +296,7 @@ class CitationVerifierService
         if ($start !== null && $end !== null && $end > $start) {
             return $end - $start;
         }
+
         return (int) ($cleanLen * 1.15) + 10;
     }
 }

@@ -2,23 +2,25 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\User;
+use App\Http\Middleware\HtmlSanitizationMiddleware;
 use App\Models\Article;
 use App\Models\Note;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class NoteTest extends TestCase
 {
     use RefreshDatabase;
 
     private User $user;
+
     private Article $article;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->withoutMiddleware(\App\Http\Middleware\HtmlSanitizationMiddleware::class);
+        $this->withoutMiddleware(HtmlSanitizationMiddleware::class);
         $this->user = User::factory()->create();
         $this->article = Article::factory()->create(['user_id' => $this->user->id]);
     }

@@ -12,12 +12,12 @@ class SearchSuggestion extends Model
         'popularity',
         'metadata',
     ];
-    
+
     protected $casts = [
         'popularity' => 'integer',
         'metadata' => 'array',
     ];
-    
+
     /**
      * Scope for popular suggestions
      */
@@ -25,7 +25,7 @@ class SearchSuggestion extends Model
     {
         return $query->orderByDesc('popularity')->limit($limit);
     }
-    
+
     /**
      * Scope for query type suggestions
      */
@@ -33,7 +33,7 @@ class SearchSuggestion extends Model
     {
         return $query->where('type', 'query');
     }
-    
+
     /**
      * Scope for tag type suggestions
      */
@@ -41,7 +41,7 @@ class SearchSuggestion extends Model
     {
         return $query->where('type', 'tag');
     }
-    
+
     /**
      * Scope for content type suggestions
      */
@@ -49,7 +49,7 @@ class SearchSuggestion extends Model
     {
         return $query->where('type', 'content');
     }
-    
+
     /**
      * Increment popularity
      */

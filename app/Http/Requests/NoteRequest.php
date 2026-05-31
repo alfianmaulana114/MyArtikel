@@ -2,9 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Note;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use App\Models\Note;
 
 class NoteRequest extends FormRequest
 {
@@ -29,26 +29,26 @@ class NoteRequest extends FormRequest
             'content' => ['required_without:content_json', 'string', 'max:10000'],
             'content_json' => ['required_without:content', 'array'],
             'is_rich_text' => ['boolean'],
-            
+
             // Article association
             'article_id' => ['required', 'integer', 'exists:articles,id'],
-            
+
             // Note anchoring
             'paragraph_index' => ['nullable', 'integer', 'min:0'],
             'paragraph_id' => ['nullable', 'string', 'max:255'],
             'start_offset' => ['nullable', 'integer', 'min:0'],
             'end_offset' => ['nullable', 'integer', 'min:0', 'gte:start_offset'],
-            
+
             // Categories and tags
-            'type' => ['nullable', 'in:' . implode(',', [Note::TYPE_PERSONAL, Note::TYPE_RESEARCH, Note::TYPE_DRAFT])],
+            'type' => ['nullable', 'in:'.implode(',', [Note::TYPE_PERSONAL, Note::TYPE_RESEARCH, Note::TYPE_DRAFT])],
             'category' => ['nullable', 'string', 'max:100'],
             'tags' => ['nullable', 'array', 'max:10'],
             'tags.*' => ['string', 'max:50'],
-            
+
             // Privacy and sync
             'is_private' => ['boolean'],
             'device_id' => ['nullable', 'string', 'max:255'],
-            'sync_status' => ['nullable', 'in:' . implode(',', [Note::SYNC_SYNCED, Note::SYNC_PENDING, Note::SYNC_CONFLICT, Note::SYNC_ERROR])],
+            'sync_status' => ['nullable', 'in:'.implode(',', [Note::SYNC_SYNCED, Note::SYNC_PENDING, Note::SYNC_CONFLICT, Note::SYNC_ERROR])],
         ];
     }
 
@@ -97,38 +97,39 @@ class NoteRequest extends FormRequest
             if ($this->input('is_rich_text') && $this->input('content_json')) {
                 $this->validateRichTextContent($validator);
             }
-            
+
             // Validate paragraph anchoring consistency
             $this->validateParagraphAnchoring($validator);
-            
+
             // Additional security checks for note content
             $this->validateContentSecurity($validator);
         });
     }
-    
+
     /**
      * Validate rich text content structure
      */
     protected function validateRichTextContent($validator)
     {
         $contentJson = $this->input('content_json');
-        
-        if (!is_array($contentJson)) {
+
+        if (! is_array($contentJson)) {
             $validator->errors()->add('content_json', 'Rich text content must be a valid array.');
+
             return;
         }
-        
+
         // Basic validation for common rich text formats
         if (isset($contentJson['ops']) && is_array($contentJson['ops'])) {
             // Quill.js format validation
             foreach ($contentJson['ops'] as $index => $op) {
-                if (!isset($op['insert'])) {
+                if (! isset($op['insert'])) {
                     $validator->errors()->add('content_json', "Rich text operation {$index} is missing insert property.");
                 }
             }
         }
     }
-    
+
     /**
      * Validate paragraph anchoring consistency
      */
@@ -138,23 +139,23 @@ class NoteRequest extends FormRequest
         $paragraphId = $this->input('paragraph_id');
         $startOffset = $this->input('start_offset');
         $endOffset = $this->input('end_offset');
-        
+
         // If any anchoring field is provided, validate consistency
-        if (!is_null($paragraphIndex) || !is_null($paragraphId)) {
+        if (! is_null($paragraphIndex) || ! is_null($paragraphId)) {
             if (is_null($paragraphIndex) || is_null($paragraphId)) {
                 $validator->errors()->add('paragraph_index', 'Both paragraph index and paragraph ID are required for anchoring.');
             }
-            
-            if (!is_null($startOffset) && is_null($endOffset)) {
+
+            if (! is_null($startOffset) && is_null($endOffset)) {
                 $validator->errors()->add('end_offset', 'End offset is required when start offset is provided.');
             }
-            
-            if (!is_null($endOffset) && is_null($startOffset)) {
+
+            if (! is_null($endOffset) && is_null($startOffset)) {
                 $validator->errors()->add('start_offset', 'Start offset is required when end offset is provided.');
             }
         }
     }
-    
+
     /**
      * Validate content security
      */
@@ -162,9 +163,9 @@ class NoteRequest extends FormRequest
     {
         $content = $this->input('content');
         $contentJson = $this->input('content_json');
-        
+
         $contentToCheck = $content ?? json_encode($contentJson);
-        
+
         if ($contentToCheck) {
             // Check for potentially dangerous content
             $dangerousPatterns = [
@@ -178,14 +179,14 @@ class NoteRequest extends FormRequest
                 '/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/is',
                 '/<form\b[^<]*(?:(?!<\/form>)<[^<]*)*<\/form>/is',
             ];
-            
+
             foreach ($dangerousPatterns as $pattern) {
                 if (preg_match($pattern, $contentToCheck)) {
                     $validator->errors()->add('content', 'The note content contains potentially dangerous HTML or JavaScript.');
                     break;
                 }
             }
-            
+
             // Check for excessive special characters that might indicate injection attempts
             if (substr_count($contentToCheck, '<') > 100 || substr_count($contentToCheck, '>') > 100) {
                 $validator->errors()->add('content', 'The note content contains too many HTML tags.');

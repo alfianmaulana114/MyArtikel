@@ -20,7 +20,7 @@ return new class extends Migration
             $table->enum('type', ['personal', 'research', 'draft'])->default('personal');
             $table->boolean('is_private')->default(false);
             $table->timestamps();
-            
+
             $table->index('user_id');
             $table->index('article_id');
             $table->index('type');

@@ -15,7 +15,7 @@ return new class extends Migration
             $table->enum('role', ['reference', 'citation', 'inspiration', 'primary'])->default('reference');
             $table->text('notes')->nullable();
             $table->timestamps();
-            
+
             $table->unique(['project_id', 'article_id']);
             $table->index(['project_id', 'role']);
         });

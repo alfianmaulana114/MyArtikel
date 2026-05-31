@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\Bookmark;
 use App\Models\Article;
+use App\Models\Bookmark;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 

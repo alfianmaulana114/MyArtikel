@@ -17,7 +17,7 @@ class DatabaseSeeder extends Seeder
     {
         // Call AdminSeeder for authentication testing
         $this->call(AdminSeeder::class);
-        
+
         // User::factory(10)->create();
 
         User::factory()->create([

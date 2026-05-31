@@ -9,16 +9,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('articles', function (Blueprint $table) {
-            if (!Schema::hasColumn('articles', 'source_type')) {
+            if (! Schema::hasColumn('articles', 'source_type')) {
                 $table->string('source_type', 10)->default('url')->after('source_domain');
             }
-            if (!Schema::hasColumn('articles', 'file_path')) {
+            if (! Schema::hasColumn('articles', 'file_path')) {
                 $table->string('file_path')->nullable()->after('source_type');
             }
-            if (!Schema::hasColumn('articles', 'research_title')) {
+            if (! Schema::hasColumn('articles', 'research_title')) {
                 $table->string('research_title')->nullable()->after('file_path');
             }
-            if (!Schema::hasColumn('articles', 'ai_quotation_suggestions')) {
+            if (! Schema::hasColumn('articles', 'ai_quotation_suggestions')) {
                 $table->json('ai_quotation_suggestions')->nullable()->after('metadata');
             }
         });

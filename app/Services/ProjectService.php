@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\Article;
 use App\Models\Project;
 use App\Models\ProjectOutline;
-use App\Models\Article;
 use Illuminate\Support\Facades\Auth;
 
 class ProjectService
@@ -58,9 +58,9 @@ class ProjectService
      */
     public function generateOutlineWithAI(Project $project, string $topic, string $language = 'id'): array
     {
-        $geminiService = app(\App\Services\GeminiSummarizationService::class);
+        $geminiService = app(GeminiSummarizationService::class);
 
-        if (!$geminiService->isAvailable()) {
+        if (! $geminiService->isAvailable()) {
             throw new \Exception('AI service tidak tersedia');
         }
 
@@ -75,7 +75,7 @@ class ProjectService
 
         if ($result['success']) {
             $outlines = $this->parseOutlineResponse($result['content'], $project->id);
-            
+
             return [
                 'success' => true,
                 'outlines' => $outlines,
@@ -95,7 +95,7 @@ class ProjectService
     protected function buildOutlinePrompt(string $topic, string $language): string
     {
         $lang = $language === 'id' ? 'Bahasa Indonesia' : 'English';
-        
+
         return <<<PROMPT
 Buat outline makalah untuk: "{$topic}"
 {$lang}, maks 8 sections.
@@ -111,20 +111,22 @@ PROMPT;
     {
         // Extract JSON from markdown if needed
         $json = $this->extractJson($content);
-        
-        if (!$json) {
+
+        if (! $json) {
             throw new \Exception('Response AI tidak valid');
         }
 
         $data = json_decode($json, true);
-        
-        if (!is_array($data)) {
+
+        if (! is_array($data)) {
             throw new \Exception('Format outline tidak valid');
         }
 
         $outlines = [];
         foreach ($data as $index => $item) {
-            if (!isset($item['title'])) continue;
+            if (! isset($item['title'])) {
+                continue;
+            }
 
             $outline = ProjectOutline::create([
                 'project_id' => $projectId,
@@ -164,23 +166,23 @@ PROMPT;
      */
     public function generateSectionDraft(ProjectOutline $outline, array $options = []): array
     {
-        $geminiService = app(\App\Services\GeminiSummarizationService::class);
+        $geminiService = app(GeminiSummarizationService::class);
 
-        if (!$geminiService->isAvailable()) {
+        if (! $geminiService->isAvailable()) {
             throw new \Exception('AI service tidak tersedia');
         }
 
         $project = $outline->project;
         $language = $options['language'] ?? 'id';
-        
+
         // Get only essential context (not full article content)
         $context = $this->buildSectionContext($outline, $options);
-        
+
         // Efficient prompt
         $prompt = $this->buildDraftPrompt($outline, $context, $language);
 
         // Strict token limit based on section type
-        $maxTokens = $options['max_tokens'] ?? match($outline->section_type) {
+        $maxTokens = $options['max_tokens'] ?? match ($outline->section_type) {
             'introduction' => 800,
             'literature_review' => 1000,
             'methodology' => 600,
@@ -215,10 +217,10 @@ PROMPT;
     protected function buildSectionContext(ProjectOutline $outline, array $options): array
     {
         $project = $outline->project;
-        
+
         // Get articles assigned to this project
         $articles = $project->articles()->with('summaries')->limit(5)->get();
-        
+
         $context = [
             'topic' => $project->title,
             'section' => $outline->title,
@@ -229,7 +231,7 @@ PROMPT;
         foreach ($articles as $article) {
             // Only use summaries (cheap), not full content (expensive)
             $latestSummary = $article->summaries()->latest()->first();
-            
+
             $context['articles'][] = [
                 'title' => $article->title,
                 'excerpt' => $article->excerpt,
@@ -252,10 +254,10 @@ PROMPT;
         foreach ($context['articles'] as $idx => $article) {
             $articleContext .= "\n[{$idx}] {$article['title']}";
             if ($article['summary']) {
-                $articleContext .= "\n" . substr($article['summary'], 0, 300);
+                $articleContext .= "\n".substr($article['summary'], 0, 300);
             }
             if ($article['excerpt']) {
-                $articleContext .= "\n" . substr($article['excerpt'], 0, 200);
+                $articleContext .= "\n".substr($article['excerpt'], 0, 200);
             }
         }
 
@@ -273,7 +275,7 @@ PROMPT;
      */
     protected function getWordLimit(string $sectionType): int
     {
-        return match($sectionType) {
+        return match ($sectionType) {
             'introduction' => 400,
             'literature_review' => 600,
             'methodology' => 350,
@@ -290,7 +292,7 @@ PROMPT;
     {
         $newProject = Project::create([
             'user_id' => Auth::id(),
-            'title' => $project->title . ' (Copy)',
+            'title' => $project->title.' (Copy)',
             'description' => $project->description,
             'status' => 'drafting',
             'deadline' => null,
@@ -326,7 +328,7 @@ PROMPT;
     {
         $articles = $project->articles()->get();
         $wordCount = 0;
-        
+
         foreach ($articles as $article) {
             $content = $article->text_extracted ?: $article->content;
             $wordCount += str_word_count(strip_tags((string) $content) ?: '');

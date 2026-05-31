@@ -59,8 +59,9 @@ return [
             'image/gif',
             'image/webp',
             'image/svg+xml',
+            'application/pdf',
         ],
-        'allowed_extensions' => ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'],
+        'allowed_extensions' => ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'pdf'],
         'max_image_width' => 2048,
         'max_image_height' => 2048,
         'virus_scanning' => true,
@@ -72,7 +73,7 @@ return [
         'allowed_tags' => [
             'p', 'br', 'strong', 'em', 'u', 'i', 'b', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
             'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'a', 'img', 'div', 'span',
-            'table', 'thead', 'tbody', 'tr', 'td', 'th', 'caption'
+            'table', 'thead', 'tbody', 'tr', 'td', 'th', 'caption',
         ],
         'allowed_attributes' => [
             'href' => ['a'],

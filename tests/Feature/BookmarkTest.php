@@ -2,12 +2,13 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\User;
+use App\Http\Middleware\HtmlSanitizationMiddleware;
 use App\Models\Article;
 use App\Models\Bookmark;
 use App\Models\BookmarkCategory;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class BookmarkTest extends TestCase
 {
@@ -18,7 +19,7 @@ class BookmarkTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->withoutMiddleware(\App\Http\Middleware\HtmlSanitizationMiddleware::class);
+        $this->withoutMiddleware(HtmlSanitizationMiddleware::class);
         $this->user = User::factory()->create();
     }
 

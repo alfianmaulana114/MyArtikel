@@ -38,7 +38,7 @@ class Article extends SecureModel
         'view_count',
         'is_featured',
     ];
-    
+
     protected $casts = [
         'published_at' => 'datetime',
         'fetched_at' => 'datetime',
@@ -47,32 +47,32 @@ class Article extends SecureModel
         'metadata' => 'array',
         'ai_quotation_suggestions' => 'array',
     ];
-    
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
-    
+
     public function tags(): BelongsToMany
     {
         return $this->belongsToMany(Tag::class);
     }
-    
+
     public function notes(): HasMany
     {
         return $this->hasMany(Note::class);
     }
-    
+
     public function bookmarks(): HasMany
     {
         return $this->hasMany(Bookmark::class);
     }
-    
+
     public function summaries(): HasMany
     {
         return $this->hasMany(Summary::class);
     }
-    
+
     public function projects(): BelongsToMany
     {
         return $this->belongsToMany(Project::class, 'project_articles')
@@ -86,9 +86,9 @@ class Article extends SecureModel
     public function scopeByStatus($query, string $status)
     {
         $allowedStatuses = ['draft', 'published', 'archived'];
-        
-        if (!in_array($status, $allowedStatuses)) {
-            throw new \InvalidArgumentException('Invalid status: ' . $status);
+
+        if (! in_array($status, $allowedStatuses)) {
+            throw new \InvalidArgumentException('Invalid status: '.$status);
         }
 
         return $query->where('status', $status);
@@ -100,7 +100,7 @@ class Article extends SecureModel
     public function scopeBySlug($query, string $slug)
     {
         // Validate slug format
-        if (!preg_match('/^[a-z0-9-]+$/', $slug)) {
+        if (! preg_match('/^[a-z0-9-]+$/', $slug)) {
             throw new \InvalidArgumentException('Invalid slug format');
         }
 

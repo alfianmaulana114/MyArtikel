@@ -2,10 +2,18 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
+use App\Jobs\ProcessArticleIngestion;
+use App\Jobs\ProcessPdfExport;
+use App\Jobs\ProcessSummaryGeneration;
 use Exception;
+use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\RequestException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class JobRetryService
 {
@@ -24,25 +32,25 @@ class JobRetryService
         $jobClass = $this->getJobClass($job);
         $attempts = $this->getJobAttempts($job);
         $maxAttempts = $this->getMaxAttempts($jobClass);
-        
+
         $retryDecision = $this->shouldRetry($jobClass, $exception, $attempts, $maxAttempts);
-        
-        if (!$retryDecision['should_retry']) {
+
+        if (! $retryDecision['should_retry']) {
             return [
                 'action' => 'discard',
                 'reason' => $retryDecision['reason'],
-                'final_failure' => true
+                'final_failure' => true,
             ];
         }
 
         $retryDelay = $this->calculateRetryDelay($jobClass, $attempts, $exception);
-        
+
         return [
             'action' => 'retry',
             'delay' => $retryDelay,
             'reason' => $retryDecision['reason'],
             'attempt' => $attempts + 1,
-            'max_attempts' => $maxAttempts
+            'max_attempts' => $maxAttempts,
         ];
     }
 
@@ -55,7 +63,7 @@ class JobRetryService
         if ($attempts >= $maxAttempts) {
             return [
                 'should_retry' => false,
-                'reason' => 'Maximum attempts reached'
+                'reason' => 'Maximum attempts reached',
             ];
         }
 
@@ -63,7 +71,7 @@ class JobRetryService
         if ($this->isBusinessLogicException($jobClass, $exception)) {
             return [
                 'should_retry' => false,
-                'reason' => 'Business logic exception - no retry needed'
+                'reason' => 'Business logic exception - no retry needed',
             ];
         }
 
@@ -71,7 +79,7 @@ class JobRetryService
         if ($this->isRetryableException($exception)) {
             return [
                 'should_retry' => true,
-                'reason' => 'Retryable exception type'
+                'reason' => 'Retryable exception type',
             ];
         }
 
@@ -79,7 +87,7 @@ class JobRetryService
         if ($this->hasRetryableErrorPattern($exception)) {
             return [
                 'should_retry' => true,
-                'reason' => 'Retryable error pattern detected'
+                'reason' => 'Retryable error pattern detected',
             ];
         }
 
@@ -87,13 +95,13 @@ class JobRetryService
         if ($this->shouldRetryByDefault($jobClass)) {
             return [
                 'should_retry' => true,
-                'reason' => 'Default retry policy'
+                'reason' => 'Default retry policy',
             ];
         }
 
         return [
             'should_retry' => false,
-            'reason' => 'Exception not retryable'
+            'reason' => 'Exception not retryable',
         ];
     }
 
@@ -103,20 +111,20 @@ class JobRetryService
     public function calculateRetryDelay(string $jobClass, int $attempts, Exception $exception): int
     {
         $strategy = $this->getRetryStrategy($jobClass, $exception);
-        
+
         switch ($strategy) {
             case 'exponential':
                 return $this->exponentialBackoff($attempts);
-                
+
             case 'linear':
                 return $this->linearBackoff($attempts);
-                
+
             case 'fixed':
                 return $this->fixedBackoff($attempts);
-                
+
             case 'custom':
                 return $this->customBackoff($jobClass, $attempts, $exception);
-                
+
             default:
                 return $this->exponentialBackoff($attempts);
         }
@@ -155,11 +163,11 @@ class JobRetryService
     {
         // Get custom backoff configuration for specific job and exception
         $customConfig = $this->getCustomBackoffConfig($jobClass, $exception);
-        
+
         if ($customConfig) {
             return $this->applyCustomBackoff($customConfig, $attempts);
         }
-        
+
         return $this->exponentialBackoff($attempts);
     }
 
@@ -169,9 +177,9 @@ class JobRetryService
     private function isBusinessLogicException(string $jobClass, Exception $exception): bool
     {
         $businessExceptions = [
-            \Illuminate\Validation\ValidationException::class,
-            \Symfony\Component\HttpKernel\Exception\HttpException::class,
-            \Illuminate\Database\Eloquent\ModelNotFoundException::class,
+            ValidationException::class,
+            HttpException::class,
+            ModelNotFoundException::class,
         ];
 
         foreach ($businessExceptions as $businessException) {
@@ -206,11 +214,11 @@ class JobRetryService
     private function isRetryableException(Exception $exception): bool
     {
         $retryableExceptions = [
-            \Illuminate\Http\Client\ConnectionException::class,
+            ConnectionException::class,
             \Illuminate\Http\Client\RequestException::class,
-            \GuzzleHttp\Exception\ConnectException::class,
-            \GuzzleHttp\Exception\RequestException::class,
-            \Illuminate\Database\QueryException::class,
+            ConnectException::class,
+            RequestException::class,
+            QueryException::class,
             \PDOException::class,
         ];
 
@@ -257,12 +265,12 @@ class JobRetryService
     private function getRetryStrategy(string $jobClass, Exception $exception): string
     {
         $jobConfig = $this->getJobConfiguration($jobClass);
-        
+
         // Check for exception-specific strategy
         if (isset($jobConfig['retry_strategies'][$exception::class])) {
             return $jobConfig['retry_strategies'][$exception::class];
         }
-        
+
         // Check for general strategy
         if (isset($jobConfig['retry_strategy'])) {
             return $jobConfig['retry_strategy'];
@@ -282,28 +290,28 @@ class JobRetryService
     private function getJobConfiguration(string $jobClass): array
     {
         $configurations = [
-            \App\Jobs\ProcessSummaryGeneration::class => [
+            ProcessSummaryGeneration::class => [
                 'retry_strategy' => 'exponential',
                 'max_attempts' => 3,
                 'retry_strategies' => [
-                    \Illuminate\Http\Client\ConnectionException::class => 'exponential',
-                    \GuzzleHttp\Exception\RequestException::class => 'linear',
-                ]
+                    ConnectionException::class => 'exponential',
+                    RequestException::class => 'linear',
+                ],
             ],
-            \App\Jobs\ProcessArticleIngestion::class => [
+            ProcessArticleIngestion::class => [
                 'retry_strategy' => 'linear',
                 'max_attempts' => 5,
                 'retry_strategies' => [
-                    \Illuminate\Http\Client\ConnectionException::class => 'exponential',
-                    \GuzzleHttp\Exception\ConnectException::class => 'exponential',
-                ]
+                    ConnectionException::class => 'exponential',
+                    ConnectException::class => 'exponential',
+                ],
             ],
-            \App\Jobs\ProcessPdfExport::class => [
+            ProcessPdfExport::class => [
                 'retry_strategy' => 'fixed',
                 'max_attempts' => 2,
                 'retry_strategies' => [
-                    \Exception::class => 'fixed',
-                ]
+                    Exception::class => 'fixed',
+                ],
             ],
         ];
 
@@ -319,6 +327,7 @@ class JobRetryService
     private function getMaxAttempts(string $jobClass): int
     {
         $config = $this->getJobConfiguration($jobClass);
+
         return $config['max_attempts'] ?? 3;
     }
 
@@ -328,6 +337,7 @@ class JobRetryService
     private function shouldRetryByDefault(string $jobClass): bool
     {
         $config = $this->getJobConfiguration($jobClass);
+
         return $config['retry_by_default'] ?? true;
     }
 
@@ -369,6 +379,7 @@ class JobRetryService
     private function getCustomBackoffConfig(string $jobClass, Exception $exception): ?array
     {
         $config = $this->getJobConfiguration($jobClass);
+
         return $config['custom_backoff'][$exception::class] ?? null;
     }
 

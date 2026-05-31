@@ -4,40 +4,61 @@ namespace App\Http\Controllers;
 
 use App\Models\Article;
 use App\Models\Tag;
+use App\Services\GeminiSummarizationService;
 use App\Services\TagSuggestionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class ArticleController extends Controller
 {
     protected TagSuggestionService $tagSuggestionService;
-    
+
     public function __construct(TagSuggestionService $tagSuggestionService)
     {
         $this->tagSuggestionService = $tagSuggestionService;
     }
-    
+
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
-        return view('articles.index');
+        $user = Auth::user();
+        $articles = Article::query()
+            ->where('user_id', $user->id)
+            ->with(['tags', 'user'])
+            ->withCount(['notes', 'bookmarks'])
+            ->latest()
+            ->paginate(20);
+
+        return view('articles.index', [
+            'articles' => $articles,
+        ]);
     }
 
     public function data(Request $request): JsonResponse
     {
         $user = Auth::user();
         $query = Article::query()->where('user_id', $user->id);
-        
+
         // Filter by status
         if ($request->has('status')) {
-            $query->byStatus($request->status);
+            $status = $request->status;
+            if (in_array($status, ['ready', 'processing', 'failed'])) {
+                if ($status === 'processing') {
+                    $query->whereIn('processing_status', ['queued', 'fetching', 'extracting']);
+                } else {
+                    $query->where('processing_status', $status);
+                }
+            } else {
+                $query->byStatus($status);
+            }
         }
-        
+
         // Filter by tags
         if ($request->has('tags')) {
             $tagIds = is_array($request->tags) ? $request->tags : explode(',', $request->tags);
@@ -45,39 +66,46 @@ class ArticleController extends Controller
                 $q->whereIn('tags.id', $tagIds);
             });
         }
-        
+
         // Search functionality
         if ($request->has('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('content', 'like', "%{$search}%")
-                  ->orWhere('excerpt', 'like', "%{$search}%");
+                    ->orWhere('content', 'like', "%{$search}%")
+                    ->orWhere('excerpt', 'like', "%{$search}%");
             });
         }
-        
+
         // Filter by date range
         if ($request->has('date_from')) {
             $query->whereDate('created_at', '>=', $request->date_from);
         }
-        
+
         if ($request->has('date_to')) {
             $query->whereDate('created_at', '<=', $request->date_to);
         }
-        
+
         // Sort options
+        $allowedSortFields = ['created_at', 'updated_at', 'title', 'status', 'view_count', 'published_at'];
         $sortBy = $request->get('sort_by', 'created_at');
         $sortOrder = $request->get('sort_order', 'desc');
+        if (! in_array($sortBy, $allowedSortFields)) {
+            $sortBy = 'created_at';
+        }
+        if (! in_array($sortOrder, ['asc', 'desc'])) {
+            $sortOrder = 'desc';
+        }
         $query->orderBy($sortBy, $sortOrder);
-        
+
         // Pagination
         $articles = $query->with(['tags', 'user'])
             ->withCount(['notes', 'bookmarks'])
             ->paginate($request->get('per_page', 20));
-        
+
         // Get tag statistics for filtering
         $tagStats = $this->getTagStatistics($user->id);
-        
+
         return response()->json([
             'articles' => $articles,
             'tag_statistics' => $tagStats,
@@ -87,10 +115,10 @@ class ArticleController extends Controller
                 'search' => $request->search,
                 'date_from' => $request->date_from,
                 'date_to' => $request->date_to,
-            ]
+            ],
         ]);
     }
-    
+
     /**
      * Store a newly created resource in storage.
      */
@@ -107,9 +135,9 @@ class ArticleController extends Controller
             'auto_generate_tags' => 'boolean',
             'published_at' => 'nullable|date',
         ]);
-        
+
         $user = Auth::user();
-        
+
         $article = Article::create([
             'title' => $validated['title'],
             'slug' => $this->generateUniqueSlug($validated['title'], $user->id),
@@ -120,16 +148,16 @@ class ArticleController extends Controller
             'status' => $validated['status'],
             'published_at' => $validated['published_at'],
         ]);
-        
+
         // Handle tags
         $this->processTags($article, $validated['tags'] ?? [], $validated['auto_generate_tags'] ?? false);
-        
+
         return response()->json([
             'message' => 'Article created successfully',
             'article' => $article->load(['tags', 'user']),
         ], 201);
     }
-    
+
     /**
      * Display the specified resource.
      */
@@ -140,13 +168,13 @@ class ArticleController extends Controller
             ->with(['tags', 'user', 'notes', 'bookmarks'])
             ->withCount(['notes', 'bookmarks'])
             ->findOrFail($id);
-        
+
         // Increment view count
         $article->increment('view_count');
-        
+
         // Get related articles based on tags
         $relatedArticles = $this->getRelatedArticles($article, $user->id);
-        
+
         // Get tag suggestions for this article
         $tagSuggestions = $this->tagSuggestionService->suggestTags(
             $article->content,
@@ -168,7 +196,7 @@ class ArticleController extends Controller
             'tagSuggestions' => $tagSuggestions,
         ]);
     }
-    
+
     /**
      * Update the specified resource in storage.
      */
@@ -187,35 +215,35 @@ class ArticleController extends Controller
             'auto_generate_tags' => 'boolean',
             'published_at' => 'nullable|date',
         ]);
-        
+
         $user = Auth::user();
         $article = Article::where('user_id', $user->id)->findOrFail($id);
-        
+
         // Update basic fields
         if (isset($validated['title'])) {
             $article->title = $validated['title'];
             $article->slug = $this->generateUniqueSlug($validated['title'], $user->id, $article->id);
         }
-        
+
         if (isset($validated['content'])) {
             $article->content = $validated['content'];
-            if (!isset($validated['excerpt'])) {
+            if (! isset($validated['excerpt'])) {
                 $article->excerpt = $this->generateExcerpt($validated['content']);
             }
         }
-        
+
         if (isset($validated['excerpt'])) {
             $article->excerpt = $validated['excerpt'];
         }
-        
+
         if (isset($validated['featured_image'])) {
             $article->featured_image = $validated['featured_image'];
         }
-        
+
         if (isset($validated['status'])) {
             $article->status = $validated['status'];
         }
-        
+
         if (isset($validated['published_at'])) {
             $article->published_at = $validated['published_at'];
         }
@@ -229,18 +257,18 @@ class ArticleController extends Controller
         }
 
         $article->save();
-        
+
         // Handle tags
         if (isset($validated['tags']) || isset($validated['auto_generate_tags'])) {
             $this->processTags($article, $validated['tags'] ?? [], $validated['auto_generate_tags'] ?? false);
         }
-        
+
         return response()->json([
             'message' => 'Article updated successfully',
             'article' => $article->load(['tags', 'user']),
         ]);
     }
-    
+
     /**
      * Remove the specified resource from storage.
      */
@@ -248,14 +276,14 @@ class ArticleController extends Controller
     {
         $user = Auth::user();
         $article = Article::where('user_id', $user->id)->findOrFail($id);
-        
+
         // Detach all tags before deletion
         $article->tags()->detach();
-        
+
         $article->delete();
-        
+
         return response()->json([
-            'message' => 'Article deleted successfully'
+            'message' => 'Article deleted successfully',
         ]);
     }
 
@@ -289,9 +317,9 @@ class ArticleController extends Controller
         }
 
         try {
-            $geminiService = app(\App\Services\GeminiSummarizationService::class);
+            $geminiService = app(GeminiSummarizationService::class);
 
-            if (!$geminiService->isAvailable()) {
+            if (! $geminiService->isAvailable()) {
                 return response()->json([
                     'success' => false,
                     'error' => 'Layanan AI tidak tersedia saat ini.',
@@ -323,7 +351,7 @@ class ArticleController extends Controller
             ], 500);
 
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Citation generation failed', [
+            Log::error('Citation generation failed', [
                 'article_id' => $id,
                 'error' => $e->getMessage(),
             ]);
@@ -334,25 +362,104 @@ class ArticleController extends Controller
             ], 500);
         }
     }
-    
+
+    /**
+     * Generate paraphrase for a single citation and update the article.
+     */
+    public function paraphraseCitation(Request $request, string $id, int $citationIndex): JsonResponse
+    {
+        $user = Auth::user();
+        $article = Article::where('user_id', $user->id)->findOrFail($id);
+
+        $suggestions = $article->ai_quotation_suggestions ?? [];
+        if (! isset($suggestions[$citationIndex])) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Kutipan tidak ditemukan.',
+            ], 404);
+        }
+
+        $citation = $suggestions[$citationIndex];
+        $quote = $citation['quote'] ?? '';
+        if (empty($quote)) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Kutipan asli kosong.',
+            ], 400);
+        }
+
+        try {
+            $geminiService = app(GeminiSummarizationService::class);
+
+            if (! $geminiService->isAvailable()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Layanan AI tidak tersedia saat ini.',
+                ], 503);
+            }
+
+            $result = $geminiService->paraphraseQuote(
+                $quote,
+                $article->research_title ?? 'General',
+                $article->research_context,
+                'id'
+            );
+
+            if ($result['success']) {
+                $suggestions[$citationIndex]['paraphrase'] = $result['paraphrase'];
+                $article->update([
+                    'ai_quotation_suggestions' => $suggestions,
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Parafrase berhasil dibuat.',
+                    'data' => [
+                        'paraphrase' => $result['paraphrase'],
+                        'citation_index' => $citationIndex,
+                    ],
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'error' => $result['error'] ?? 'Gagal memparafrase kutipan.',
+            ], 500);
+
+        } catch (\Exception $e) {
+            Log::error('Paraphrase generation failed', [
+                'article_id' => $id,
+                'citation_index' => $citationIndex,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Gagal memparafrase kutipan.',
+            ], 500);
+        }
+    }
+
     /**
      * Process tags for an article
      */
     private function processTags(Article $article, array $tags, bool $autoGenerate = false)
     {
         $tagIds = [];
-        
+
         // Process provided tags
         foreach ($tags as $tagName) {
             $tagName = trim($tagName);
-            if (empty($tagName)) continue;
-            
+            if (empty($tagName)) {
+                continue;
+            }
+
             $tag = $this->findOrCreateTag($tagName, Auth::id());
             if ($tag) {
                 $tagIds[] = $tag->id;
             }
         }
-        
+
         // Auto-generate tags if requested
         if ($autoGenerate) {
             $suggestions = $this->tagSuggestionService->suggestTags(
@@ -360,7 +467,7 @@ class ArticleController extends Controller
                 Auth::id(),
                 $article->id
             );
-            
+
             foreach ($suggestions as $suggestion) {
                 $tag = $suggestion['tag'];
                 if (is_array($tag)) {
@@ -368,20 +475,20 @@ class ArticleController extends Controller
                 } else {
                     $tag = $this->findOrCreateTag($tag->name, Auth::id(), true);
                 }
-                
-                if ($tag && !in_array($tag->id, $tagIds)) {
+
+                if ($tag && ! in_array($tag->id, $tagIds)) {
                     $tagIds[] = $tag->id;
                 }
             }
         }
-        
+
         // Sync tags with article
         $article->tags()->sync($tagIds);
-        
+
         // Update tag usage counts
         $this->updateTagUsageCounts($tagIds);
     }
-    
+
     /**
      * Find or create a tag
      */
@@ -389,16 +496,16 @@ class ArticleController extends Controller
     {
         // First try to find existing tag (user-specific or system)
         $tag = Tag::where(function ($query) use ($userId) {
-                $query->where('user_id', $userId)
-                      ->orWhereNull('user_id');
-            })
+            $query->where('user_id', $userId)
+                ->orWhereNull('user_id');
+        })
             ->where('name', $tagName)
             ->first();
-        
+
         if ($tag) {
             return $tag;
         }
-        
+
         // Create new tag
         try {
             return Tag::create([
@@ -416,7 +523,7 @@ class ArticleController extends Controller
                 ->first();
         }
     }
-    
+
     /**
      * Update tag usage counts
      */
@@ -431,7 +538,7 @@ class ArticleController extends Controller
             }
         }
     }
-    
+
     /**
      * Generate unique slug
      */
@@ -440,19 +547,19 @@ class ArticleController extends Controller
         $slug = Str::slug($title);
         $originalSlug = $slug;
         $count = 1;
-        
+
         while (Article::where('user_id', $userId)
             ->where('slug', $slug)
             ->when($excludeId, function ($query) use ($excludeId) {
                 $query->where('id', '!=', $excludeId);
             })
             ->exists()) {
-            $slug = $originalSlug . '-' . $count++;
+            $slug = $originalSlug.'-'.$count++;
         }
-        
+
         return $slug;
     }
-    
+
     /**
      * Generate excerpt from content
      */
@@ -460,25 +567,25 @@ class ArticleController extends Controller
     {
         $text = strip_tags($content);
         $text = trim($text);
-        
+
         if (strlen($text) <= $length) {
             return $text;
         }
-        
-        return substr($text, 0, $length) . '...';
+
+        return substr($text, 0, $length).'...';
     }
-    
+
     /**
      * Get related articles based on tags
      */
     private function getRelatedArticles(Article $article, int $userId)
     {
         $articleTagIds = $article->tags->pluck('id')->toArray();
-        
+
         if (empty($articleTagIds)) {
             return collect();
         }
-        
+
         return Article::where('user_id', $userId)
             ->where('id', '!=', $article->id)
             ->where('status', 'published')
@@ -492,7 +599,7 @@ class ArticleController extends Controller
             ->limit(5)
             ->get();
     }
-    
+
     /**
      * Get tag statistics
      */
@@ -510,7 +617,7 @@ class ArticleController extends Controller
             'total_tag_usage' => Tag::forUser($userId)->sum('usage_count'),
         ];
     }
-    
+
     /**
      * Generate random color
      */
@@ -518,9 +625,9 @@ class ArticleController extends Controller
     {
         $colors = [
             '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
-            '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
+            '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
         ];
-        
+
         return $colors[array_rand($colors)];
     }
 }

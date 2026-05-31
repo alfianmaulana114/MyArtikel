@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Article;
-use App\Models\User;
 use App\Models\Summary;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -74,9 +74,10 @@ class AdminController extends Controller
             return back()->with('error', 'Tidak bisa menonaktifkan admin.');
         }
 
-        $user->update(['is_active' => !$user->is_active]);
+        $user->update(['is_active' => ! $user->is_active]);
 
         $status = $user->is_active ? 'diaktifkan' : 'dinonaktifkan';
+
         return back()->with('status', "User {$user->name} berhasil {$status}.");
     }
 
@@ -172,15 +173,15 @@ class AdminController extends Controller
     {
         try {
             $dbName = DB::connection()->getDatabaseName();
-            $result = DB::select("
+            $result = DB::select('
                 SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS size_mb
                 FROM information_schema.tables
                 WHERE table_schema = ?
                 GROUP BY table_schema
-            ", [$dbName]);
+            ', [$dbName]);
 
-            if (!empty($result)) {
-                return $result[0]->size_mb . ' MB';
+            if (! empty($result)) {
+                return $result[0]->size_mb.' MB';
             }
         } catch (\Exception $e) {
             //

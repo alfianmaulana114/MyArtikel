@@ -23,10 +23,10 @@ class ProfileUpdateRequest extends FormRequest
     public function rules(): array
     {
         $userId = auth()->id();
-        
+
         return [
             'name' => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z\s]+$/'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $userId],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$userId],
             'bio' => ['nullable', 'string', 'max:500'],
             'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
         ];
@@ -61,7 +61,7 @@ class ProfileUpdateRequest extends FormRequest
         $validator->after(function ($validator) {
             $name = $this->input('name');
             $bio = $this->input('bio');
-            
+
             if ($name) {
                 // Check for suspicious patterns in name
                 $suspiciousPatterns = [
@@ -70,7 +70,7 @@ class ProfileUpdateRequest extends FormRequest
                     '/on\w+\s*=/i',
                     '/<[^>]+>/',
                 ];
-                
+
                 foreach ($suspiciousPatterns as $pattern) {
                     if (preg_match($pattern, $name)) {
                         $validator->errors()->add('name', 'Name contains invalid characters.');
@@ -78,7 +78,7 @@ class ProfileUpdateRequest extends FormRequest
                     }
                 }
             }
-            
+
             if ($bio) {
                 // Check for suspicious patterns in bio
                 $dangerousPatterns = [
@@ -88,7 +88,7 @@ class ProfileUpdateRequest extends FormRequest
                     '/on\w+\s*=/i',
                     '/data:text\/html/i',
                 ];
-                
+
                 foreach ($dangerousPatterns as $pattern) {
                     if (preg_match($pattern, $bio)) {
                         $validator->errors()->add('bio', 'Bio contains potentially dangerous content.');

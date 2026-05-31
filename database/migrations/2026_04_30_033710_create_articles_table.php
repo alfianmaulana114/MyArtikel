@@ -24,7 +24,7 @@ return new class extends Migration
             $table->integer('view_count')->default(0);
             $table->boolean('is_featured')->default(false);
             $table->timestamps();
-            
+
             $table->index('slug');
             $table->index('status');
             $table->index('published_at');

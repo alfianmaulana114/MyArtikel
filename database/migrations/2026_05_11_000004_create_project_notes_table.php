@@ -14,7 +14,7 @@ return new class extends Migration
             $table->foreignId('note_id')->constrained()->cascadeOnDelete();
             $table->foreignId('outline_id')->nullable()->constrained('project_outlines')->nullOnDelete();
             $table->timestamps();
-            
+
             $table->unique(['project_id', 'note_id']);
             $table->index(['project_id', 'outline_id']);
         });

@@ -8,15 +8,16 @@ use Illuminate\Support\Facades\Cache;
 class LocalSummarizationService
 {
     private int $maxSentences = 5;
+
     private int $maxKeyPoints = 5;
-    
+
     /**
      * Generate extractive summary using local algorithms
      */
     public function generateSummary(string $content, int $maxWords = 150, string $language = 'id'): array
     {
         $cacheKey = $this->generateCacheKey($content, $maxWords, $language);
-        
+
         // Check cache first
         if ($cachedSummary = Cache::get($cacheKey)) {
             return $cachedSummary;
@@ -26,7 +27,7 @@ class LocalSummarizationService
             // Preprocess content
             $cleanedContent = $this->preprocessContent($content);
             $sentences = $this->extractSentences($cleanedContent);
-            
+
             if (count($sentences) < 3) {
                 // If too few sentences, return the whole content as summary
                 $summary = [
@@ -34,26 +35,26 @@ class LocalSummarizationService
                     'key_points' => [$cleanedContent],
                     'method' => 'extractive',
                     'sentences_used' => count($sentences),
-                    'confidence' => 0.5
+                    'confidence' => 0.5,
                 ];
             } else {
                 // Generate proper extractive summary
                 $summary = $this->generateExtractiveSummary($sentences, $maxWords, $language);
             }
-            
+
             // Cache the result for 24 hours
             Cache::put($cacheKey, $summary, now()->addHours(24));
-            
+
             return $summary;
-            
+
         } catch (Exception $e) {
             // Fallback to simple truncation
             return [
                 'summary' => $this->truncateText($content, $maxWords),
-                'key_points' => [substr($content, 0, 200) . '...'],
+                'key_points' => [substr($content, 0, 200).'...'],
                 'method' => 'fallback',
                 'error' => $e->getMessage(),
-                'confidence' => 0.3
+                'confidence' => 0.3,
             ];
         }
     }
@@ -65,16 +66,16 @@ class LocalSummarizationService
     {
         // Remove extra whitespace
         $content = preg_replace('/\s+/', ' ', $content);
-        
+
         // Remove special characters but keep punctuation
         $content = preg_replace('/[^\w\s\.\,\!\?\-]/', '', $content);
-        
+
         // Remove very short sentences (less than 10 characters)
         $sentences = $this->extractSentences($content);
-        $filteredSentences = array_filter($sentences, function($sentence) {
+        $filteredSentences = array_filter($sentences, function ($sentence) {
             return strlen(trim($sentence)) > 10;
         });
-        
+
         return implode(' ', $filteredSentences);
     }
 
@@ -85,7 +86,7 @@ class LocalSummarizationService
     {
         // Split by sentence endings
         $sentences = preg_split('/[.!?]+/', $content);
-        
+
         // Clean and filter sentences
         $cleanedSentences = [];
         foreach ($sentences as $sentence) {
@@ -94,7 +95,7 @@ class LocalSummarizationService
                 $cleanedSentences[] = $sentence;
             }
         }
-        
+
         return $cleanedSentences;
     }
 
@@ -105,30 +106,30 @@ class LocalSummarizationService
     {
         // Calculate sentence scores based on multiple factors
         $scoredSentences = [];
-        
+
         foreach ($sentences as $index => $sentence) {
             $score = $this->calculateSentenceScore($sentence, $sentences, $index);
             $scoredSentences[] = [
                 'sentence' => $sentence,
                 'score' => $score,
-                'length' => str_word_count($sentence)
+                'length' => str_word_count($sentence),
             ];
         }
-        
+
         // Sort by score descending
-        usort($scoredSentences, function($a, $b) {
+        usort($scoredSentences, function ($a, $b) {
             return $b['score'] <=> $a['score'];
         });
-        
+
         // Select top sentences
         $selectedSentences = [];
         $totalWords = 0;
         $maxSentences = min($this->maxSentences, count($scoredSentences));
-        
+
         for ($i = 0; $i < $maxSentences; $i++) {
             $sentenceData = $scoredSentences[$i];
             $sentenceWords = str_word_count($sentenceData['sentence']);
-            
+
             if ($totalWords + $sentenceWords <= $maxWords) {
                 $selectedSentences[] = $sentenceData;
                 $totalWords += $sentenceWords;
@@ -136,27 +137,28 @@ class LocalSummarizationService
                 break;
             }
         }
-        
+
         // Sort selected sentences by original position
-        usort($selectedSentences, function($a, $b) use ($sentences) {
+        usort($selectedSentences, function ($a, $b) use ($sentences) {
             $posA = array_search($a['sentence'], $sentences);
             $posB = array_search($b['sentence'], $sentences);
+
             return $posA <=> $posB;
         });
-        
+
         // Build summary
         $summaryText = implode('. ', array_column($selectedSentences, 'sentence'));
         $summaryText = $this->truncateText($summaryText, $maxWords);
-        
+
         // Extract key points
         $keyPoints = $this->extractKeyPoints($sentences, $language);
-        
+
         return [
             'summary' => $summaryText,
             'key_points' => $keyPoints,
             'method' => 'extractive',
             'sentences_used' => count($selectedSentences),
-            'confidence' => $this->calculateOverallConfidence($selectedSentences)
+            'confidence' => $this->calculateOverallConfidence($selectedSentences),
         ];
     }
 
@@ -167,30 +169,30 @@ class LocalSummarizationService
     {
         $score = 0;
         $words = str_word_count(strtolower($sentence), 1);
-        
+
         // Position bonus (earlier sentences often more important)
         $positionBonus = max(0, 1 - ($position / count($allSentences)));
         $score += $positionBonus * 0.2;
-        
+
         // Length score (prefer medium-length sentences)
         $wordCount = count($words);
         if ($wordCount >= 8 && $wordCount <= 25) {
             $score += 0.3;
         }
-        
+
         // Keyword frequency score
         $keywordScore = $this->calculateKeywordScore($sentence, $allSentences);
         $score += $keywordScore * 0.4;
-        
+
         // Presence of important words (numbers, proper nouns, etc.)
         if (preg_match('/\d+/', $sentence)) {
             $score += 0.1; // Contains numbers
         }
-        
+
         if (preg_match('/[A-Z][a-z]+/', $sentence)) {
             $score += 0.1; // Contains proper nouns
         }
-        
+
         return min(1.0, $score);
     }
 
@@ -201,7 +203,7 @@ class LocalSummarizationService
     {
         $sentenceWords = array_count_values(str_word_count(strtolower($sentence), 1));
         $allWords = [];
-        
+
         foreach ($allSentences as $s) {
             $words = str_word_count(strtolower($s), 1);
             foreach ($words as $word) {
@@ -210,10 +212,10 @@ class LocalSummarizationService
                 }
             }
         }
-        
+
         $allWordFreq = array_count_values($allWords);
         $score = 0;
-        
+
         foreach ($sentenceWords as $word => $freq) {
             if (strlen($word) > 3 && isset($allWordFreq[$word])) {
                 // TF-IDF-like scoring
@@ -222,7 +224,7 @@ class LocalSummarizationService
                 $score += $tf * $idf;
             }
         }
-        
+
         return min(1.0, $score);
     }
 
@@ -232,22 +234,22 @@ class LocalSummarizationService
     private function extractKeyPoints(array $sentences, string $language): array
     {
         $keyPoints = [];
-        
+
         // Score sentences for key point extraction
         $scoredSentences = [];
         foreach ($sentences as $index => $sentence) {
             $score = $this->calculateSentenceScore($sentence, $sentences, $index);
             $scoredSentences[] = [
                 'sentence' => $sentence,
-                'score' => $score
+                'score' => $score,
             ];
         }
-        
+
         // Sort by score
-        usort($scoredSentences, function($a, $b) {
+        usort($scoredSentences, function ($a, $b) {
             return $b['score'] <=> $a['score'];
         });
-        
+
         // Select top sentences as key points
         $maxPoints = min($this->maxKeyPoints, count($scoredSentences));
         for ($i = 0; $i < $maxPoints; $i++) {
@@ -256,7 +258,7 @@ class LocalSummarizationService
                 $keyPoints[] = $this->formatKeyPoint($sentence, $language);
             }
         }
-        
+
         return $keyPoints;
     }
 
@@ -267,15 +269,15 @@ class LocalSummarizationService
     {
         // Remove trailing punctuation
         $sentence = rtrim($sentence, '.!?');
-        
+
         // Capitalize first letter
         $sentence = ucfirst(strtolower($sentence));
-        
+
         // Limit length
         if (strlen($sentence) > 150) {
-            $sentence = substr($sentence, 0, 150) . '...';
+            $sentence = substr($sentence, 0, 150).'...';
         }
-        
+
         return $sentence;
     }
 
@@ -287,10 +289,10 @@ class LocalSummarizationService
         if (empty($selectedSentences)) {
             return 0.0;
         }
-        
+
         $avgScore = array_sum(array_column($selectedSentences, 'score')) / count($selectedSentences);
         $sentenceCountBonus = min(0.3, count($selectedSentences) * 0.1);
-        
+
         return min(1.0, $avgScore + $sentenceCountBonus);
     }
 
@@ -300,13 +302,14 @@ class LocalSummarizationService
     private function truncateText(string $text, int $maxWords): string
     {
         $words = str_word_count($text, 1);
-        
+
         if (count($words) <= $maxWords) {
             return $text;
         }
-        
+
         $truncated = implode(' ', array_slice($words, 0, $maxWords));
-        return $truncated . '...';
+
+        return $truncated.'...';
     }
 
     /**
@@ -315,6 +318,7 @@ class LocalSummarizationService
     private function generateCacheKey(string $content, int $maxWords, string $language): string
     {
         $contentHash = md5($content);
+
         return "local_summary:{$contentHash}:{$maxWords}:{$language}";
     }
 

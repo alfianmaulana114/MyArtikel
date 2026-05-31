@@ -67,7 +67,7 @@ class ProjectOutline extends Model
     public function getStatus(): string
     {
         $content = trim($this->content ?? '');
-        
+
         if (empty($content)) {
             return 'empty';
         } elseif (strlen($content) < 50) {
@@ -75,7 +75,7 @@ class ProjectOutline extends Model
         } elseif (strlen($content) < 200) {
             return 'in_progress';
         }
-        
+
         return 'completed';
     }
 

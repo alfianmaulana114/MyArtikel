@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
-use Smalot\PdfParser\Parser;
+use Exception;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Exception;
+use Smalot\PdfParser\Parser;
 
 class PdfExtractionService
 {
@@ -13,7 +13,7 @@ class PdfExtractionService
 
     public function __construct()
     {
-        $this->parser = new Parser();
+        $this->parser = new Parser;
     }
 
     /**
@@ -27,8 +27,8 @@ class PdfExtractionService
             // Resolve full path from storage
             $fullPath = Storage::disk('public')->path($filePath);
 
-            if (!file_exists($fullPath)) {
-                throw new Exception('File not found: ' . $filePath);
+            if (! file_exists($fullPath)) {
+                throw new Exception('File not found: '.$filePath);
             }
 
             // Parse PDF
@@ -37,22 +37,22 @@ class PdfExtractionService
             // Extract metadata if available
             $details = $pdf->getDetails();
             $metadata = [];
-            if (!empty($details['Title'] ?? null)) {
+            if (! empty($details['Title'] ?? null)) {
                 $metadata['title'] = $details['Title'];
             }
-            if (!empty($details['Author'] ?? null)) {
+            if (! empty($details['Author'] ?? null)) {
                 $metadata['author'] = $details['Author'];
             }
-            if (!empty($details['Subject'] ?? null)) {
+            if (! empty($details['Subject'] ?? null)) {
                 $metadata['subject'] = $details['Subject'];
             }
-            if (!empty($details['Keywords'] ?? null)) {
+            if (! empty($details['Keywords'] ?? null)) {
                 $metadata['keywords'] = $details['Keywords'];
             }
-            if (!empty($details['Creator'] ?? null)) {
+            if (! empty($details['Creator'] ?? null)) {
                 $metadata['creator'] = $details['Creator'];
             }
-            if (!empty($details['Producer'] ?? null)) {
+            if (! empty($details['Producer'] ?? null)) {
                 $metadata['producer'] = $details['Producer'];
             }
 
@@ -65,7 +65,7 @@ class PdfExtractionService
             foreach ($pages as $index => $page) {
                 $pageText = $page->getText();
                 if (trim($pageText) !== '') {
-                    $fullText .= $pageText . "\n";
+                    $fullText .= $pageText."\n";
                 }
             }
 
@@ -127,7 +127,7 @@ class PdfExtractionService
             foreach ($pages as $page) {
                 $pageText = $page->getText();
                 if (trim($pageText) !== '') {
-                    $fullText .= $pageText . "\n";
+                    $fullText .= $pageText."\n";
                 }
             }
 
